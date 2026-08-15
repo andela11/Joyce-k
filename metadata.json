@@ -1,0 +1,6 @@
+{
+  "name": "Amour & Affinités - Rencontres Privées & IA",
+  "description": "Application de rencontres amoureuses avec matching intelligent par centres d'intérêt, IA de réponse automatique en cas d'indisponibilité, géolocalisation de proximité et messagerie chiffrée avec protection stricte de la vie privée.",
+  "requestFramePermissions": ["geolocation"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
