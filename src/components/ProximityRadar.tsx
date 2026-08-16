@@ -11,6 +11,7 @@ import {
   Sliders,
   CheckCircle2,
   Navigation as NavIcon,
+  ChevronLeft,
 } from 'lucide-react';
 import { UserProfile, PrivacySettings } from '../types';
 import {
@@ -27,6 +28,7 @@ interface ProximityRadarProps {
   onSelectProfile: (profile: UserProfile) => void;
   onStartChat: (profile: UserProfile) => void;
   onOpenPrivacy: () => void;
+  onBackToDiscovery?: () => void;
 }
 
 export const ProximityRadar: React.FC<ProximityRadarProps> = ({
@@ -37,6 +39,7 @@ export const ProximityRadar: React.FC<ProximityRadarProps> = ({
   onSelectProfile,
   onStartChat,
   onOpenPrivacy,
+  onBackToDiscovery,
 }) => {
   const [radarRadius, setRadarRadius] = useState<number>(25); // in km
   const [isLocating, setIsLocating] = useState(false);
@@ -44,17 +47,19 @@ export const ProximityRadar: React.FC<ProximityRadarProps> = ({
   const [selectedPinProfile, setSelectedPinProfile] = useState<UserProfile | null>(null);
 
   // Calculate distance for all profiles
-  const profilesWithDistance = profiles
-    .filter((p) => !privacySettings.blockedUsers.includes(p.id))
+  const profilesWithDistance = (profiles || [])
+    .filter((p) => p && !(privacySettings?.blockedUsers || []).includes(p.id))
     .map((p) => {
       const distance = calculateDistanceKm(
-        currentUser.lat,
-        currentUser.lng,
-        p.lat,
-        p.lng
+        currentUser?.lat || 0,
+        currentUser?.lng || 0,
+        p.lat || 0,
+        p.lng || 0
       );
-      const commonCount = currentUser.interests.filter((i) =>
-        p.interests.includes(i)
+      const userInterests = currentUser?.interests || [];
+      const profileInterests = p.interests || [];
+      const commonCount = userInterests.filter((i) =>
+        profileInterests.includes(i)
       ).length;
       return {
         ...p,
@@ -101,7 +106,18 @@ export const ProximityRadar: React.FC<ProximityRadarProps> = ({
       {/* Top Banner */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white border border-rose-100 rounded-[32px] p-4 sm:p-6 shadow-xl shadow-rose-100/60">
         <div>
-          <div className="flex items-center gap-2 mb-1">
+          <div className="flex items-center gap-2 mb-1 flex-wrap">
+            {onBackToDiscovery && (
+              <button
+                id="radar-back-to-discovery-btn"
+                onClick={onBackToDiscovery}
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-slate-100 hover:bg-rose-50 text-slate-700 hover:text-rose-600 border border-slate-200 transition-colors cursor-pointer mr-1"
+                title="Retourner aux Swipes"
+              >
+                <ChevronLeft className="w-4 h-4" />
+                <span>Retour</span>
+              </button>
+            )}
             <div className="p-2 rounded-2xl bg-rose-100 text-rose-600 border border-rose-200">
               <Radio className="w-5 h-5 animate-pulse" />
             </div>

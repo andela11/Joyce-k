@@ -118,6 +118,19 @@ export interface AuthUser {
   createdAt?: string;
 }
 
+export interface AppNotification {
+  id: string;
+  title: string;
+  message: string;
+  targetUserId?: string; // 'all' or specific user ID
+  targetUserName?: string;
+  type: 'announcement' | 'security' | 'feature' | 'reward' | 'match_alert';
+  createdAt: number;
+  read?: boolean;
+  senderName: string;
+  actionTab?: ActiveTab;
+}
+
 export type ActiveTab =
   | 'landing'
   | 'discovery'

@@ -16,6 +16,7 @@ import {
   Upload,
   ShieldAlert,
   Globe2,
+  ChevronLeft,
 } from 'lucide-react';
 import { UserProfile, RelationshipGoal, AuthUser } from '../types';
 import { ALL_INTEREST_CATEGORIES } from '../data/categories';
@@ -27,6 +28,7 @@ interface ProfileEditorProps {
   authUser?: AuthUser | null;
   onOpenAuth?: (mode?: 'login' | 'signup') => void;
   onLogout?: () => void;
+  onBackToDiscovery?: () => void;
 }
 
 export const ProfileEditor: React.FC<ProfileEditorProps> = ({
@@ -35,6 +37,7 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({
   authUser,
   onOpenAuth,
   onLogout,
+  onBackToDiscovery,
 }) => {
   const [profile, setProfile] = useState<UserProfile>(userProfile);
   const [newPhotoUrl, setNewPhotoUrl] = useState('');
@@ -49,16 +52,17 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({
 
   const toggleInterest = (interest: string) => {
     setProfile((prev) => {
-      const exists = prev.interests.includes(interest);
+      const interests = prev.interests || [];
+      const exists = interests.includes(interest);
       if (exists) {
         return {
           ...prev,
-          interests: prev.interests.filter((i) => i !== interest),
+          interests: interests.filter((i) => i !== interest),
         };
       } else {
         return {
           ...prev,
-          interests: [...prev.interests, interest],
+          interests: [...interests, interest],
         };
       }
     });
@@ -134,10 +138,10 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({
   };
 
   const handleRemovePhoto = (idx: number) => {
-    if (profile.photos.length <= 1) return;
+    if ((profile.photos || []).length <= 1) return;
     setProfile((prev) => ({
       ...prev,
-      photos: prev.photos.filter((_, i) => i !== idx),
+      photos: (prev.photos || []).filter((_, i) => i !== idx),
     }));
   };
 
@@ -174,8 +178,18 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({
   return (
     <div id="profile-editor-view" className="max-w-4xl mx-auto px-3 sm:px-6 py-4 sm:py-6 space-y-6">
       {/* Header Banner */}
-      <div className="flex items-center justify-between bg-slate-900 border border-slate-800 rounded-[32px] p-5 shadow-xl shadow-slate-950/40 text-white">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between bg-slate-900 border border-slate-800 rounded-[32px] p-5 shadow-xl shadow-slate-950/40 text-white gap-4">
         <div className="flex items-center gap-3.5">
+          {onBackToDiscovery && (
+            <button
+              id="profile-back-to-discovery-btn"
+              onClick={onBackToDiscovery}
+              className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition-colors cursor-pointer"
+              title="Retourner aux Swipes"
+            >
+              <ChevronLeft className="w-5 h-5 text-rose-400" />
+            </button>
+          )}
           <div className="relative">
             <img
               src={profile.photos[0]}
@@ -202,7 +216,7 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({
         <button
           id="save-profile-top-btn"
           onClick={handleSave}
-          className="py-2.5 px-4 rounded-2xl bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-600 text-white font-bold text-xs flex items-center gap-2 shadow-lg shadow-rose-950 transition-all active:scale-95"
+          className="py-2.5 px-4 rounded-2xl bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-600 text-white font-bold text-xs flex items-center gap-2 shadow-lg shadow-rose-950 transition-all active:scale-95 cursor-pointer self-end sm:self-auto"
         >
           <Save className="w-4 h-4" />
           <span>{saveSuccess ? 'Enregistré !' : 'Sauvegarder'}</span>

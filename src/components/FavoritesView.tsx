@@ -22,36 +22,46 @@ import { calculateDistanceKm, formatFuzzedDistance } from '../utils/geoUtils';
 
 interface FavoritesViewProps {
   currentUser: UserProfile;
-  profiles: UserProfile[];
-  favoriteIds: string[];
+  profiles?: UserProfile[];
+  allProfiles?: UserProfile[];
+  favoriteIds?: string[];
   onToggleFavorite: (profileId: string) => void;
   onOpenCompatibility: (profile: UserProfile) => void;
   onStartChat: (profile: UserProfile) => void;
-  onGoToDiscovery: () => void;
-  privacySettings: PrivacySettings;
+  onGoToDiscovery?: () => void;
+  onExploreMore?: () => void;
+  privacySettings?: PrivacySettings;
 }
 
 export const FavoritesView: React.FC<FavoritesViewProps> = ({
   currentUser,
   profiles,
-  favoriteIds,
+  allProfiles,
+  favoriteIds = [],
   onToggleFavorite,
   onOpenCompatibility,
   onStartChat,
   onGoToDiscovery,
+  onExploreMore,
   privacySettings,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterGoal, setFilterGoal] = useState<string>('all');
   const [activePhotoIndices, setActivePhotoIndices] = useState<{ [key: string]: number }>({});
 
-  const favoriteProfiles = profiles.filter((p) => favoriteIds.includes(p.id));
+  const profilesList = profiles || allProfiles || [];
+  const safeFavoriteIds = Array.isArray(favoriteIds) ? favoriteIds : [];
+  const favoriteProfiles = profilesList.filter((p) => p && safeFavoriteIds.includes(p.id));
 
   const filteredFavorites = favoriteProfiles.filter((p) => {
+    if (!p) return false;
+    const name = p.name || '';
+    const city = p.city || '';
+    const interests = p.interests || [];
     const matchesSearch =
-      p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      p.city.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      p.interests.some((i) => i.toLowerCase().includes(searchTerm.toLowerCase()));
+      name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      city.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      interests.some((i) => (i || '').toLowerCase().includes(searchTerm.toLowerCase()));
 
     if (!matchesSearch) return false;
     if (filterGoal !== 'all' && p.relationshipGoal !== filterGoal) return false;
@@ -81,6 +91,17 @@ export const FavoritesView: React.FC<FavoritesViewProps> = ({
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-6 sm:p-7 rounded-[32px] bg-white border border-rose-100 shadow-xl shadow-rose-100/60">
           <div className="space-y-1.5">
             <div className="flex items-center gap-2">
+              {onGoToDiscovery && (
+                <button
+                  id="favorites-back-btn"
+                  onClick={onGoToDiscovery}
+                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-slate-100 hover:bg-rose-50 text-slate-700 hover:text-rose-600 border border-slate-200 transition-colors cursor-pointer"
+                  title="Retourner aux Swipes"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                  <span>Retour</span>
+                </button>
+              )}
               <span className="px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-rose-50 text-rose-600 border border-rose-200">
                 Coups de Cœur
               </span>
@@ -173,7 +194,7 @@ export const FavoritesView: React.FC<FavoritesViewProps> = ({
               </p>
             </div>
             <button
-              onClick={onGoToDiscovery}
+              onClick={onGoToDiscovery || onExploreMore}
               className="px-6 py-3.5 rounded-2xl bg-gradient-to-r from-rose-600 to-orange-500 text-white font-bold text-xs sm:text-sm shadow-lg shadow-rose-200 hover:scale-105 active:scale-95 transition-all flex items-center gap-2 mx-auto cursor-pointer"
             >
               <Compass className="w-4 h-4" />
@@ -198,9 +219,12 @@ export const FavoritesView: React.FC<FavoritesViewProps> = ({
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredFavorites.map((profile) => {
               const currentPhotoIdx = activePhotoIndices[profile.id] || 0;
-              const photo = profile.photos[currentPhotoIdx] || profile.photos[0];
-              const commonCount = currentUser.interests.filter((i) =>
-                profile.interests.includes(i)
+              const photos = profile.photos || [];
+              const photo = photos[currentPhotoIdx] || photos[0] || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800';
+              const userInterests = currentUser?.interests || [];
+              const profileInterests = profile.interests || [];
+              const commonCount = userInterests.filter((i) =>
+                profileInterests.includes(i)
               ).length;
               const affinityScore = Math.min(98, Math.max(65, 60 + commonCount * 9));
 

@@ -53,7 +53,16 @@ export default function App() {
   const [currentUser, setCurrentUser] = useState<UserProfile>(() => {
     try {
       const saved = localStorage.getItem('amour_affinites_user');
-      return saved ? JSON.parse(saved) : INITIAL_USER_PROFILE;
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return {
+          ...INITIAL_USER_PROFILE,
+          ...parsed,
+          interests: Array.isArray(parsed.interests) ? parsed.interests : INITIAL_USER_PROFILE.interests,
+          photos: Array.isArray(parsed.photos) && parsed.photos.length > 0 ? parsed.photos : INITIAL_USER_PROFILE.photos,
+        };
+      }
+      return INITIAL_USER_PROFILE;
     } catch (e) {
       console.warn('Failed to parse user profile from localStorage:', e);
       return INITIAL_USER_PROFILE;
@@ -64,7 +73,15 @@ export default function App() {
   const [privacySettings, setPrivacySettings] = useState<PrivacySettings>(() => {
     try {
       const saved = localStorage.getItem('amour_affinites_privacy');
-      return saved ? JSON.parse(saved) : INITIAL_PRIVACY_SETTINGS;
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return {
+          ...INITIAL_PRIVACY_SETTINGS,
+          ...parsed,
+          blockedUsers: Array.isArray(parsed.blockedUsers) ? parsed.blockedUsers : [],
+        };
+      }
+      return INITIAL_PRIVACY_SETTINGS;
     } catch (e) {
       console.warn('Failed to parse privacy settings from localStorage:', e);
       return INITIAL_PRIVACY_SETTINGS;
@@ -202,6 +219,62 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    document.title = 'joyce-k';
+  }, []);
+
+  // Global Keyboard Navigation between main sections and tabs
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      // Ignore if user is currently typing in input, textarea, or contentEditable
+      const target = e.target as HTMLElement;
+      if (
+        target &&
+        (target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.isContentEditable)
+      ) {
+        return;
+      }
+
+      // Check for Alt/Cmd combinations or standalone navigation keys
+      if (e.altKey || (!e.ctrlKey && !e.metaKey)) {
+        const key = e.key.toLowerCase();
+
+        // Numeric keys 1-7 for tabs
+        if (key === '1') {
+          e.preventDefault();
+          setActiveTab(authUser ? 'discovery' : 'landing');
+        } else if (key === '2') {
+          e.preventDefault();
+          setActiveTab('favorites');
+        } else if (key === '3') {
+          e.preventDefault();
+          setActiveTab('radar');
+        } else if (key === '4') {
+          e.preventDefault();
+          setActiveTab('messages');
+        } else if (key === '5') {
+          e.preventDefault();
+          setActiveTab('ai_wingman');
+        } else if (key === '6') {
+          e.preventDefault();
+          setActiveTab('privacy');
+        } else if (key === '7') {
+          e.preventDefault();
+          setActiveTab('profile');
+        } else if (key === 'h' && !e.altKey) {
+          // 'H' -> Home / Landing
+          e.preventDefault();
+          setActiveTab('landing');
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  }, [authUser]);
+
+  useEffect(() => {
     if (authUser) {
       localStorage.setItem('amour_affinites_auth', JSON.stringify(authUser));
     } else {
@@ -254,8 +327,10 @@ export default function App() {
     const existingConv = conversations.find((c) => c.participant.id === profile.id);
     if (!existingConv) {
       const newConvId = `conv_${profile.id}`;
-      const commonInterests = currentUser.interests.filter((i) =>
-        profile.interests.includes(i)
+      const userInterests = currentUser?.interests || [];
+      const profileInterests = profile.interests || [];
+      const commonInterests = userInterests.filter((i) =>
+        profileInterests.includes(i)
       );
 
       const newConv: Conversation = {
@@ -268,7 +343,7 @@ export default function App() {
         commonInterests,
       };
 
-      setConversations((prev) => [newConv, ...prev]);
+      setConversations((prev) => [newConv, ...(prev || [])]);
       setMessages((prev) => ({
         ...prev,
         [newConvId]: [],
@@ -366,9 +441,9 @@ export default function App() {
   const handleBlockUser = (userId: string) => {
     setPrivacySettings((prev) => ({
       ...prev,
-      blockedUsers: [...prev.blockedUsers, userId],
+      blockedUsers: [...(prev.blockedUsers || []), userId],
     }));
-    setConversations((prev) => prev.filter((c) => c.participant.id !== userId));
+    setConversations((prev) => (prev || []).filter((c) => c.participant?.id !== userId));
     setActiveConversationId(null);
   };
 
@@ -376,18 +451,20 @@ export default function App() {
   const handleUnblockUser = (userId: string) => {
     setPrivacySettings((prev) => ({
       ...prev,
-      blockedUsers: prev.blockedUsers.filter((id) => id !== userId),
+      blockedUsers: (prev.blockedUsers || []).filter((id) => id !== userId),
     }));
   };
 
   // Start chat with a profile from compatibility or match modal
   const handleStartChatWithProfile = (profile: UserProfile, initialMessage?: string) => {
-    let conv = conversations.find((c) => c.participant.id === profile.id);
+    let conv = (conversations || []).find((c) => c.participant?.id === profile.id);
     let convId = conv ? conv.id : `conv_${profile.id}`;
 
     if (!conv) {
-      const commonInterests = currentUser.interests.filter((i) =>
-        profile.interests.includes(i)
+      const userInterests = currentUser?.interests || [];
+      const profileInterests = profile.interests || [];
+      const commonInterests = userInterests.filter((i) =>
+        profileInterests.includes(i)
       );
       const newConv: Conversation = {
         id: convId,
@@ -398,7 +475,7 @@ export default function App() {
         autoRepliesCount: 0,
         commonInterests,
       };
-      setConversations((prev) => [newConv, ...prev]);
+      setConversations((prev) => [newConv, ...(prev || [])]);
       setMessages((prev) => ({ ...prev, [convId]: [] }));
     }
 
@@ -508,11 +585,14 @@ export default function App() {
           <div className="pb-8 bg-rose-50/60 min-h-[calc(100vh-70px)] text-slate-800">
             <FavoritesView
               currentUser={currentUser}
+              profiles={profiles}
               allProfiles={profiles}
               favoriteIds={favoriteIds}
+              privacySettings={privacySettings}
               onToggleFavorite={handleToggleFavorite}
               onOpenCompatibility={(profile) => setCompatibilityProfile(profile)}
               onStartChat={(profile) => handleStartChatWithProfile(profile)}
+              onGoToDiscovery={() => setActiveTab('discovery')}
               onExploreMore={() => setActiveTab('discovery')}
             />
           </div>
@@ -535,7 +615,7 @@ export default function App() {
         )}
 
         {activeTab === 'messages' && (
-          <div className="pb-8 bg-rose-50/60 min-h-[calc(100vh-70px)] text-slate-800">
+          <div className="bg-rose-50/60 h-[calc(100vh-65px)] flex flex-col text-slate-800">
             <MessagingCenter
               currentUser={currentUser}
               conversations={conversations}
@@ -547,6 +627,7 @@ export default function App() {
               aiSettings={aiSettings}
               onToggleAi={handleToggleAi}
               onBlockUser={handleBlockUser}
+              onBackToDiscovery={() => setActiveTab('discovery')}
             />
           </div>
         )}

@@ -67,5 +67,11 @@ service cloud.firestore {
         isAdmin()
       );
     }
+
+    // Notifications broadcast & user alerts
+    match /notifications/{notificationId} {
+      allow read: if true;
+      allow create, update, delete: if isSignedIn() && isAdmin();
+    }
   }
 }

@@ -28,8 +28,10 @@ export const CompatibilityModal: React.FC<CompatibilityModalProps> = ({
   const [report, setReport] = useState<CompatibilityReport | null>(null);
 
   // Common interests
-  const commonInterests = userProfile.interests.filter((i) =>
-    targetProfile.interests.includes(i)
+  const userInterests = userProfile?.interests || [];
+  const targetInterests = targetProfile?.interests || [];
+  const commonInterests = userInterests.filter((i) =>
+    targetInterests.includes(i)
   );
 
   const calculateCompatibilityWithAi = async () => {

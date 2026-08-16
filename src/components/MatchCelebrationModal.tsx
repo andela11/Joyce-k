@@ -26,8 +26,10 @@ export const MatchCelebrationModal: React.FC<MatchCelebrationModalProps> = ({
   const [icebreakers, setIcebreakers] = useState<string[]>([]);
   const [loadingIcebreakers, setLoadingIcebreakers] = useState(false);
 
-  const commonInterests = userProfile.interests.filter((i) =>
-    matchedProfile.interests.includes(i)
+  const userInterests = userProfile?.interests || [];
+  const matchedInterests = matchedProfile?.interests || [];
+  const commonInterests = userInterests.filter((i) =>
+    matchedInterests.includes(i)
   );
 
   useEffect(() => {

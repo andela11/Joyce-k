@@ -46,6 +46,7 @@ interface MessagingCenterProps {
   aiSettings: AiAutoResponderSettings;
   onToggleAi: () => void;
   onBlockUser: (userId: string) => void;
+  onBackToDiscovery?: () => void;
 }
 
 export const MessagingCenter: React.FC<MessagingCenterProps> = ({
@@ -59,6 +60,7 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
   aiSettings,
   onToggleAi,
   onBlockUser,
+  onBackToDiscovery,
 }) => {
   const [inputText, setInputText] = useState('');
   const [isGeneratingAiReply, setIsGeneratingAiReply] = useState(false);
@@ -200,26 +202,41 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
   }, [isRecordingAudio]);
 
   return (
-    <div id="messaging-center-view" className="max-w-7xl mx-auto px-2 sm:px-4 py-3 sm:py-6 h-[calc(100vh-80px)] flex flex-col">
-      <div className="flex-1 bg-white border border-rose-100 rounded-[32px] overflow-hidden shadow-2xl shadow-rose-100/70 flex flex-col md:flex-row">
+    <div
+      id="messaging-center-view"
+      className="max-w-7xl mx-auto px-2 sm:px-4 py-2 sm:py-4 h-[calc(100dvh-74px)] flex flex-col min-h-0"
+    >
+      <div className="flex-1 bg-white border border-rose-100 rounded-3xl sm:rounded-[32px] overflow-hidden shadow-2xl shadow-rose-100/70 flex flex-col md:flex-row min-h-0">
         {/* Left Side: Conversations List */}
         <div
-          className={`w-full md:w-80 lg:w-96 border-r border-rose-100 flex flex-col bg-rose-50/40 ${
+          className={`w-full md:w-80 lg:w-96 border-r border-rose-100 flex flex-col bg-rose-50/40 min-h-0 ${
             activeConversationId ? 'hidden md:flex' : 'flex'
           }`}
         >
           {/* Header */}
-          <div className="p-4 border-b border-rose-100 flex items-center justify-between bg-white">
-            <div>
-              <h2 className="font-black text-base text-slate-900 flex items-center gap-2">
-                <span>Discussions</span>
-                <span className="p-1 rounded-full bg-emerald-100 text-emerald-700 border border-emerald-300">
-                  <Shield className="w-3.5 h-3.5" />
-                </span>
-              </h2>
-              <p className="text-[11px] text-slate-500 font-medium">
-                Chiffrement de bout en bout E2EE
-              </p>
+          <div className="p-3 sm:p-4 border-b border-rose-100 flex items-center justify-between bg-white shrink-0">
+            <div className="flex items-center gap-2">
+              {onBackToDiscovery && (
+                <button
+                  id="conv-list-back-btn"
+                  onClick={onBackToDiscovery}
+                  title="Retour à la découverte"
+                  className="p-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-slate-700 transition-colors cursor-pointer"
+                >
+                  <ChevronLeft className="w-5 h-5 text-rose-600" />
+                </button>
+              )}
+              <div>
+                <h2 className="font-black text-sm sm:text-base text-slate-900 flex items-center gap-1.5">
+                  <span>Discussions</span>
+                  <span className="p-0.5 rounded-full bg-emerald-100 text-emerald-700 border border-emerald-300">
+                    <Shield className="w-3 h-3" />
+                  </span>
+                </h2>
+                <p className="text-[10px] sm:text-[11px] text-slate-500 font-medium">
+                  Chiffrement de bout en bout E2EE
+                </p>
+              </div>
             </div>
 
             {/* AI Auto-Responder Global Pill */}
@@ -227,7 +244,7 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
               id="conv-list-ai-toggle"
               onClick={onToggleAi}
               title="Activer/Désactiver l'IA pour répondre pendant vos absences"
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border transition-all ${
+              className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full text-xs font-bold border transition-all cursor-pointer ${
                 aiSettings.enabled
                   ? 'bg-emerald-500 text-white border-emerald-600 shadow-sm shadow-emerald-200'
                   : 'bg-white text-slate-600 border-rose-200 hover:bg-rose-50'
@@ -239,7 +256,7 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
           </div>
 
           {/* Conversation List */}
-          <div className="flex-1 overflow-y-auto divide-y divide-rose-100">
+          <div className="flex-1 overflow-y-auto divide-y divide-rose-100 min-h-0">
             {conversations.length > 0 ? (
               conversations.map((conv) => {
                 const isSelected = conv.id === activeConversationId;
@@ -323,14 +340,14 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
 
         {/* Right Side: Active Chat Window */}
         {activeConv ? (
-          <div className="flex-1 flex flex-col bg-rose-50/20 relative">
+          <div className="flex-1 flex flex-col bg-rose-50/20 relative min-h-0">
             {/* Top Chat Header */}
-            <div className="p-3 sm:p-4 border-b border-rose-100 flex items-center justify-between bg-white/90 backdrop-blur-md">
+            <div className="p-3 sm:p-4 border-b border-rose-100 flex items-center justify-between bg-white/90 backdrop-blur-md shrink-0">
               <div className="flex items-center gap-3">
                 <button
                   id="chat-back-to-list-btn"
                   onClick={() => setActiveConversationId(null)}
-                  className="md:hidden p-1.5 rounded-xl bg-rose-100 text-slate-700 hover:text-slate-900"
+                  className="md:hidden p-1.5 rounded-xl bg-rose-100 text-slate-700 hover:text-slate-900 cursor-pointer"
                 >
                   <ChevronLeft className="w-5 h-5" />
                 </button>
@@ -371,7 +388,7 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
                   onClick={handleTriggerAiAutoReply}
                   disabled={isGeneratingAiReply}
                   title="Simuler une réponse automatique de votre IA pour tester le répondeur"
-                  className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-2xl bg-gradient-to-r from-rose-500 to-orange-500 hover:from-rose-600 hover:to-orange-600 text-white text-xs font-bold shadow-md shadow-rose-200 transition-all active:scale-95 disabled:opacity-50"
+                  className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-2xl bg-gradient-to-r from-rose-500 to-orange-500 hover:from-rose-600 hover:to-orange-600 text-white text-xs font-bold shadow-md shadow-rose-200 transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
                 >
                   <Bot className={`w-4 h-4 ${isGeneratingAiReply ? 'animate-spin' : 'text-white'}`} />
                   <span className="hidden sm:inline">
@@ -383,7 +400,7 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
                 <button
                   id="chat-options-menu-btn"
                   onClick={() => setShowOptionsModal(!showOptionsModal)}
-                  className="p-2 rounded-xl text-slate-500 hover:text-slate-900 hover:bg-rose-100 transition-colors"
+                  className="p-2 rounded-xl text-slate-500 hover:text-slate-900 hover:bg-rose-100 transition-colors cursor-pointer"
                 >
                   <MoreVertical className="w-5 h-5" />
                 </button>
@@ -392,7 +409,7 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
 
             {/* AI Wingman active banner if enabled */}
             {aiSettings.enabled && (
-              <div className="bg-emerald-50 border-b border-emerald-100 px-4 py-2 flex items-center justify-between text-xs text-emerald-900">
+              <div className="bg-emerald-50 border-b border-emerald-100 px-4 py-2 flex items-center justify-between text-xs text-emerald-900 shrink-0">
                 <div className="flex items-center gap-2">
                   <Bot className="w-4 h-4 text-emerald-600 shrink-0" />
                   <span className="font-medium">
@@ -404,7 +421,7 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
                 <button
                   id="banner-pause-ai-btn"
                   onClick={onToggleAi}
-                  className="text-emerald-700 hover:underline font-bold ml-2 shrink-0 text-[11px]"
+                  className="text-emerald-700 hover:underline font-bold ml-2 shrink-0 text-[11px] cursor-pointer"
                 >
                   Mettre en pause
                 </button>
@@ -413,7 +430,7 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
 
             {/* Ephemeral messages banner if active */}
             {privacySettings.ephemeralMessages !== 'off' && (
-              <div className="bg-amber-50 border-b border-amber-100 px-4 py-1.5 flex items-center gap-1.5 text-[11px] text-amber-900 font-semibold">
+              <div className="bg-amber-50 border-b border-amber-100 px-4 py-1.5 flex items-center gap-1.5 text-[11px] text-amber-900 font-semibold shrink-0">
                 <Clock className="w-3.5 h-3.5 text-amber-600" />
                 <span>
                   Messages éphémères activés : disparition automatique après{' '}
@@ -423,7 +440,7 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
             )}
 
             {/* Chat Messages Body */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-3.5">
+            <div className="flex-1 overflow-y-auto p-4 space-y-3.5 min-h-0">
               {/* Security handshake message */}
               <div className="text-center my-2">
                 <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-white border border-rose-200 text-[11px] text-slate-500 font-medium shadow-xs">
@@ -539,13 +556,20 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
             )}
 
             {/* Input Bar */}
-            <div className="p-3 sm:p-4 bg-white border-t border-rose-100">
-              <div className="flex items-center gap-2">
+            <div className="p-2.5 sm:p-4 bg-white border-t border-rose-100 shrink-0 shadow-lg shadow-rose-100/50">
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  handleSend();
+                }}
+                className="flex items-center gap-2"
+              >
                 {/* Simulated Voice note recorder button */}
                 <button
+                  type="button"
                   id="record-voice-note-btn"
                   onClick={handleToggleRecordAudio}
-                  className={`p-2.5 rounded-2xl border transition-all ${
+                  className={`p-2.5 sm:p-3 rounded-2xl border transition-all cursor-pointer shrink-0 ${
                     isRecordingAudio
                       ? 'bg-rose-600 text-white border-rose-500 shadow-md'
                       : 'bg-rose-50 border-rose-200 text-slate-600 hover:text-slate-900 hover:bg-rose-100'
@@ -566,8 +590,9 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
                       Enregistrement audio en cours... ({recordingSeconds}s)
                     </span>
                     <button
+                      type="button"
                       onClick={handleToggleRecordAudio}
-                      className="px-3.5 py-1 rounded-xl bg-rose-600 text-white font-bold text-[11px] shadow-sm shadow-rose-200"
+                      className="px-3.5 py-1 rounded-xl bg-rose-600 text-white font-bold text-[11px] shadow-sm shadow-rose-200 cursor-pointer"
                     >
                       Envoyer
                     </button>
@@ -579,24 +604,22 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
                       type="text"
                       value={inputText}
                       onChange={(e) => setInputText(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') handleSend();
-                      }}
                       placeholder="Écrivez un message sécurisé..."
-                      className="flex-1 bg-rose-50/60 border border-rose-200 focus:border-rose-500 rounded-2xl px-4 py-3 text-xs sm:text-sm text-slate-800 placeholder-slate-400 focus:outline-none font-medium"
+                      className="flex-1 bg-rose-50/60 border border-rose-200 focus:border-rose-500 focus:bg-white rounded-2xl px-3.5 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm text-slate-800 placeholder-slate-400 focus:outline-none font-medium min-w-0"
                     />
 
                     <button
+                      type="submit"
                       id="send-chat-message-btn"
-                      onClick={handleSend}
                       disabled={!inputText.trim()}
-                      className="p-3 rounded-2xl bg-gradient-to-r from-rose-500 to-orange-500 hover:from-rose-600 hover:to-orange-600 text-white font-bold transition-all shadow-md shadow-rose-200 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
+                      className="p-2.5 sm:p-3 rounded-2xl bg-gradient-to-r from-rose-500 to-orange-500 hover:from-rose-600 hover:to-orange-600 text-white font-bold transition-all shadow-md shadow-rose-200 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer shrink-0"
+                      title="Envoyer le message"
                     >
                       <Send className="w-5 h-5" />
                     </button>
                   </>
                 )}
-              </div>
+              </form>
             </div>
 
             {/* Chat Options & Security Menu Modal */}

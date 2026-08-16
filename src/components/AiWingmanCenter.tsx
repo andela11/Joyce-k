@@ -13,6 +13,7 @@ import {
   Clock,
   Flame,
   UserCheck,
+  ChevronLeft,
 } from 'lucide-react';
 import {
   UserProfile,
@@ -26,6 +27,7 @@ interface AiWingmanCenterProps {
   aiSettings: AiAutoResponderSettings;
   onUpdateAiSettings: (newSettings: Partial<AiAutoResponderSettings>) => void;
   onUpdateUserBio: (newBio: string) => void;
+  onBackToDiscovery?: () => void;
 }
 
 export const AiWingmanCenter: React.FC<AiWingmanCenterProps> = ({
@@ -33,6 +35,7 @@ export const AiWingmanCenter: React.FC<AiWingmanCenterProps> = ({
   aiSettings,
   onUpdateAiSettings,
   onUpdateUserBio,
+  onBackToDiscovery,
 }) => {
   // Playground state for testing the user's AI replica live
   const [testMessages, setTestMessages] = useState<
@@ -169,7 +172,18 @@ export const AiWingmanCenter: React.FC<AiWingmanCenterProps> = ({
       {/* Top Banner */}
       <div className="bg-gradient-to-r from-rose-500 via-pink-500 to-orange-400 text-white rounded-[32px] p-5 sm:p-6 shadow-xl shadow-rose-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2.5 mb-1.5">
+          <div className="flex items-center gap-2.5 mb-1.5 flex-wrap">
+            {onBackToDiscovery && (
+              <button
+                id="ai-wingman-back-btn"
+                onClick={onBackToDiscovery}
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-white/20 hover:bg-white/30 text-white border border-white/40 transition-colors cursor-pointer mr-1"
+                title="Retourner aux Swipes"
+              >
+                <ChevronLeft className="w-4 h-4" />
+                <span>Retour</span>
+              </button>
+            )}
             <div className="p-2.5 rounded-2xl bg-white text-rose-600 shadow-md">
               <Bot className="w-6 h-6" />
             </div>

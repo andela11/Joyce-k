@@ -20,9 +20,12 @@ import {
   BarChart3,
   Server,
   Lock,
+  Bell,
+  ChevronLeft,
 } from 'lucide-react';
-import { UserProfile, AuthUser } from '../types';
+import { UserProfile, AuthUser, AppNotification } from '../types';
 import { db, collection, onSnapshot, doc, updateDoc, setDoc } from '../lib/firebase';
+import { AdminNotificationManager } from './AdminNotificationManager';
 
 interface AdminDashboardProps {
   currentUser: UserProfile;
@@ -30,6 +33,7 @@ interface AdminDashboardProps {
   allProfiles: UserProfile[];
   onUpdateProfiles: React.Dispatch<React.SetStateAction<UserProfile[]>>;
   onEnterApp: (tab?: any) => void;
+  onSendNotificationLocal?: (notif: AppNotification) => void;
 }
 
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({
@@ -38,10 +42,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   allProfiles,
   onUpdateProfiles,
   onEnterApp,
+  onSendNotificationLocal,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'verified' | 'unverified' | 'ai_flagged'>('all');
-  const [activeTab, setActiveTab] = useState<'users' | 'ai_system' | 'stats' | 'security'>('users');
+  const [activeTab, setActiveTab] = useState<'users' | 'notifications' | 'ai_system' | 'stats' | 'security'>('users');
   const [dbUsers, setDbUsers] = useState<any[]>([]);
   const [isLoadingDb, setIsLoadingDb] = useState(false);
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
@@ -84,24 +89,26 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   };
 
   // Combine mock profiles with real Firestore users for administrative management
+  const safeAllProfiles = Array.isArray(allProfiles) ? allProfiles : [];
+  const safeDbUsers = Array.isArray(dbUsers) ? dbUsers : [];
   const combinedUserList: (UserProfile & { source?: string; email?: string })[] = [
-    ...allProfiles.map((p) => ({ ...p, source: 'Système' })),
-    ...dbUsers
-      .filter((dbU) => !allProfiles.some((p) => p.id === dbU.id))
+    ...safeAllProfiles.map((p) => ({ ...p, source: 'Système' })),
+    ...safeDbUsers
+      .filter((dbU) => dbU && !safeAllProfiles.some((p) => p.id === (dbU.id || dbU.uid)))
       .map((dbU) => ({
-        id: dbU.id || dbU.uid,
+        id: dbU.id || dbU.uid || `db_user_${Math.random()}`,
         name: dbU.name || 'Utilisateur',
         age: dbU.age || 25,
         gender: dbU.gender || 'homme',
         interestedIn: dbU.interestedIn || ['femme'],
-        photos: dbU.photoUrl ? [dbU.photoUrl] : ['https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800'],
+        photos: dbU.photoUrl ? [dbU.photoUrl] : (Array.isArray(dbU.photos) && dbU.photos.length > 0 ? dbU.photos : ['https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800']),
         bio: dbU.bio || 'Membre inscrit sur Joyce-K',
         occupation: dbU.occupation || 'Membre actif',
         city: dbU.city || 'Yaoundé, Cameroun',
         lat: dbU.lat || 3.848,
         lng: dbU.lng || 11.5021,
-        interests: dbU.interests || ['Voyages', 'Authenticité', 'Musique'],
-        relationshipGoal: 'Relation sérieuse',
+        interests: Array.isArray(dbU.interests) ? dbU.interests : ['Voyages', 'Authenticité', 'Musique'],
+        relationshipGoal: dbU.relationshipGoal || 'Relation sérieuse',
         verified: dbU.verified ?? true,
         isOnline: true,
         lastActiveText: 'En ligne',
@@ -111,14 +118,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   ];
 
   const filteredUsers = combinedUserList.filter((u) => {
+    if (!u) return false;
+    const name = u.name || '';
+    const city = u.city || '';
+    const email = u.email || '';
     const matchesSearch =
-      u.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      u.city.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (u.email && u.email.toLowerCase().includes(searchTerm.toLowerCase()));
+      name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      city.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      email.toLowerCase().includes(searchTerm.toLowerCase());
 
     if (!matchesSearch) return false;
 
-    if (selectedFilter === 'verified') return u.verified;
+    if (selectedFilter === 'verified') return Boolean(u.verified);
     if (selectedFilter === 'unverified') return !u.verified;
     return true;
   });
@@ -158,7 +169,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         {/* Top Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-6 rounded-3xl bg-slate-800/90 border border-slate-700 shadow-xl">
           <div className="space-y-1">
-            <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <button
+                onClick={() => onEnterApp('discovery')}
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-slate-700 hover:bg-slate-600 text-slate-200 hover:text-white border border-slate-600 transition-colors cursor-pointer"
+                title="Retourner à l'application"
+              >
+                <ChevronLeft className="w-4 h-4" />
+                <span>Retour App</span>
+              </button>
               <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-rose-950 text-rose-400 border border-rose-800">
                 Espace Super Admin
               </span>
@@ -171,7 +190,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               <span>Administration Joyce-K</span>
             </h1>
             <p className="text-xs sm:text-sm text-slate-400">
-              Gestionnaire centralisé : Profils, Détection Anti-IA, Sécurité, Radar Mondial & Paramètres Système.
+              Gestionnaire centralisé : Profils, Diffusions de Notifications, Détection Anti-IA, Sécurité & Paramètres.
             </p>
           </div>
 
@@ -236,26 +255,45 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         </div>
 
         {/* Main Tab Navigation */}
-        <div className="flex bg-slate-800/90 p-1.5 rounded-2xl border border-slate-700 max-w-xl">
+        <div className="flex flex-wrap bg-slate-800/90 p-1.5 rounded-2xl border border-slate-700 max-w-2xl gap-1">
           <button
             onClick={() => setActiveTab('users')}
-            className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            className={`flex-1 min-w-[140px] py-2 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer ${
               activeTab === 'users' ? 'bg-rose-600 text-white shadow-md' : 'text-slate-400 hover:text-white'
             }`}
           >
-            Gestion des Utilisateurs ({combinedUserList.length})
+            Gestion Profils ({combinedUserList.length})
+          </button>
+          <button
+            onClick={() => setActiveTab('notifications')}
+            className={`flex-1 min-w-[160px] py-2 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+              activeTab === 'notifications' ? 'bg-rose-600 text-white shadow-md' : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            <Bell className="w-3.5 h-3.5" />
+            <span>Diffuser Notifications</span>
           </button>
           <button
             onClick={() => setActiveTab('ai_system')}
-            className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            className={`flex-1 min-w-[140px] py-2 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer ${
               activeTab === 'ai_system' ? 'bg-rose-600 text-white shadow-md' : 'text-slate-400 hover:text-white'
             }`}
           >
-            Paramètres Système & Anti-IA
+            Paramètres & Anti-IA
           </button>
         </div>
 
-        {/* 1. USERS MANAGEMENT TAB */}
+        {/* 1. NOTIFICATIONS BROADCAST TAB */}
+        {activeTab === 'notifications' && (
+          <AdminNotificationManager
+            allProfiles={allProfiles}
+            dbUsers={dbUsers}
+            adminName={authUser?.name || currentUser.name}
+            onSendNotificationLocal={onSendNotificationLocal}
+          />
+        )}
+
+        {/* 2. USERS MANAGEMENT TAB */}
         {activeTab === 'users' && (
           <div className="space-y-4">
             {/* Search and Filters bar */}

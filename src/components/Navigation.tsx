@@ -212,7 +212,7 @@ export const Navigation: React.FC<NavigationProps> = ({
               })
             ) : (
               // AUTHENTICATED APP TABS (Connected Navigation)
-              authenticatedTabs.map((tab) => {
+              authenticatedTabs.map((tab, idx) => {
                 const Icon = tab.icon;
                 const isActive = activeTab === tab.id;
 
@@ -221,6 +221,7 @@ export const Navigation: React.FC<NavigationProps> = ({
                     key={tab.id}
                     id={`nav-tab-${tab.id}`}
                     onClick={() => handleTabClick(tab.id)}
+                    title={`Raccourci clavier : ${idx + 1}`}
                     className={`relative flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 select-none shrink-0 cursor-pointer ${
                       isActive
                         ? 'bg-gradient-to-r from-rose-600 to-rose-500 text-white shadow-md shadow-rose-200'
@@ -229,6 +230,15 @@ export const Navigation: React.FC<NavigationProps> = ({
                   >
                     {Icon && <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
                     <span>{tab.label}</span>
+                    <span
+                      className={`hidden xl:inline text-[9px] px-1 py-0.2 rounded font-mono ${
+                        isActive
+                          ? 'bg-white/20 text-white'
+                          : 'bg-orange-100/70 text-slate-500'
+                      }`}
+                    >
+                      {idx + 1}
+                    </span>
                     {tab.badge !== null && (
                       <span
                         className={`ml-0.5 px-1.5 py-0.2 rounded-full text-[10px] font-bold ${

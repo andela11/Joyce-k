@@ -69,19 +69,20 @@ export const DiscoverySwipe: React.FC<DiscoverySwipeProps> = ({
   const [verifiedOnly, setVerifiedOnly] = useState(false);
 
   // Filter the available profiles
-  const filteredProfiles = profiles.filter((p) => {
-    if (privacySettings.blockedUsers.includes(p.id)) return false;
+  const filteredProfiles = (profiles || []).filter((p) => {
+    if (!p) return false;
+    if ((privacySettings?.blockedUsers || []).includes(p.id)) return false;
     if (p.age < minAge || p.age > maxAge) return false;
     if (verifiedOnly && !p.verified) return false;
     if (
       selectedInterestFilter !== 'all' &&
-      !p.interests.includes(selectedInterestFilter)
+      !(p.interests || []).includes(selectedInterestFilter)
     )
       return false;
 
     // Region filter
     if (selectedRegion !== 'all') {
-      const pCity = p.city.toLowerCase();
+      const pCity = (p.city || '').toLowerCase();
       if (selectedRegion === 'Europe' && !pCity.includes('france') && !pCity.includes('belgique') && !pCity.includes('suisse') && !pCity.includes('royaume-uni') && !pCity.includes('allemagne') && !pCity.includes('espagne') && !pCity.includes('italie') && !pCity.includes('paris') && !pCity.includes('bruxelles') && !pCity.includes('genève') && !pCity.includes('londres') && !pCity.includes('berlin') && !pCity.includes('madrid') && !pCity.includes('rome')) {
         return false;
       }
@@ -98,10 +99,10 @@ export const DiscoverySwipe: React.FC<DiscoverySwipeProps> = ({
 
     if (maxDistance < 20000) {
       const distance = calculateDistanceKm(
-        currentUser.lat,
-        currentUser.lng,
-        p.lat,
-        p.lng
+        currentUser?.lat || 0,
+        currentUser?.lng || 0,
+        p.lat || 0,
+        p.lng || 0
       );
       if (distance > maxDistance) return false;
     }
@@ -586,8 +587,10 @@ export const DiscoverySwipe: React.FC<DiscoverySwipeProps> = ({
 
                   {/* Floating compatibility pill */}
                   {(() => {
-                    const commonCount = currentUser.interests.filter((i) =>
-                      activeProfile.interests.includes(i)
+                    const userInterests = currentUser?.interests || [];
+                    const profileInterests = activeProfile.interests || [];
+                    const commonCount = userInterests.filter((i) =>
+                      profileInterests.includes(i)
                     ).length;
                     const estimatedScore = Math.min(
                       98,
@@ -702,12 +705,12 @@ export const DiscoverySwipe: React.FC<DiscoverySwipeProps> = ({
                 <div className="space-y-2">
                   <div className="flex items-center justify-between text-xs text-slate-500">
                     <span className="font-bold uppercase tracking-wider text-[10px] text-slate-600">
-                      Centres d'intérêt ({activeProfile.interests.length})
+                      Centres d'intérêt ({(activeProfile.interests || []).length})
                     </span>
                     <span className="text-rose-600 text-[11px] font-bold">
                       {
-                        currentUser.interests.filter((i) =>
-                          activeProfile.interests.includes(i)
+                        (currentUser?.interests || []).filter((i) =>
+                          (activeProfile.interests || []).includes(i)
                         ).length
                       }{' '}
                       en commun
@@ -715,8 +718,8 @@ export const DiscoverySwipe: React.FC<DiscoverySwipeProps> = ({
                   </div>
 
                   <div className="flex flex-wrap gap-1.5">
-                    {activeProfile.interests.map((interest) => {
-                      const isCommon = currentUser.interests.includes(interest);
+                    {(activeProfile.interests || []).map((interest) => {
+                      const isCommon = (currentUser?.interests || []).includes(interest);
                       return (
                         <span
                           key={interest}

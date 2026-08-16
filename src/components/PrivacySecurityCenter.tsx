@@ -11,6 +11,7 @@ import {
   FileCheck,
   CheckCircle2,
   AlertTriangle,
+  ChevronLeft,
 } from 'lucide-react';
 import {
   PrivacySettings,
@@ -25,6 +26,7 @@ interface PrivacySecurityCenterProps {
   onUpdatePrivacySettings: (newSettings: Partial<PrivacySettings>) => void;
   onPurgeAccount: () => void;
   onUnblockUser: (userId: string) => void;
+  onBackToDiscovery?: () => void;
 }
 
 export const PrivacySecurityCenter: React.FC<PrivacySecurityCenterProps> = ({
@@ -33,6 +35,7 @@ export const PrivacySecurityCenter: React.FC<PrivacySecurityCenterProps> = ({
   onUpdatePrivacySettings,
   onPurgeAccount,
   onUnblockUser,
+  onBackToDiscovery,
 }) => {
   const [showPurgeConfirm, setShowPurgeConfirm] = useState(false);
   const [exportedSuccess, setExportedSuccess] = useState(false);
@@ -69,7 +72,18 @@ export const PrivacySecurityCenter: React.FC<PrivacySecurityCenterProps> = ({
       {/* Top Banner */}
       <div className="bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 text-white rounded-[32px] p-5 sm:p-6 shadow-xl shadow-emerald-200/60 flex items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2.5 mb-1.5">
+          <div className="flex items-center gap-2.5 mb-1.5 flex-wrap">
+            {onBackToDiscovery && (
+              <button
+                id="privacy-back-btn"
+                onClick={onBackToDiscovery}
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-white/20 hover:bg-white/30 text-white border border-white/40 transition-colors cursor-pointer mr-1"
+                title="Retourner aux Swipes"
+              >
+                <ChevronLeft className="w-4 h-4" />
+                <span>Retour</span>
+              </button>
+            )}
             <div className="p-2.5 rounded-2xl bg-white text-emerald-600 shadow-md">
               <ShieldCheck className="w-6 h-6" />
             </div>
