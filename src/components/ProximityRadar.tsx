@@ -5,7 +5,7 @@ import {
   Locate,
   Shield,
   EyeOff,
-  Sparkles,
+  User,
   Heart,
   MessageCircle,
   Sliders,
@@ -128,21 +128,23 @@ export const ProximityRadar: React.FC<ProximityRadarProps> = ({
             <span>{isLocating ? 'Localisation...' : 'Me Géolocaliser'}</span>
           </button>
 
-          {/* Quick City Presets */}
+          {/* Quick Worldwide City Presets */}
           <select
             id="city-preset-select"
             value={currentUser.city}
             onChange={(e) => {
-              const city = PRESET_CITIES.find((c) => c.name === e.target.value);
+              const city = PRESET_CITIES.find(
+                (c) => `${c.name}, ${c.country}` === e.target.value || c.name === e.target.value
+              );
               if (city) {
-                onUpdateUserLocation(city.name, city.lat, city.lng);
+                onUpdateUserLocation(`${city.name}, ${city.country}`, city.lat, city.lng);
               }
             }}
             className="bg-rose-50/80 border border-rose-200 text-slate-800 font-semibold text-xs rounded-2xl px-3 py-2 focus:ring-rose-500 focus:border-rose-500 shadow-sm"
           >
             {PRESET_CITIES.map((c) => (
-              <option key={c.name} value={c.name}>
-                📍 {c.name}
+              <option key={c.name} value={`${c.name}, ${c.country}`}>
+                {c.flag} {c.name}, {c.country} ({c.region})
               </option>
             ))}
           </select>
@@ -347,7 +349,14 @@ export const ProximityRadar: React.FC<ProximityRadarProps> = ({
                               {profile.name}, {profile.age}
                             </h4>
                             {profile.verified && (
-                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                              <span
+                                title="Profil Certifié — Inscription complétée & photos validées"
+                                className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-blue-600 text-white shrink-0 shadow-2xs"
+                              >
+                                <svg className="w-2.5 h-2.5 fill-white" viewBox="0 0 24 24">
+                                  <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" />
+                                </svg>
+                              </span>
                             )}
                           </div>
                           <p className="text-[11px] text-slate-500 font-medium truncate">
@@ -403,7 +412,7 @@ export const ProximityRadar: React.FC<ProximityRadarProps> = ({
                         className="p-2 rounded-2xl bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 transition-colors shadow-xs"
                         title="Voir le profil complet"
                       >
-                        <Sparkles className="w-4 h-4" />
+                        <User className="w-4 h-4" />
                       </button>
                     </div>
                   </div>

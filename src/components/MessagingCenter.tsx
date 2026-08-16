@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   Send,
-  Sparkles,
   Bot,
   Shield,
   Clock,
@@ -521,7 +520,7 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
             {aiSuggestions.length > 0 && (
               <div className="px-4 py-2.5 bg-white/90 border-t border-rose-100">
                 <div className="flex items-center gap-1.5 text-[11px] text-rose-600 font-bold mb-1.5">
-                  <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                  <Bot className="w-3.5 h-3.5 text-rose-500" />
                   <span>Suggestions d'accroches personnalisées :</span>
                 </div>
                 <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
@@ -548,7 +547,7 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
                   onClick={handleToggleRecordAudio}
                   className={`p-2.5 rounded-2xl border transition-all ${
                     isRecordingAudio
-                      ? 'bg-rose-600 text-white border-rose-500 animate-pulse shadow-md'
+                      ? 'bg-rose-600 text-white border-rose-500 shadow-md'
                       : 'bg-rose-50 border-rose-200 text-slate-600 hover:text-slate-900 hover:bg-rose-100'
                   }`}
                   title={
@@ -563,7 +562,7 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
                 {isRecordingAudio ? (
                   <div className="flex-1 px-4 py-2.5 bg-rose-50 border border-rose-300 rounded-2xl text-xs text-rose-800 flex items-center justify-between">
                     <span className="font-bold flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping" />
+                      <span className="w-2 h-2 rounded-full bg-rose-500" />
                       Enregistrement audio en cours... ({recordingSeconds}s)
                     </span>
                     <button

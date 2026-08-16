@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import {
   Bot,
-  Sparkles,
   Zap,
   Shield,
   MessageSquare,
@@ -213,7 +212,7 @@ export const AiWingmanCenter: React.FC<AiWingmanCenterProps> = ({
           <div className="bg-white border border-rose-100 rounded-[32px] p-5 shadow-xl shadow-rose-100/60 space-y-4">
             <div className="flex items-center justify-between border-b border-rose-100 pb-3">
               <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-rose-500" /> Tonalité & Personnalité de l'IA
+                <Bot className="w-4 h-4 text-rose-500" /> Tonalité & Personnalité de l'IA
               </h3>
               <span className="text-[11px] text-slate-400 font-medium">
                 Comment l'IA doit s'exprimer
@@ -323,7 +322,7 @@ export const AiWingmanCenter: React.FC<AiWingmanCenterProps> = ({
           <div className="bg-white border border-rose-100 rounded-[32px] p-5 shadow-xl shadow-rose-100/60 flex flex-col h-[420px]">
             <div className="flex items-center justify-between border-b border-rose-100 pb-3 mb-3">
               <div className="flex items-center gap-2">
-                <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping" />
+                <div className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
                 <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900">
                   Simulateur en Direct
                 </h3>
@@ -370,8 +369,8 @@ export const AiWingmanCenter: React.FC<AiWingmanCenterProps> = ({
                 </div>
               ))}
               {isSimulating && (
-                <div className="flex items-center gap-2 text-xs text-rose-700 bg-rose-50 p-2.5 rounded-xl border border-rose-200 animate-pulse font-medium">
-                  <Bot className="w-4 h-4 animate-spin text-rose-500" />
+                <div className="flex items-center gap-2 text-xs text-rose-700 bg-rose-50 p-2.5 rounded-xl border border-rose-200 font-medium">
+                  <Bot className="w-4 h-4 text-rose-500" />
                   <span>Votre IA réfléchit à la réponse idéale...</span>
                 </div>
               )}
@@ -405,7 +404,7 @@ export const AiWingmanCenter: React.FC<AiWingmanCenterProps> = ({
           <div className="bg-white border border-rose-100 rounded-[32px] p-5 shadow-xl shadow-rose-100/60 space-y-3.5">
             <div className="flex items-center justify-between">
               <h3 className="text-xs font-bold uppercase tracking-wider text-rose-600 flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                <Zap className="w-3.5 h-3.5 text-rose-500 fill-rose-500" />
                 Optimiseur de Bio par IA
               </h3>
             </div>

@@ -11,7 +11,6 @@ import {
   FileCheck,
   CheckCircle2,
   AlertTriangle,
-  Sparkles,
 } from 'lucide-react';
 import {
   PrivacySettings,

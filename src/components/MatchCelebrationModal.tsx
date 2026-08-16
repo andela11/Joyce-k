@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import confetti from 'canvas-confetti';
 import {
   Heart,
-  Sparkles,
+  Bot,
   MessageCircle,
   X,
   Compass,
@@ -96,7 +96,7 @@ export const MatchCelebrationModal: React.FC<MatchCelebrationModalProps> = ({
         {/* Title */}
         <div className="relative z-10 space-y-1 mb-6">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-100 text-rose-700 border border-rose-200 text-xs font-black uppercase tracking-wider mb-2 shadow-xs">
-            <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+            <Heart className="w-3.5 h-3.5 text-rose-600 fill-rose-600" />
             Coup de Cœur Réciproque
           </div>
           <h2 className="text-3xl font-black bg-gradient-to-r from-rose-600 via-pink-600 to-orange-500 bg-clip-text text-transparent">
@@ -162,13 +162,13 @@ export const MatchCelebrationModal: React.FC<MatchCelebrationModalProps> = ({
         <div className="relative z-10 text-left space-y-2 mt-4">
           <div className="flex items-center justify-between text-xs text-slate-600">
             <span className="font-bold flex items-center gap-1">
-              <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+              <Bot className="w-3.5 h-3.5 text-rose-500" />
               Propositions d'accroche par l'IA :
             </span>
           </div>
 
           {loadingIcebreakers ? (
-            <div className="p-3 bg-rose-50/80 rounded-xl text-center text-xs text-slate-500 font-medium animate-pulse border border-rose-200">
+            <div className="p-3 bg-rose-50/80 rounded-xl text-center text-xs text-slate-500 font-medium border border-rose-200">
               Génération des phrases d'accroche basées sur vos affinités...
             </div>
           ) : (

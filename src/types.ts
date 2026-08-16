@@ -107,10 +107,24 @@ export interface CompatibilityReport {
   commonInterests: string[];
 }
 
+export interface AuthUser {
+  id: string;
+  email: string;
+  name: string;
+  photoUrl?: string;
+  provider: 'google' | 'email' | 'guest';
+  isLoggedIn: boolean;
+  isAdmin?: boolean;
+  createdAt?: string;
+}
+
 export type ActiveTab =
+  | 'landing'
   | 'discovery'
+  | 'favorites'
   | 'radar'
   | 'messages'
   | 'ai_wingman'
   | 'privacy'
-  | 'profile';
+  | 'profile'
+  | 'admin';

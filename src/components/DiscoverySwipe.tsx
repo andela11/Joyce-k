@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, useMotionValue, useTransform, AnimatePresence } from 'motion/react';
 import {
   Heart,
   X,
-  Sparkles,
   Zap,
+  Bot,
+  Flame,
   MapPin,
   Briefcase,
   CheckCircle2,
@@ -16,6 +17,7 @@ import {
   RotateCcw,
   Star,
   Info,
+  Bookmark,
 } from 'lucide-react';
 import { UserProfile, PrivacySettings } from '../types';
 import { calculateDistanceKm, formatFuzzedDistance } from '../utils/geoUtils';
@@ -25,6 +27,8 @@ interface DiscoverySwipeProps {
   currentUser: UserProfile;
   profiles: UserProfile[];
   privacySettings: PrivacySettings;
+  favoriteIds?: string[];
+  onToggleFavorite?: (profileId: string) => void;
   onLike: (profile: UserProfile, isSuperLike?: boolean) => void;
   onPass: (profile: UserProfile) => void;
   onOpenCompatibility: (profile: UserProfile) => void;
@@ -35,6 +39,8 @@ export const DiscoverySwipe: React.FC<DiscoverySwipeProps> = ({
   currentUser,
   profiles,
   privacySettings,
+  favoriteIds = [],
+  onToggleFavorite,
   onLike,
   onPass,
   onOpenCompatibility,
@@ -44,19 +50,21 @@ export const DiscoverySwipe: React.FC<DiscoverySwipeProps> = ({
   const [showFilters, setShowFilters] = useState(false);
   const [history, setHistory] = useState<number[]>([]);
   const [swipeDirection, setSwipeDirection] = useState<'left' | 'right' | 'up' | null>(null);
+  const [showSuperLikeBurst, setShowSuperLikeBurst] = useState(false);
 
-  // Motion values for fluid drag gestures
+  const lastTapRef = useRef<number>(0);
+
+  // Motion values for fluid horizontal drag gestures only
   const dragX = useMotionValue(0);
-  const dragY = useMotionValue(0);
   const rotate = useTransform(dragX, [-200, 200], [-18, 18]);
   const likeOpacity = useTransform(dragX, [30, 120], [0, 1]);
   const nopeOpacity = useTransform(dragX, [-30, -120], [0, 1]);
-  const superLikeOpacity = useTransform(dragY, [-30, -120], [0, 1]);
 
   // Filter States
-  const [maxDistance, setMaxDistance] = useState(50);
-  const [minAge, setMinAge] = useState(20);
-  const [maxAge, setMaxAge] = useState(38);
+  const [selectedRegion, setSelectedRegion] = useState<string>('all');
+  const [maxDistance, setMaxDistance] = useState(20000);
+  const [minAge, setMinAge] = useState(18);
+  const [maxAge, setMaxAge] = useState(45);
   const [selectedInterestFilter, setSelectedInterestFilter] = useState<string>('all');
   const [verifiedOnly, setVerifiedOnly] = useState(false);
 
@@ -71,22 +79,61 @@ export const DiscoverySwipe: React.FC<DiscoverySwipeProps> = ({
     )
       return false;
 
-    const distance = calculateDistanceKm(
-      currentUser.lat,
-      currentUser.lng,
-      p.lat,
-      p.lng
-    );
-    if (distance > maxDistance) return false;
+    // Region filter
+    if (selectedRegion !== 'all') {
+      const pCity = p.city.toLowerCase();
+      if (selectedRegion === 'Europe' && !pCity.includes('france') && !pCity.includes('belgique') && !pCity.includes('suisse') && !pCity.includes('royaume-uni') && !pCity.includes('allemagne') && !pCity.includes('espagne') && !pCity.includes('italie') && !pCity.includes('paris') && !pCity.includes('bruxelles') && !pCity.includes('genève') && !pCity.includes('londres') && !pCity.includes('berlin') && !pCity.includes('madrid') && !pCity.includes('rome')) {
+        return false;
+      }
+      if (selectedRegion === 'Afrique' && !pCity.includes('côte d\'ivoire') && !pCity.includes('sénégal') && !pCity.includes('cameroun') && !pCity.includes('maroc') && !pCity.includes('rd congo') && !pCity.includes('abidjan') && !pCity.includes('dakar') && !pCity.includes('yaoundé') && !pCity.includes('casablanca') && !pCity.includes('kinshasa') && !pCity.includes('tunisie') && !pCity.includes('algérie')) {
+        return false;
+      }
+      if (selectedRegion === 'Amériques' && !pCity.includes('canada') && !pCity.includes('états-unis') && !pCity.includes('montréal') && !pCity.includes('québec') && !pCity.includes('new york') && !pCity.includes('brésil') && !pCity.includes('guadeloupe') && !pCity.includes('martinique')) {
+        return false;
+      }
+      if (selectedRegion === 'Asie & Moyen-Orient' && !pCity.includes('japon') && !pCity.includes('tokyo') && !pCity.includes('émirats') && !pCity.includes('dubaï') && !pCity.includes('singapour')) {
+        return false;
+      }
+    }
+
+    if (maxDistance < 20000) {
+      const distance = calculateDistanceKm(
+        currentUser.lat,
+        currentUser.lng,
+        p.lat,
+        p.lng
+      );
+      if (distance > maxDistance) return false;
+    }
 
     return true;
   });
 
+  const [activeProfileId, setActiveProfileId] = useState<string | null>(null);
+
   const activeProfile = filteredProfiles[currentIndex];
+  const nextProfile = filteredProfiles[currentIndex + 1];
 
   const handleNext = (liked: boolean, superLike = false) => {
     if (!activeProfile) return;
+    
+    // Set exit animation direction
+    if (superLike) {
+      setSwipeDirection('up');
+    } else if (liked) {
+      setSwipeDirection('right');
+    } else {
+      setSwipeDirection('left');
+    }
+
     setHistory((prev) => [...prev, currentIndex]);
+    
+    // Reset motion values after exit
+    setTimeout(() => {
+      dragX.set(0);
+      setSwipeDirection(null);
+    }, 280);
+
     if (liked) {
       onLike(activeProfile, superLike);
     } else {
@@ -96,12 +143,35 @@ export const DiscoverySwipe: React.FC<DiscoverySwipeProps> = ({
     setCurrentIndex((prev) => prev + 1);
   };
 
+  const triggerSuperLikeBurst = () => {
+    if (!activeProfile || showSuperLikeBurst) return;
+    setShowSuperLikeBurst(true);
+    setTimeout(() => {
+      setShowSuperLikeBurst(false);
+      handleNext(true, true);
+    }, 400);
+  };
+
+  const handleDoubleTap = () => {
+    const now = Date.now();
+    const timeSinceLastTap = now - lastTapRef.current;
+    if (timeSinceLastTap > 0 && timeSinceLastTap < 380) {
+      // Confirmed double tap
+      triggerSuperLikeBurst();
+      lastTapRef.current = 0;
+    } else {
+      lastTapRef.current = now;
+    }
+  };
+
   const handleRewind = () => {
     if (history.length === 0) return;
     const lastIdx = history[history.length - 1];
     setHistory((prev) => prev.slice(0, -1));
     setCurrentIndex(lastIdx);
     setCurrentPhotoIndex(0);
+    dragX.set(0);
+    setSwipeDirection(null);
   };
 
   const nextPhoto = (e: React.MouseEvent) => {
@@ -131,9 +201,9 @@ export const DiscoverySwipe: React.FC<DiscoverySwipeProps> = ({
       } else if (e.key === 'ArrowLeft') {
         e.preventDefault();
         handleNext(false, false);
-      } else if (e.key === 'ArrowUp') {
+      } else if (e.key === 'ArrowUp' || e.key === 's') {
         e.preventDefault();
-        handleNext(true, true);
+        triggerSuperLikeBurst();
       } else if (e.key === 'Backspace' || e.key === 'z') {
         handleRewind();
       }
@@ -143,15 +213,11 @@ export const DiscoverySwipe: React.FC<DiscoverySwipeProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [activeProfile, history]);
 
-  // Handle drag end
+  // Handle horizontal drag end
   const handleDragEnd = (_: any, info: any) => {
-    const thresholdX = 100;
-    const thresholdY = -90;
+    const thresholdX = 95;
 
-    if (info.offset.y < thresholdY && Math.abs(info.offset.x) < 80) {
-      // Swiped Up (Super Like)
-      handleNext(true, true);
-    } else if (info.offset.x > thresholdX) {
+    if (info.offset.x > thresholdX) {
       // Swiped Right (Like)
       handleNext(true, false);
     } else if (info.offset.x < -thresholdX) {
@@ -163,7 +229,7 @@ export const DiscoverySwipe: React.FC<DiscoverySwipeProps> = ({
   return (
     <div id="discovery-view" className="max-w-4xl mx-auto px-3 sm:px-4 py-4 sm:py-6">
       {/* Top Filter Bar */}
-      <div className="flex items-center justify-between gap-3 mb-4">
+      <div className="flex items-center justify-between gap-3 mb-3">
         <div>
           <h1 className="text-xl sm:text-2xl font-black text-slate-900 flex items-center gap-2">
             <span>Découvrir</span>
@@ -174,7 +240,7 @@ export const DiscoverySwipe: React.FC<DiscoverySwipeProps> = ({
             </span>
           </h1>
           <p className="text-xs text-slate-500">
-            Matching basé sur vos passions communes & affinités de vie
+            joyce-k : Affinités mondiales authentiques sans photos IA
           </p>
         </div>
 
@@ -189,10 +255,37 @@ export const DiscoverySwipe: React.FC<DiscoverySwipeProps> = ({
         >
           <SlidersHorizontal className="w-4 h-4" />
           <span>Filtres</span>
-          {(maxDistance < 50 || minAge > 20 || maxAge < 38 || selectedInterestFilter !== 'all' || verifiedOnly) && (
-            <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping" />
+          {(maxDistance < 20000 || selectedRegion !== 'all' || minAge > 18 || maxAge < 45 || selectedInterestFilter !== 'all' || verifiedOnly) && (
+            <span className="w-2 h-2 rounded-full bg-rose-400" />
           )}
         </button>
+      </div>
+
+      {/* World Region Selector Pills */}
+      <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-2 mb-3">
+        {[
+          { id: 'all', label: '🌍 Toutes les régions' },
+          { id: 'Europe', label: '🇪🇺 Europe' },
+          { id: 'Afrique', label: '🌍 Afrique' },
+          { id: 'Amériques', label: '🌎 Amériques' },
+          { id: 'Asie & Moyen-Orient', label: '🌏 Asie & Orient' },
+        ].map((reg) => (
+          <button
+            key={reg.id}
+            id={`region-pill-${reg.id}`}
+            onClick={() => {
+              setSelectedRegion(reg.id);
+              setCurrentIndex(0);
+            }}
+            className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all whitespace-nowrap shrink-0 shadow-xs ${
+              selectedRegion === reg.id
+                ? 'bg-gradient-to-r from-rose-600 to-rose-500 text-white shadow-md shadow-rose-200 scale-[1.02]'
+                : 'bg-white border border-rose-200 text-slate-700 hover:bg-rose-50'
+            }`}
+          >
+            {reg.label}
+          </button>
+        ))}
       </div>
 
       {/* Filter Drawer / Accordion */}
@@ -273,17 +366,21 @@ export const DiscoverySwipe: React.FC<DiscoverySwipeProps> = ({
             <div className="flex items-center justify-between sm:justify-start gap-3 pt-4 sm:pt-0">
               <label
                 htmlFor="filter-verified-checkbox"
-                className="text-xs font-semibold text-slate-700 flex items-center gap-1.5 cursor-pointer"
+                className="text-xs font-semibold text-slate-700 flex items-center gap-2 cursor-pointer"
               >
-                <CheckCircle2 className="w-4 h-4 text-emerald-600" /> Profils
-                vérifiés uniquement
+                <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-blue-600 text-white shrink-0">
+                  <svg className="w-2.5 h-2.5 fill-white" viewBox="0 0 24 24">
+                    <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" />
+                  </svg>
+                </span>
+                <span>Profils certifiés uniquement (Coche bleue)</span>
               </label>
               <input
                 id="filter-verified-checkbox"
                 type="checkbox"
                 checked={verifiedOnly}
                 onChange={(e) => setVerifiedOnly(e.target.checked)}
-                className="w-4 h-4 accent-rose-500 rounded cursor-pointer"
+                className="w-4 h-4 accent-blue-600 rounded cursor-pointer"
               />
             </div>
           </div>
@@ -327,247 +424,428 @@ export const DiscoverySwipe: React.FC<DiscoverySwipeProps> = ({
       {/* Main Card Swiper Area */}
       {activeProfile ? (
         <div className="relative max-w-md mx-auto">
-          {/* Card Container */}
-          <div
-            id={`discovery-profile-card-${activeProfile.id}`}
-            className="relative bg-white border border-rose-100 rounded-[36px] overflow-hidden shadow-2xl shadow-rose-200/50 transition-all duration-300"
-          >
-            {/* Photo & Carousel */}
-            <div className="relative aspect-[3/4] sm:aspect-[4/5] w-full bg-slate-100 overflow-hidden select-none">
-              <img
-                src={activeProfile.photos[currentPhotoIndex] || activeProfile.photos[0]}
-                alt={activeProfile.name}
-                className="w-full h-full object-cover object-center transition-opacity duration-300"
-                referrerPolicy="no-referrer"
-              />
+          {/* Background Card Preview (Deck Depth Effect) */}
+          {nextProfile && (
+            <div
+              aria-hidden="true"
+              className="absolute inset-0 bg-white/90 border border-rose-100/80 rounded-[36px] overflow-hidden shadow-lg shadow-rose-100/40 pointer-events-none transform scale-[0.94] translate-y-3 opacity-70 transition-all duration-300 z-0"
+            >
+              <div className="aspect-[3/4] sm:aspect-[4/5] w-full bg-slate-100 overflow-hidden">
+                <img
+                  src={nextProfile.photos[0]}
+                  alt={nextProfile.name}
+                  className="w-full h-full object-cover object-center filter blur-[1px]"
+                  referrerPolicy="no-referrer"
+                />
+              </div>
+            </div>
+          )}
 
-              {/* Photo indicator dashes */}
-              {activeProfile.photos.length > 1 && (
-                <div className="absolute top-3 inset-x-3 flex gap-1.5 z-20">
-                  {activeProfile.photos.map((_, idx) => (
-                    <div
-                      key={idx}
-                      className={`h-1.5 flex-1 rounded-full transition-all duration-200 ${
-                        idx === currentPhotoIndex
-                          ? 'bg-white shadow-md'
-                          : 'bg-white/40 backdrop-blur-sm'
+          {/* Active Card with Framer Motion Horizontal Drag and Exit Transitions */}
+          <AnimatePresence mode="popLayout">
+            <motion.div
+              key={activeProfile.id}
+              id={`discovery-profile-card-${activeProfile.id}`}
+              drag="x"
+              dragConstraints={{ left: 0, right: 0 }}
+              dragElastic={0.65}
+              onDragEnd={handleDragEnd}
+              style={{ x: dragX, rotate }}
+              initial={{ scale: 0.96, opacity: 0, y: 15 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{
+                x: swipeDirection === 'right' ? 500 : swipeDirection === 'left' ? -500 : 0,
+                y: swipeDirection === 'up' ? -500 : 0,
+                scale: swipeDirection === 'up' ? 1.08 : 0.95,
+                opacity: 0,
+                rotate: swipeDirection === 'right' ? 22 : swipeDirection === 'left' ? -22 : 0,
+                transition: { duration: 0.28, ease: 'easeOut' },
+              }}
+              className="relative bg-white border border-rose-100 rounded-[36px] overflow-hidden shadow-2xl shadow-rose-200/60 cursor-grab active:cursor-grabbing z-10 select-none touch-pan-y"
+            >
+              {/* Floating Swiping Stamps (Like, Nope) */}
+              <motion.div
+                style={{ opacity: likeOpacity }}
+                className="absolute top-8 left-8 z-30 pointer-events-none border-4 border-emerald-500 text-emerald-500 font-black text-2xl tracking-wider px-4 py-1.5 rounded-2xl -rotate-12 bg-white/90 backdrop-blur-md shadow-xl"
+              >
+                LIKE ❤️
+              </motion.div>
+
+              <motion.div
+                style={{ opacity: nopeOpacity }}
+                className="absolute top-8 right-8 z-30 pointer-events-none border-4 border-rose-500 text-rose-500 font-black text-2xl tracking-wider px-4 py-1.5 rounded-2xl rotate-12 bg-white/90 backdrop-blur-md shadow-xl"
+              >
+                PASSER ✖️
+              </motion.div>
+
+              {/* Super Like Double-Tap Celebration Burst Animation */}
+              <AnimatePresence>
+                {showSuperLikeBurst && (
+                  <motion.div
+                    initial={{ scale: 0.5, opacity: 0 }}
+                    animate={{ scale: [0.5, 1.15, 1], opacity: 1 }}
+                    exit={{ scale: 1.3, opacity: 0 }}
+                    className="absolute inset-0 z-40 flex flex-col items-center justify-center bg-slate-900/60 backdrop-blur-xs pointer-events-none"
+                  >
+                    <div className="p-4 rounded-full bg-gradient-to-tr from-amber-400 to-orange-500 text-white shadow-2xl shadow-amber-300 animate-bounce">
+                      <Star className="w-16 h-16 fill-white" />
+                    </div>
+                    <span className="text-3xl font-black text-white drop-shadow-md mt-3 uppercase tracking-wider">
+                      SUPER LIKE !
+                    </span>
+                    <span className="text-xs text-amber-200 font-bold mt-1">
+                      Coup de cœur envoyé ⭐
+                    </span>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {/* Photo & Carousel (Supports double tap/click for Super Like) */}
+              <div
+                className="relative aspect-[3/4] sm:aspect-[4/5] w-full bg-slate-100 overflow-hidden cursor-pointer"
+                onClick={handleDoubleTap}
+                onDoubleClick={triggerSuperLikeBurst}
+                title="Tapez 2 fois pour Super Liker ⭐"
+              >
+                <img
+                  src={activeProfile.photos[currentPhotoIndex] || activeProfile.photos[0]}
+                  alt={activeProfile.name}
+                  className="w-full h-full object-cover object-center transition-opacity duration-300 pointer-events-none"
+                  referrerPolicy="no-referrer"
+                />
+
+                {/* Photo indicator dashes */}
+                {activeProfile.photos.length > 1 && (
+                  <div className="absolute top-3 inset-x-3 flex gap-1.5 z-20">
+                    {activeProfile.photos.map((_, idx) => (
+                      <div
+                        key={idx}
+                        className={`h-1.5 flex-1 rounded-full transition-all duration-200 ${
+                          idx === currentPhotoIndex
+                            ? 'bg-white shadow-md'
+                            : 'bg-white/40 backdrop-blur-sm'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                )}
+
+                {/* Left / Right photo touch areas */}
+                {activeProfile.photos.length > 1 && (
+                  <>
+                    <button
+                      id="prev-photo-btn"
+                      onClick={prevPhoto}
+                      onPointerDown={(e) => e.stopPropagation()}
+                      className="absolute left-2 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/40 text-white hover:bg-black/60 transition-all z-20"
+                      aria-label="Photo précédente"
+                    >
+                      <ChevronLeft className="w-5 h-5" />
+                    </button>
+                    <button
+                      id="next-photo-btn"
+                      onClick={nextPhoto}
+                      onPointerDown={(e) => e.stopPropagation()}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/40 text-white hover:bg-black/60 transition-all z-20"
+                      aria-label="Photo suivante"
+                    >
+                      <ChevronRight className="w-5 h-5" />
+                    </button>
+                  </>
+                )}
+
+                {/* Bottom Gradient overlay */}
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent pointer-events-none" />
+
+                {/* Floating Top Buttons: Dedicated Favorite Heart & AI Affinity Pill */}
+                <div className="absolute top-4 inset-x-4 z-20 flex items-center justify-between pointer-events-auto">
+                  {/* Dedicated Favorite Heart Button */}
+                  <button
+                    id={`card-favorite-btn-${activeProfile.id}`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (onToggleFavorite) {
+                        onToggleFavorite(activeProfile.id);
+                      }
+                    }}
+                    onPointerDown={(e) => e.stopPropagation()}
+                    title={favoriteIds.includes(activeProfile.id) ? 'Retirer des Favoris' : 'Ajouter aux Favoris'}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full backdrop-blur-md shadow-md text-xs font-black transition-all transform hover:scale-105 active:scale-90 cursor-pointer ${
+                      favoriteIds.includes(activeProfile.id)
+                        ? 'bg-rose-600 text-white border border-rose-500 shadow-rose-400/50'
+                        : 'bg-white/95 text-rose-600 border border-rose-200 hover:bg-rose-50'
+                    }`}
+                  >
+                    <Heart
+                      className={`w-4 h-4 transition-transform ${
+                        favoriteIds.includes(activeProfile.id) ? 'fill-white text-white scale-110' : 'text-rose-500'
                       }`}
                     />
-                  ))}
-                </div>
-              )}
-
-              {/* Left / Right photo touch areas */}
-              {activeProfile.photos.length > 1 && (
-                <>
-                  <button
-                    id="prev-photo-btn"
-                    onClick={prevPhoto}
-                    className="absolute left-2 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/40 text-white hover:bg-black/60 transition-all z-20"
-                    aria-label="Photo précédente"
-                  >
-                    <ChevronLeft className="w-5 h-5" />
+                    <span>{favoriteIds.includes(activeProfile.id) ? 'Favori ❤️' : 'Sauvegarder'}</span>
                   </button>
-                  <button
-                    id="next-photo-btn"
-                    onClick={nextPhoto}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/40 text-white hover:bg-black/60 transition-all z-20"
-                    aria-label="Photo suivante"
-                  >
-                    <ChevronRight className="w-5 h-5" />
-                  </button>
-                </>
-              )}
 
-              {/* Bottom Gradient overlay */}
-              <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent pointer-events-none" />
-
-              {/* Floating compatibility pill */}
-              {(() => {
-                const commonCount = currentUser.interests.filter((i) =>
-                  activeProfile.interests.includes(i)
-                ).length;
-                const estimatedScore = Math.min(
-                  98,
-                  Math.max(65, 60 + commonCount * 9)
-                );
-                return (
-                  <button
-                    id={`card-ai-affinity-btn-${activeProfile.id}`}
-                    onClick={() => onOpenCompatibility(activeProfile)}
-                    className="absolute top-4 right-4 z-20 flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/95 backdrop-blur-md border border-rose-200 text-rose-600 shadow-md text-xs font-bold hover:scale-105 transition-all"
-                  >
-                    <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                    <span>{estimatedScore}% d'Affinité</span>
-                  </button>
-                );
-              })()}
-
-              {/* Quick Info on Photo */}
-              <div className="absolute bottom-4 inset-x-4 z-20 space-y-1 text-white">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <h2 className="text-2xl font-black tracking-tight drop-shadow-md">
-                    {activeProfile.name}, {activeProfile.age}
-                  </h2>
-                  {activeProfile.verified && (
-                    <span
-                      title="Profil vérifié par pièce d'identité et selfie"
-                      className="p-1 rounded-full bg-emerald-500 text-white shadow-sm"
-                    >
-                      <CheckCircle2 className="w-3.5 h-3.5" />
-                    </span>
-                  )}
-                  {activeProfile.astrologySign && (
-                    <span className="text-xs px-2 py-0.5 rounded-full bg-white/20 backdrop-blur-md text-white font-medium border border-white/30">
-                      {activeProfile.astrologySign}
-                    </span>
-                  )}
-                </div>
-
-                <div className="flex items-center gap-3 text-xs text-white/90 font-medium">
-                  <span className="flex items-center gap-1">
-                    <Briefcase className="w-3.5 h-3.5 text-rose-300" />
-                    {activeProfile.occupation}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <MapPin className="w-3.5 h-3.5 text-orange-300" />
-                    {formatFuzzedDistance(
-                      calculateDistanceKm(
-                        currentUser.lat,
-                        currentUser.lng,
-                        activeProfile.lat,
-                        activeProfile.lng
-                      ),
-                      privacySettings.distanceFuzzing,
-                      activeProfile.city
-                    )}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Profile Details & Shared Interests */}
-            <div className="p-4 sm:p-5 space-y-4 text-left bg-white">
-              {/* Bio */}
-              <div>
-                <p className="text-sm text-slate-700 leading-relaxed font-medium">
-                  "{activeProfile.bio}"
-                </p>
-              </div>
-
-              {/* Relationship Goal Banner */}
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-rose-50 text-xs font-bold text-rose-700 border border-rose-200">
-                <Heart className="w-3.5 h-3.5 text-rose-500 fill-rose-500" />
-                <span>Recherche : {activeProfile.relationshipGoal}</span>
-              </div>
-
-              {/* Shared & Distinct Interests */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between text-xs text-slate-500">
-                  <span className="font-bold uppercase tracking-wider text-[10px] text-slate-600">
-                    Centres d'intérêt ({activeProfile.interests.length})
-                  </span>
-                  <span className="text-rose-600 text-[11px] font-bold">
-                    {
-                      currentUser.interests.filter((i) =>
-                        activeProfile.interests.includes(i)
-                      ).length
-                    }{' '}
-                    en commun
-                  </span>
-                </div>
-
-                <div className="flex flex-wrap gap-1.5">
-                  {activeProfile.interests.map((interest) => {
-                    const isCommon = currentUser.interests.includes(interest);
-                    return (
-                      <span
-                        key={interest}
-                        className={`px-3 py-1 rounded-full text-xs transition-all ${
-                          isCommon
-                            ? 'bg-gradient-to-r from-rose-500 to-orange-500 text-white font-bold shadow-sm shadow-rose-200'
-                            : 'bg-rose-50 text-rose-800 font-semibold border border-rose-200'
-                        }`}
-                      >
-                        {isCommon ? '✨ ' : ''}
-                        {interest}
-                      </span>
+                  {/* Floating compatibility pill */}
+                  {(() => {
+                    const commonCount = currentUser.interests.filter((i) =>
+                      activeProfile.interests.includes(i)
+                    ).length;
+                    const estimatedScore = Math.min(
+                      98,
+                      Math.max(65, 60 + commonCount * 9)
                     );
-                  })}
+                    return (
+                      <button
+                        id={`card-ai-affinity-btn-${activeProfile.id}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onOpenCompatibility(activeProfile);
+                        }}
+                        onPointerDown={(e) => e.stopPropagation()}
+                        className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/95 backdrop-blur-md border border-rose-200 text-rose-600 shadow-md text-xs font-bold hover:scale-105 transition-all cursor-pointer"
+                      >
+                        <Zap className="w-3.5 h-3.5 text-rose-500 fill-rose-500" />
+                        <span>{estimatedScore}% d'Affinité</span>
+                      </button>
+                    );
+                  })()}
+                </div>
+
+                {/* Quick Info on Photo */}
+                <div className="absolute bottom-4 inset-x-4 z-20 space-y-1 text-white pointer-events-none">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h2 className="text-2xl font-black tracking-tight drop-shadow-md">
+                      {activeProfile.name}, {activeProfile.age}
+                    </h2>
+                    {activeProfile.verified && (
+                      <span
+                        id={`verified-badge-pill-${activeProfile.id}`}
+                        title="Profil Certifié Joyce-K — Inscription complétée & photos réelles validées"
+                        className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-blue-600 text-white font-extrabold text-[11px] shadow-lg shadow-blue-500/30 border border-white/90 backdrop-blur-xs select-none"
+                      >
+                        <svg className="w-3.5 h-3.5 fill-white" viewBox="0 0 24 24">
+                          <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" />
+                        </svg>
+                        <span>Certifié</span>
+                      </span>
+                    )}
+                    {activeProfile.astrologySign && (
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-white/20 backdrop-blur-md text-white font-medium border border-white/30">
+                        {activeProfile.astrologySign}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-3 text-xs text-white/90 font-medium">
+                    <span className="flex items-center gap-1">
+                      <Briefcase className="w-3.5 h-3.5 text-rose-300" />
+                      {activeProfile.occupation}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <MapPin className="w-3.5 h-3.5 text-orange-300" />
+                      {formatFuzzedDistance(
+                        calculateDistanceKm(
+                          currentUser.lat,
+                          currentUser.lng,
+                          activeProfile.lat,
+                          activeProfile.lng
+                        ),
+                        privacySettings.distanceFuzzing,
+                        activeProfile.city
+                      )}
+                    </span>
+                  </div>
                 </div>
               </div>
 
-              {/* Interactive prompt answer */}
-              {activeProfile.promptQuestion && (
-                <div className="p-3.5 bg-rose-50/70 rounded-2xl border border-rose-100 space-y-1">
-                  <span className="text-[11px] font-bold text-rose-600 uppercase tracking-wider">
-                    {activeProfile.promptQuestion}
+              {/* Profile Details & Shared Interests (Smoothly scrollable down) */}
+              <div className="p-4 sm:p-5 space-y-4 text-left bg-white">
+                {/* Double tap hint */}
+                <div className="flex items-center justify-between text-[11px] text-slate-400 bg-rose-50/50 px-3 py-1.5 rounded-xl border border-rose-100">
+                  <span className="flex items-center gap-1 text-amber-600 font-semibold">
+                    <Star className="w-3.5 h-3.5 fill-amber-500 text-amber-500" /> Tapez 2 fois pour Super-Liker
                   </span>
-                  <p className="text-xs text-slate-700 italic font-medium">
-                    {activeProfile.promptAnswer}
+                  <span className="text-slate-400 font-medium">Défilement libre vers le bas ↓</span>
+                </div>
+
+                {/* Bio */}
+                <div>
+                  <p className="text-sm text-slate-700 leading-relaxed font-medium">
+                    "{activeProfile.bio}"
                   </p>
                 </div>
-              )}
-            </div>
 
-            {/* Action Bar (Rewind, Pass, Super-Like, Like, Deep AI) */}
-            <div className="p-4 bg-white border-t border-rose-100 flex items-center justify-center gap-3 sm:gap-4">
-              {/* Rewind */}
-              <button
-                id="rewind-card-btn"
-                onClick={handleRewind}
-                disabled={history.length === 0}
-                title="Annuler le dernier swipe"
-                className={`p-3.5 rounded-full border transition-all ${
-                  history.length > 0
-                    ? 'bg-slate-50 border-slate-200 text-amber-500 hover:bg-amber-50 hover:scale-110 active:scale-95 shadow-sm'
-                    : 'bg-slate-50 border-slate-200 text-slate-300 cursor-not-allowed opacity-50'
-                }`}
-              >
-                <RotateCcw className="w-5 h-5" />
-              </button>
+                {/* Relationship Goal Banner */}
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-rose-50 text-xs font-bold text-rose-700 border border-rose-200">
+                  <Heart className="w-3.5 h-3.5 text-rose-500 fill-rose-500" />
+                  <span>Recherche : {activeProfile.relationshipGoal}</span>
+                </div>
 
-              {/* Pass (Cross) */}
-              <button
-                id={`pass-card-btn-${activeProfile.id}`}
-                onClick={() => handleNext(false)}
-                title="Passer au profil suivant"
-                className="w-14 h-14 rounded-full bg-rose-50 border border-rose-200 text-rose-500 flex items-center justify-center hover:bg-rose-100 hover:scale-110 active:scale-90 transition-all shadow-md shadow-rose-100"
-              >
-                <X className="w-6 h-6 stroke-[2.5]" />
-              </button>
+                {/* Verified Trust Banner with Blue Check */}
+                {activeProfile.verified && (
+                  <div className="flex items-center gap-2.5 p-3 rounded-2xl bg-blue-50/90 border border-blue-200 text-blue-900 shadow-2xs">
+                    <div className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+                      <svg className="w-3.5 h-3.5 fill-white" viewBox="0 0 24 24">
+                        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" />
+                      </svg>
+                    </div>
+                    <div className="text-xs">
+                      <div className="font-bold flex items-center gap-1.5 text-blue-950">
+                        <span>Profil Vérifié & Certifié</span>
+                        <span className="text-[10px] px-1.5 py-0.2 rounded-md bg-blue-200/80 text-blue-900 font-extrabold uppercase">Coche Bleue</span>
+                      </div>
+                      <p className="text-[11px] text-blue-800/90 font-medium">Inscription complétée et photos réelles validées avec succès.</p>
+                    </div>
+                  </div>
+                )}
 
-              {/* Super-Like (Star) */}
-              <button
-                id={`superlike-card-btn-${activeProfile.id}`}
-                onClick={() => handleNext(true, true)}
-                title="Super-Like avec coup de cœur"
-                className="w-14 h-14 rounded-full bg-amber-50 border border-amber-200 text-amber-500 flex items-center justify-center hover:bg-amber-100 hover:scale-110 active:scale-90 transition-all shadow-md shadow-amber-100"
-              >
-                <Star className="w-6 h-6 fill-amber-500" />
-              </button>
+                {/* Shared & Distinct Interests */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-xs text-slate-500">
+                    <span className="font-bold uppercase tracking-wider text-[10px] text-slate-600">
+                      Centres d'intérêt ({activeProfile.interests.length})
+                    </span>
+                    <span className="text-rose-600 text-[11px] font-bold">
+                      {
+                        currentUser.interests.filter((i) =>
+                          activeProfile.interests.includes(i)
+                        ).length
+                      }{' '}
+                      en commun
+                    </span>
+                  </div>
 
-              {/* Like (Heart) */}
-              <button
-                id={`like-card-btn-${activeProfile.id}`}
-                onClick={() => handleNext(true, false)}
-                title="Aimer ce profil"
-                className="w-20 h-20 rounded-full bg-gradient-to-r from-rose-500 to-orange-500 text-white flex items-center justify-center shadow-xl shadow-rose-300/80 border-4 border-white hover:scale-110 active:scale-90 transition-all"
-              >
-                <Heart className="w-8 h-8 fill-white" />
-              </button>
+                  <div className="flex flex-wrap gap-1.5">
+                    {activeProfile.interests.map((interest) => {
+                      const isCommon = currentUser.interests.includes(interest);
+                      return (
+                        <span
+                          key={interest}
+                          className={`px-3 py-1 rounded-full text-xs transition-all ${
+                            isCommon
+                              ? 'bg-gradient-to-r from-rose-500 to-orange-500 text-white font-bold shadow-sm shadow-rose-200'
+                              : 'bg-rose-50 text-rose-800 font-semibold border border-rose-200'
+                          }`}
+                        >
+                          {isCommon ? '✨ ' : ''}
+                          {interest}
+                        </span>
+                      );
+                    })}
+                  </div>
+                </div>
 
-              {/* Deep AI Analysis Button */}
-              <button
-                id={`deep-ai-compat-btn-${activeProfile.id}`}
-                onClick={() => onOpenCompatibility(activeProfile)}
-                title="Analyse IA de compatibilité"
-                className="p-3.5 rounded-full bg-violet-50 border border-violet-200 text-violet-600 hover:bg-violet-100 hover:scale-110 active:scale-95 transition-all shadow-sm"
-              >
-                <Sparkles className="w-5 h-5" />
-              </button>
-            </div>
-          </div>
+                {/* Interactive prompt answer */}
+                {activeProfile.promptQuestion && (
+                  <div className="p-3.5 bg-rose-50/70 rounded-2xl border border-rose-100 space-y-1">
+                    <span className="text-[11px] font-bold text-rose-600 uppercase tracking-wider">
+                      {activeProfile.promptQuestion}
+                    </span>
+                    <p className="text-xs text-slate-700 italic font-medium">
+                      {activeProfile.promptAnswer}
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Action Bar (Rewind, Pass, Favorite, Super-Like, Like, Deep AI) */}
+              <div className="p-4 bg-white border-t border-rose-100 flex items-center justify-center gap-2.5 sm:gap-3.5">
+                {/* Rewind */}
+                <button
+                  id="rewind-card-btn"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleRewind();
+                  }}
+                  onPointerDown={(e) => e.stopPropagation()}
+                  disabled={history.length === 0}
+                  title="Annuler le dernier swipe (Touche Ret.Arr)"
+                  className={`p-3 sm:p-3.5 rounded-full border transition-all ${
+                    history.length > 0
+                      ? 'bg-slate-50 border-slate-200 text-amber-500 hover:bg-amber-50 hover:scale-110 active:scale-95 shadow-sm'
+                      : 'bg-slate-50 border-slate-200 text-slate-300 cursor-not-allowed opacity-50'
+                  }`}
+                >
+                  <RotateCcw className="w-4 h-4 sm:w-5 sm:h-5" />
+                </button>
+
+                {/* Pass (Cross) */}
+                <button
+                  id={`pass-card-btn-${activeProfile.id}`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleNext(false);
+                  }}
+                  onPointerDown={(e) => e.stopPropagation()}
+                  title="Passer au profil suivant (Flèche Gauche)"
+                  className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-rose-50 border border-rose-200 text-rose-500 flex items-center justify-center hover:bg-rose-100 hover:scale-110 active:scale-90 transition-all shadow-md shadow-rose-100 cursor-pointer"
+                >
+                  <X className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2.5]" />
+                </button>
+
+                {/* Favorite Toggle Button */}
+                <button
+                  id={`favorite-action-btn-${activeProfile.id}`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (onToggleFavorite) {
+                      onToggleFavorite(activeProfile.id);
+                    }
+                  }}
+                  onPointerDown={(e) => e.stopPropagation()}
+                  title={favoriteIds.includes(activeProfile.id) ? 'Retirer des favoris' : 'Sauvegarder en Favori'}
+                  className={`w-12 h-12 sm:w-14 sm:h-14 rounded-full border flex items-center justify-center transition-all shadow-md cursor-pointer hover:scale-110 active:scale-90 ${
+                    favoriteIds.includes(activeProfile.id)
+                      ? 'bg-rose-600 border-rose-500 text-white shadow-rose-200'
+                      : 'bg-rose-50/80 border-rose-200 text-rose-500 hover:bg-rose-100 shadow-rose-50'
+                  }`}
+                >
+                  <Heart className={`w-5 h-5 sm:w-6 sm:h-6 ${favoriteIds.includes(activeProfile.id) ? 'fill-white' : ''}`} />
+                </button>
+
+                {/* Super-Like (Star or Double-tap) */}
+                <button
+                  id={`superlike-card-btn-${activeProfile.id}`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    triggerSuperLikeBurst();
+                  }}
+                  onPointerDown={(e) => e.stopPropagation()}
+                  title="Super-Like avec coup de cœur (Tapez 2 fois ou Flèche Haut)"
+                  className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-amber-50 border border-amber-200 text-amber-500 flex items-center justify-center hover:bg-amber-100 hover:scale-110 active:scale-90 transition-all shadow-md shadow-amber-100 cursor-pointer"
+                >
+                  <Star className="w-5 h-5 sm:w-6 sm:h-6 fill-amber-500" />
+                </button>
+
+                {/* Like (Heart) */}
+                <button
+                  id={`like-card-btn-${activeProfile.id}`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleNext(true, false);
+                  }}
+                  onPointerDown={(e) => e.stopPropagation()}
+                  title="Aimer ce profil (Flèche Droite)"
+                  className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-r from-rose-500 to-orange-500 text-white flex items-center justify-center shadow-xl shadow-rose-300/80 border-4 border-white hover:scale-110 active:scale-90 transition-all cursor-pointer"
+                >
+                  <Heart className="w-7 h-7 sm:w-8 sm:h-8 fill-white" />
+                </button>
+
+                {/* Deep AI Analysis Button */}
+                <button
+                  id={`deep-ai-compat-btn-${activeProfile.id}`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onOpenCompatibility(activeProfile);
+                  }}
+                  onPointerDown={(e) => e.stopPropagation()}
+                  title="Analyse IA de compatibilité"
+                  className="p-3 sm:p-3.5 rounded-full bg-violet-50 border border-violet-200 text-violet-600 hover:bg-violet-100 hover:scale-110 active:scale-95 transition-all shadow-sm cursor-pointer"
+                >
+                  <Bot className="w-4 h-4 sm:w-5 sm:h-5" />
+                </button>
+              </div>
+            </motion.div>
+          </AnimatePresence>
         </div>
       ) : (
         /* End of stack */
@@ -576,7 +854,7 @@ export const DiscoverySwipe: React.FC<DiscoverySwipeProps> = ({
           className="text-center py-16 px-4 max-w-md mx-auto bg-white border border-rose-200 rounded-[36px] space-y-4 shadow-xl shadow-rose-100/50"
         >
           <div className="w-16 h-16 rounded-full bg-rose-50 border border-rose-200 flex items-center justify-center mx-auto text-rose-500">
-            <Sparkles className="w-8 h-8" />
+            <Flame className="w-8 h-8" />
           </div>
           <h3 className="text-xl font-black text-slate-900">
             Vous avez vu tous les profils récents !

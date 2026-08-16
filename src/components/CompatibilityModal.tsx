@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import {
-  Sparkles,
+  Bot,
   X,
   Heart,
   MessageCircle,
@@ -95,7 +95,7 @@ export const CompatibilityModal: React.FC<CompatibilityModalProps> = ({
         <div className="flex items-center justify-between pb-4 border-b border-rose-100 relative z-10">
           <div className="flex items-center gap-2.5">
             <div className="p-2.5 rounded-2xl bg-gradient-to-r from-rose-500 to-orange-500 text-white shadow-md shadow-rose-200">
-              <Sparkles className="w-5 h-5" />
+              <Bot className="w-5 h-5" />
             </div>
             <div>
               <h3 className="font-black text-lg text-slate-900">
@@ -132,7 +132,7 @@ export const CompatibilityModal: React.FC<CompatibilityModalProps> = ({
             </div>
 
             <div className="flex flex-col items-center">
-              <div className="w-10 h-10 rounded-full bg-rose-100 border border-rose-300 flex items-center justify-center text-rose-500 shadow-sm animate-pulse">
+              <div className="w-10 h-10 rounded-full bg-rose-100 border border-rose-300 flex items-center justify-center text-rose-500 shadow-sm">
                 <Heart className="w-5 h-5 fill-rose-500" />
               </div>
               {report && (
@@ -231,7 +231,7 @@ export const CompatibilityModal: React.FC<CompatibilityModalProps> = ({
               <div className="bg-rose-50/90 border border-rose-200 rounded-2xl p-4 shadow-xs">
                 <div className="flex items-center justify-between mb-1.5">
                   <span className="text-xs font-bold text-rose-700 flex items-center gap-1.5">
-                    <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                    <Zap className="w-3.5 h-3.5 text-rose-500 fill-rose-500" />
                     Accroche recommandée par l'IA
                   </span>
                 </div>

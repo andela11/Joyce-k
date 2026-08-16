@@ -5,6 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Navigation } from './components/Navigation';
+import { LandingPage } from './components/LandingPage';
 import { DiscoverySwipe } from './components/DiscoverySwipe';
 import { ProximityRadar } from './components/ProximityRadar';
 import { MessagingCenter } from './components/MessagingCenter';
@@ -13,6 +14,9 @@ import { PrivacySecurityCenter } from './components/PrivacySecurityCenter';
 import { ProfileEditor } from './components/ProfileEditor';
 import { CompatibilityModal } from './components/CompatibilityModal';
 import { MatchCelebrationModal } from './components/MatchCelebrationModal';
+import { AuthModal } from './components/AuthModal';
+import { AdminDashboard } from './components/AdminDashboard';
+import { FavoritesView } from './components/FavoritesView';
 import {
   UserProfile,
   ActiveTab,
@@ -20,6 +24,7 @@ import {
   AiAutoResponderSettings,
   Conversation,
   ChatMessage,
+  AuthUser,
 } from './types';
 import {
   INITIAL_USER_PROFILE,
@@ -30,7 +35,19 @@ import {
 
 export default function App() {
   // Navigation State
-  const [activeTab, setActiveTab] = useState<ActiveTab>('discovery');
+  const [activeTab, setActiveTab] = useState<ActiveTab>('landing');
+
+  // Authentication State
+  const [authUser, setAuthUser] = useState<AuthUser | null>(() => {
+    try {
+      const saved = localStorage.getItem('amour_affinites_auth');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [authInitialMode, setAuthInitialMode] = useState<'login' | 'signup'>('login');
 
   // User Profile
   const [currentUser, setCurrentUser] = useState<UserProfile>(() => {
@@ -67,6 +84,18 @@ export default function App() {
 
   // Available Profiles
   const [profiles, setProfiles] = useState<UserProfile[]>(MOCK_PROFILES);
+
+  // Favorites Profile IDs
+  const [favoriteIds, setFavoriteIds] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem('amour_affinites_favorites');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {
+      console.warn('Failed to parse favorites from localStorage:', e);
+    }
+    // Pre-loaded favorite with Camille and Aminata
+    return ['user_1', 'user_2'];
+  });
 
   // Conversations and Messages
   const [conversations, setConversations] = useState<Conversation[]>(() => {
@@ -123,7 +152,63 @@ export default function App() {
   const [compatibilityProfile, setCompatibilityProfile] = useState<UserProfile | null>(null);
   const [celebrationProfile, setCelebrationProfile] = useState<UserProfile | null>(null);
 
-  // Sync to LocalStorage
+  // Sync to LocalStorage & Firebase Auth state listener
+  useEffect(() => {
+    import('./lib/firebase').then(({ auth, onAuthStateChanged, db, doc, getDoc }) => {
+      const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
+        if (fbUser) {
+          const emailLower = (fbUser.email || '').toLowerCase();
+          const isAdmin =
+            emailLower === 'andelacyrille11@gmail.com' ||
+            emailLower === 'blinkservices513@gmail.com' ||
+            emailLower.includes('admin');
+
+          const userObj: AuthUser = {
+            id: fbUser.uid,
+            email: fbUser.email || '',
+            name: isAdmin ? `${fbUser.displayName || fbUser.email?.split('@')[0] || 'Junior Andela'} (Admin)` : (fbUser.displayName || fbUser.email?.split('@')[0] || 'Alexandre'),
+            photoUrl: fbUser.photoURL || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&auto=format&fit=crop&q=80',
+            provider: (fbUser.providerData?.[0]?.providerId === 'google.com' ? 'google' : 'email') as 'email' | 'google' | 'guest',
+            isLoggedIn: true,
+            isAdmin,
+            createdAt: fbUser.metadata?.creationTime || new Date().toISOString(),
+          };
+          setAuthUser(userObj);
+
+          // Sync user profile from Firestore if available
+          try {
+            const userDoc = await getDoc(doc(db, 'users', fbUser.uid));
+            if (userDoc.exists()) {
+              const data = userDoc.data();
+              setCurrentUser((prev) => ({
+                ...prev,
+                name: data.name || prev.name,
+                age: data.age || prev.age,
+                gender: data.gender || prev.gender,
+                city: data.city || prev.city,
+                lat: data.lat || prev.lat,
+                lng: data.lng || prev.lng,
+                photos: data.photoUrl ? [data.photoUrl, ...prev.photos.slice(1)] : prev.photos,
+                verified: true,
+              }));
+            }
+          } catch (e) {
+            console.warn('Firestore profile sync warning:', e);
+          }
+        }
+      });
+      return () => unsubscribe();
+    });
+  }, []);
+
+  useEffect(() => {
+    if (authUser) {
+      localStorage.setItem('amour_affinites_auth', JSON.stringify(authUser));
+    } else {
+      localStorage.removeItem('amour_affinites_auth');
+    }
+  }, [authUser]);
+
   useEffect(() => {
     localStorage.setItem('amour_affinites_user', JSON.stringify(currentUser));
   }, [currentUser]);
@@ -144,8 +229,19 @@ export default function App() {
     localStorage.setItem('amour_affinites_messages', JSON.stringify(messages));
   }, [messages]);
 
+  useEffect(() => {
+    localStorage.setItem('amour_affinites_favorites', JSON.stringify(favoriteIds));
+  }, [favoriteIds]);
+
   // Total unread messages count
   const unreadCount = conversations.reduce((acc, c) => acc + c.unreadCount, 0);
+
+  // Toggle favorite status of a profile
+  const handleToggleFavorite = (profileId: string) => {
+    setFavoriteIds((prev) =>
+      prev.includes(profileId) ? prev.filter((id) => id !== profileId) : [...prev, profileId]
+    );
+  };
 
   // Quick toggle AI Auto-responder
   const handleToggleAi = () => {
@@ -316,100 +412,193 @@ export default function App() {
     setActiveTab('messages');
   };
 
+  // Handle Auth Login/Signup Success
+  const handleLoginSuccess = (user: AuthUser, updatedProfile?: Partial<UserProfile>) => {
+    setAuthUser(user);
+    if (updatedProfile) {
+      setCurrentUser((prev) => ({
+        ...prev,
+        name: updatedProfile.name || prev.name,
+        age: updatedProfile.age || prev.age,
+        gender: updatedProfile.gender || prev.gender,
+        verified: updatedProfile.verified !== undefined ? updatedProfile.verified : prev.verified,
+      }));
+    }
+
+    // Direct Redirection: Admin -> 'admin', User -> 'discovery' (profile swipes)
+    if (user.isAdmin) {
+      setActiveTab('admin');
+    } else {
+      setActiveTab('discovery');
+    }
+  };
+
+  // Handle Logout (returns to landing page)
+  const handleLogout = async () => {
+    try {
+      const { auth, signOut } = await import('./lib/firebase');
+      await signOut(auth);
+    } catch (err) {
+      console.warn('Firebase signout warning:', err);
+    }
+    localStorage.removeItem('amour_affinites_auth');
+    setAuthUser(null);
+    setActiveTab('landing');
+  };
+
   // Purge Account (RGPD)
   const handlePurgeAccount = () => {
     localStorage.clear();
+    setAuthUser(null);
     setCurrentUser(INITIAL_USER_PROFILE);
     setPrivacySettings(INITIAL_PRIVACY_SETTINGS);
     setAiSettings(INITIAL_AI_SETTINGS);
     setConversations([]);
     setMessages({});
-    setActiveTab('discovery');
+    setActiveTab('landing');
+  };
+
+  const handleOpenAuthModal = (mode: 'login' | 'signup' = 'signup') => {
+    setAuthInitialMode(mode);
+    setIsAuthModalOpen(true);
   };
 
   return (
-    <div className="min-h-screen bg-rose-50/60 text-slate-800 flex flex-col font-sans selection:bg-rose-500 selection:text-white">
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-rose-500 selection:text-white">
       {/* Top Main Navigation */}
       <Navigation
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         unreadCount={unreadCount}
+        favoritesCount={favoriteIds.length}
         privacySettings={privacySettings}
         aiSettings={aiSettings}
         onToggleAi={handleToggleAi}
+        authUser={authUser}
+        onOpenAuth={handleOpenAuthModal}
+        onLogout={handleLogout}
       />
 
       {/* Main Content Area based on Active Tab */}
-      <main className="flex-1 pb-8">
-        {activeTab === 'discovery' && (
-          <DiscoverySwipe
-            currentUser={currentUser}
-            profiles={profiles}
-            privacySettings={privacySettings}
-            onLike={handleLikeProfile}
-            onPass={handlePassProfile}
-            onOpenCompatibility={(profile) => setCompatibilityProfile(profile)}
+      <main className="flex-1">
+        {activeTab === 'landing' && (
+          <LandingPage
+            onOpenAuth={handleOpenAuthModal}
+            onEnterApp={(tab) => setActiveTab(tab || 'discovery')}
+            sampleProfiles={profiles}
           />
+        )}
+
+        {activeTab === 'discovery' && (
+          <div className="pb-8 bg-rose-50/60 min-h-[calc(100vh-70px)] text-slate-800">
+            <DiscoverySwipe
+              currentUser={currentUser}
+              profiles={profiles}
+              privacySettings={privacySettings}
+              favoriteIds={favoriteIds}
+              onToggleFavorite={handleToggleFavorite}
+              onLike={handleLikeProfile}
+              onPass={handlePassProfile}
+              onOpenCompatibility={(profile) => setCompatibilityProfile(profile)}
+            />
+          </div>
+        )}
+
+        {activeTab === 'favorites' && (
+          <div className="pb-8 bg-rose-50/60 min-h-[calc(100vh-70px)] text-slate-800">
+            <FavoritesView
+              currentUser={currentUser}
+              allProfiles={profiles}
+              favoriteIds={favoriteIds}
+              onToggleFavorite={handleToggleFavorite}
+              onOpenCompatibility={(profile) => setCompatibilityProfile(profile)}
+              onStartChat={(profile) => handleStartChatWithProfile(profile)}
+              onExploreMore={() => setActiveTab('discovery')}
+            />
+          </div>
         )}
 
         {activeTab === 'radar' && (
-          <ProximityRadar
-            currentUser={currentUser}
-            profiles={profiles}
-            privacySettings={privacySettings}
-            onUpdateUserLocation={(city, lat, lng) =>
-              setCurrentUser((prev) => ({ ...prev, city, lat, lng }))
-            }
-            onSelectProfile={(profile) => setCompatibilityProfile(profile)}
-            onStartChat={(profile) => handleStartChatWithProfile(profile)}
-            onOpenPrivacy={() => setActiveTab('privacy')}
-          />
+          <div className="pb-8 bg-rose-50/60 min-h-[calc(100vh-70px)] text-slate-800">
+            <ProximityRadar
+              currentUser={currentUser}
+              profiles={profiles}
+              privacySettings={privacySettings}
+              onUpdateUserLocation={(city, lat, lng) =>
+                setCurrentUser((prev) => ({ ...prev, city, lat, lng }))
+              }
+              onSelectProfile={(profile) => setCompatibilityProfile(profile)}
+              onStartChat={(profile) => handleStartChatWithProfile(profile)}
+              onOpenPrivacy={() => setActiveTab('privacy')}
+            />
+          </div>
         )}
 
         {activeTab === 'messages' && (
-          <MessagingCenter
-            currentUser={currentUser}
-            conversations={conversations}
-            activeConversationId={activeConversationId}
-            setActiveConversationId={setActiveConversationId}
-            messages={messages}
-            onSendMessage={handleSendMessage}
-            privacySettings={privacySettings}
-            aiSettings={aiSettings}
-            onToggleAi={handleToggleAi}
-            onBlockUser={handleBlockUser}
-          />
+          <div className="pb-8 bg-rose-50/60 min-h-[calc(100vh-70px)] text-slate-800">
+            <MessagingCenter
+              currentUser={currentUser}
+              conversations={conversations}
+              activeConversationId={activeConversationId}
+              setActiveConversationId={setActiveConversationId}
+              messages={messages}
+              onSendMessage={handleSendMessage}
+              privacySettings={privacySettings}
+              aiSettings={aiSettings}
+              onToggleAi={handleToggleAi}
+              onBlockUser={handleBlockUser}
+            />
+          </div>
         )}
 
         {activeTab === 'ai_wingman' && (
-          <AiWingmanCenter
-            currentUser={currentUser}
-            aiSettings={aiSettings}
-            onUpdateAiSettings={(newSettings) =>
-              setAiSettings((prev) => ({ ...prev, ...newSettings }))
-            }
-            onUpdateUserBio={(newBio) =>
-              setCurrentUser((prev) => ({ ...prev, bio: newBio }))
-            }
-          />
+          <div className="pb-8 bg-rose-50/60 min-h-[calc(100vh-70px)] text-slate-800">
+            <AiWingmanCenter
+              currentUser={currentUser}
+              aiSettings={aiSettings}
+              onUpdateAiSettings={(newSettings) =>
+                setAiSettings((prev) => ({ ...prev, ...newSettings }))
+              }
+              onUpdateUserBio={(newBio) =>
+                setCurrentUser((prev) => ({ ...prev, bio: newBio }))
+              }
+            />
+          </div>
         )}
 
         {activeTab === 'privacy' && (
-          <PrivacySecurityCenter
-            currentUser={currentUser}
-            privacySettings={privacySettings}
-            onUpdatePrivacySettings={(newSettings) =>
-              setPrivacySettings((prev) => ({ ...prev, ...newSettings }))
-            }
-            onPurgeAccount={handlePurgeAccount}
-            onUnblockUser={handleUnblockUser}
-          />
+          <div className="pb-8 bg-rose-50/60 min-h-[calc(100vh-70px)] text-slate-800">
+            <PrivacySecurityCenter
+              currentUser={currentUser}
+              privacySettings={privacySettings}
+              onUpdatePrivacySettings={(newSettings) =>
+                setPrivacySettings((prev) => ({ ...prev, ...newSettings }))
+              }
+              onPurgeAccount={handlePurgeAccount}
+              onUnblockUser={handleUnblockUser}
+            />
+          </div>
         )}
 
         {activeTab === 'profile' && (
-          <ProfileEditor
-            userProfile={currentUser}
-            onSaveProfile={(updated) => setCurrentUser(updated)}
+          <div className="pb-8 bg-rose-50/60 min-h-[calc(100vh-70px)] text-slate-800">
+            <ProfileEditor
+              userProfile={currentUser}
+              onSaveProfile={(updated) => setCurrentUser(updated)}
+              authUser={authUser}
+              onOpenAuth={handleOpenAuthModal}
+              onLogout={handleLogout}
+            />
+          </div>
+        )}
+
+        {activeTab === 'admin' && (
+          <AdminDashboard
+            currentUser={currentUser}
+            authUser={authUser}
+            allProfiles={profiles}
+            onUpdateProfiles={setProfiles}
+            onEnterApp={(tab) => setActiveTab(tab || 'discovery')}
           />
         )}
       </main>
@@ -437,6 +626,14 @@ export default function App() {
           }
         />
       )}
+
+      {/* Authentication Modal (Email / Google / SignUp / Login) */}
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        initialMode={authInitialMode}
+        onClose={() => setIsAuthModalOpen(false)}
+        onLoginSuccess={handleLoginSuccess}
+      />
     </div>
   );
 }
