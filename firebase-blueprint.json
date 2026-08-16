@@ -1,0 +1,75 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User account and profile information on Joyce-K",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "uid": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "name": { "type": "string", "maxLength": 100 },
+        "age": { "type": "number" },
+        "gender": { "type": "string", "enum": ["homme", "femme", "autre"] },
+        "interestedIn": { "type": "array" },
+        "bio": { "type": "string", "maxLength": 2000 },
+        "city": { "type": "string", "maxLength": 150 },
+        "lat": { "type": "number" },
+        "lng": { "type": "number" },
+        "photoUrl": { "type": "string" },
+        "photos": { "type": "array" },
+        "interests": { "type": "array" },
+        "relationshipGoal": { "type": "string" },
+        "occupation": { "type": "string" },
+        "verified": { "type": "boolean" },
+        "isAdmin": { "type": "boolean" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["email", "name"]
+    },
+    "ChatMessage": {
+      "title": "ChatMessage",
+      "description": "Direct message sent between users",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "conversationId": { "type": "string" },
+        "senderId": { "type": "string" },
+        "receiverId": { "type": "string" },
+        "text": { "type": "string", "maxLength": 5000 },
+        "timestamp": { "type": "string" },
+        "isRead": { "type": "boolean" },
+        "isAiWingman": { "type": "boolean" }
+      },
+      "required": ["conversationId", "senderId", "text"]
+    },
+    "Conversation": {
+      "title": "Conversation",
+      "description": "Conversation thread between two matched users",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "participants": { "type": "array" },
+        "lastMessage": { "type": "string" },
+        "lastMessageTime": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["participants"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "User profile collection"
+    },
+    "/conversations/{conversationId}": {
+      "schema": "Conversation",
+      "description": "Conversations collection"
+    },
+    "/messages/{messageId}": {
+      "schema": "ChatMessage",
+      "description": "Messages collection"
+    }
+  }
+}
