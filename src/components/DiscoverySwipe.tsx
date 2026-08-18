@@ -18,6 +18,7 @@ import {
   Star,
   Info,
   Bookmark,
+  Video,
 } from 'lucide-react';
 import { UserProfile, PrivacySettings } from '../types';
 import { calculateDistanceKm, formatFuzzedDistance } from '../utils/geoUtils';
@@ -746,6 +747,37 @@ export const DiscoverySwipe: React.FC<DiscoverySwipeProps> = ({
                     <p className="text-xs text-slate-700 italic font-medium">
                       {activeProfile.promptAnswer}
                     </p>
+                  </div>
+                )}
+
+                {/* Profile Authenticated Real Videos */}
+                {activeProfile.videos && activeProfile.videos.length > 0 && (
+                  <div className="space-y-2 pt-2 border-t border-rose-100">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold uppercase tracking-wider text-[10px] text-slate-600 flex items-center gap-1.5">
+                        <Video className="w-3.5 h-3.5 text-rose-500" />
+                        <span>Vidéos Réelles & Stories ({activeProfile.videos.length})</span>
+                      </span>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 border border-emerald-300">
+                        ✓ Anti-IA Validé
+                      </span>
+                    </div>
+
+                    <div className="space-y-3">
+                      {activeProfile.videos.map((vidSrc, vidIdx) => (
+                        <div
+                          key={vidIdx}
+                          className="rounded-2xl overflow-hidden border border-slate-200 shadow-sm bg-slate-900"
+                        >
+                          <video
+                            src={vidSrc}
+                            controls
+                            playsInline
+                            className="w-full aspect-video object-cover"
+                          />
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>

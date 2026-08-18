@@ -12,11 +12,17 @@ import {
   CheckCircle2,
   AlertTriangle,
   ChevronLeft,
+  Phone,
+  Video,
+  PhoneOff,
+  VideoOff,
+  Shield,
 } from 'lucide-react';
 import {
   PrivacySettings,
   DistanceFuzzingLevel,
   EphemeralTimer,
+  CallReceptionPreference,
   UserProfile,
 } from '../types';
 
@@ -252,6 +258,139 @@ export const PrivacySecurityCenter: React.FC<PrivacySecurityCenterProps> = ({
             qu'un match réciproque soit confirmé. Idéal pour préserver votre
             sphère privée.
           </p>
+        </div>
+
+        {/* 5. Gestion des Appels Audio & Vidéo */}
+        <div className="bg-white border border-rose-100 rounded-[32px] p-5 shadow-xl shadow-rose-100/60 space-y-4 md:col-span-2">
+          <div className="flex items-center justify-between border-b border-rose-100 pb-3">
+            <div className="flex items-center gap-2">
+              <div className="p-2 rounded-xl bg-gradient-to-br from-rose-500 to-orange-500 text-white shadow-xs">
+                <Phone className="w-4 h-4" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-slate-900 flex items-center gap-1.5">
+                  <span>Réception des Appels Audio & Vidéo</span>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold border border-emerald-300">
+                    Contrôle Total
+                  </span>
+                </h3>
+                <p className="text-[11px] text-slate-500">
+                  Définissez précisément qui peut vous appeler et le type de flux autorisé.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+            {[
+              {
+                id: 'all' as CallReceptionPreference,
+                label: 'Tous les appels',
+                desc: 'Accepter les appels audio & vidéo de vos matchs',
+                icon: Phone,
+                allowAudio: true,
+                allowVideo: true,
+                badge: 'Recommandé',
+              },
+              {
+                id: 'no_video' as CallReceptionPreference,
+                label: 'Audio uniquement',
+                desc: 'Bloquer les appels vidéo (Audio autorisé)',
+                icon: VideoOff,
+                allowAudio: true,
+                allowVideo: false,
+                badge: 'Sans caméra',
+              },
+              {
+                id: 'no_audio' as CallReceptionPreference,
+                label: 'Vidéo uniquement',
+                desc: 'Bloquer les appels audio directs (Vidéo seule)',
+                icon: PhoneOff,
+                allowAudio: false,
+                allowVideo: true,
+                badge: 'Vidéo seule',
+              },
+              {
+                id: 'none' as CallReceptionPreference,
+                label: 'Bloquer tous les appels',
+                desc: 'Refuser tous les appels entrants (Audio & Vidéo)',
+                icon: Shield,
+                allowAudio: false,
+                allowVideo: false,
+                badge: 'Mode Discret',
+              },
+            ].map((option) => {
+              const Icon = option.icon;
+              const isSelected =
+                (privacySettings.callReception || 'all') === option.id;
+
+              return (
+                <button
+                  key={option.id}
+                  id={`call-preference-${option.id}`}
+                  onClick={() =>
+                    onUpdatePrivacySettings({
+                      callReception: option.id,
+                      allowAudioCalls: option.allowAudio,
+                      allowVideoCalls: option.allowVideo,
+                    })
+                  }
+                  className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between relative ${
+                    isSelected
+                      ? 'bg-rose-50/90 border-2 border-rose-500 shadow-md shadow-rose-100/80 ring-2 ring-rose-200/50'
+                      : 'bg-white border-rose-200 hover:border-rose-300 hover:bg-rose-50/30'
+                  }`}
+                >
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <div
+                        className={`p-2 rounded-xl ${
+                          isSelected
+                            ? 'bg-rose-600 text-white shadow-xs'
+                            : 'bg-rose-100 text-rose-600'
+                        }`}
+                      >
+                        <Icon className="w-4 h-4" />
+                      </div>
+                      <span
+                        className={`text-[9px] font-black px-1.5 py-0.5 rounded-full ${
+                          isSelected
+                            ? 'bg-rose-600 text-white'
+                            : 'bg-slate-100 text-slate-600'
+                        }`}
+                      >
+                        {option.badge}
+                      </span>
+                    </div>
+                    <h4 className="text-xs font-black text-slate-900 mb-1">
+                      {option.label}
+                    </h4>
+                    <p className="text-[10px] text-slate-500 font-medium leading-snug">
+                      {option.desc}
+                    </p>
+                  </div>
+
+                  <div className="mt-3 pt-2 border-t border-rose-100/60 flex items-center justify-between text-[10px]">
+                    <span className="font-semibold text-slate-500">Statut :</span>
+                    <span
+                      className={`font-black ${
+                        isSelected ? 'text-rose-600' : 'text-slate-400'
+                      }`}
+                    >
+                      {isSelected ? '✓ Sélectionné' : 'Choisir'}
+                    </span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="p-3 rounded-2xl bg-rose-50/80 border border-rose-200 text-[11px] text-slate-700 font-medium flex items-center gap-2">
+            <Shield className="w-4 h-4 text-emerald-600 shrink-0" />
+            <span>
+              <strong>Protection Anti-Harcèlement :</strong> Vos flux de caméra et micro restent chiffrés de bout en bout et protégés par le filtre anti-enregistrement.
+            </span>
+          </div>
         </div>
       </div>
 

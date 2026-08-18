@@ -25,6 +25,8 @@ import {
   Conversation,
   ChatMessage,
   AuthUser,
+  AppNotification,
+  LoveSticker,
 } from './types';
 import {
   INITIAL_USER_PROFILE,
@@ -163,7 +165,106 @@ export default function App() {
     };
   });
 
+  // Save messages to LocalStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('amour_affinites_messages', JSON.stringify(messages));
+    } catch (e) {
+      console.warn('Failed to save messages to localStorage:', e);
+    }
+  }, [messages]);
+
   const [activeConversationId, setActiveConversationId] = useState<string | null>('conv_user_1');
+
+  // Notifications State
+  const [notifications, setNotifications] = useState<AppNotification[]>(() => {
+    try {
+      const saved = localStorage.getItem('amour_affinites_notifications');
+      if (saved) return JSON.parse(saved);
+    } catch {
+      // Fallback initial announcement
+    }
+    return [
+      {
+        id: 'notif_welcome',
+        title: 'Bienvenue sur Joyce-K ! ✨',
+        message: 'Découvrez des profils vérifiés 100% authentiques sans filtres trompeurs.',
+        targetUserId: 'all',
+        type: 'announcement',
+        createdAt: Date.now() - 3600000 * 3,
+        read: false,
+        senderName: 'Équipe Joyce-K',
+        actionTab: 'discovery',
+      },
+      {
+        id: 'notif_security',
+        title: 'Protection Anti-IA Active 🛡️',
+        message: 'Vos photos sont sécurisées et scannées par notre moteur anti-deepfake.',
+        targetUserId: 'all',
+        type: 'security',
+        createdAt: Date.now() - 3600000 * 8,
+        read: true,
+        senderName: 'Sécurité Joyce-K',
+        actionTab: 'privacy',
+      },
+    ];
+  });
+
+  // Save notifications to LocalStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('amour_affinites_notifications', JSON.stringify(notifications));
+    } catch (e) {
+      console.warn('Failed to save notifications:', e);
+    }
+  }, [notifications]);
+
+  // Firestore Notifications Real-time Sync
+  useEffect(() => {
+    import('./lib/firebase').then(({ db, collection, onSnapshot }) => {
+      try {
+        const unsub = onSnapshot(collection(db, 'notifications'), (snapshot) => {
+          if (!snapshot.empty) {
+            const list: AppNotification[] = [];
+            snapshot.forEach((docSnap) => {
+              const data = docSnap.data();
+              list.push({
+                id: docSnap.id,
+                title: data.title || '',
+                message: data.message || '',
+                targetUserId: data.targetUserId || 'all',
+                targetUserName: data.targetUserName,
+                type: data.type || 'announcement',
+                createdAt: data.createdAt || Date.now(),
+                read: data.read || false,
+                senderName: data.senderName || 'Équipe Joyce-K',
+                actionTab: data.actionTab || 'discovery',
+              });
+            });
+            list.sort((a, b) => b.createdAt - a.createdAt);
+            setNotifications(list);
+          }
+        });
+        return () => unsub();
+      } catch (err) {
+        console.warn('Firestore notifications sync warning:', err);
+      }
+    });
+  }, []);
+
+  const handleMarkNotificationRead = (id: string) => {
+    setNotifications((prev) =>
+      prev.map((n) => (n.id === id ? { ...n, read: true } : n))
+    );
+  };
+
+  const handleClearAllNotifications = () => {
+    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+  };
+
+  const handleSendNotificationLocal = (newNotif: AppNotification) => {
+    setNotifications((prev) => [newNotif, ...prev.filter((n) => n.id !== newNotif.id)]);
+  };
 
   // Modals
   const [compatibilityProfile, setCompatibilityProfile] = useState<UserProfile | null>(null);
@@ -363,10 +464,14 @@ export default function App() {
     conversationId: string,
     text: string,
     isAiGenerated = false,
-    mediaType: 'text' | 'audio' | 'icebreaker' = 'text'
+    mediaType: 'text' | 'audio' | 'icebreaker' | 'image' | 'sticker' = 'text',
+    audioUrl?: string,
+    audioDuration?: number,
+    stickerData?: LoveSticker
   ) => {
+    const messageId = `msg_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
     const newMessage: ChatMessage = {
-      id: `msg_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
+      id: messageId,
       conversationId,
       senderId: 'current_user',
       receiverId: 'partner',
@@ -374,8 +479,11 @@ export default function App() {
       timestamp: Date.now(),
       isSelf: true,
       isAiGenerated,
-      isRead: true,
+      isRead: false,
       mediaType,
+      audioUrl,
+      audioDuration,
+      stickerData,
     };
 
     setMessages((prev) => ({
@@ -396,6 +504,19 @@ export default function App() {
         return c;
       })
     );
+
+    // Simulate partner reading the message after 1.8 seconds
+    setTimeout(() => {
+      setMessages((prev) => {
+        const convMsgs = prev[conversationId] || [];
+        return {
+          ...prev,
+          [conversationId]: convMsgs.map((m) =>
+            m.id === messageId ? { ...m, isRead: true } : m
+          ),
+        };
+      });
+    }, 1800);
 
     // If sent to a new match, simulate an incoming reply after a realistic delay
     const conv = conversations.find((c) => c.id === conversationId);
@@ -421,10 +542,16 @@ export default function App() {
           mediaType: 'text',
         };
 
-        setMessages((prev) => ({
-          ...prev,
-          [conversationId]: [...(prev[conversationId] || []), incomingMsg],
-        }));
+        setMessages((prev) => {
+          const updatedList = (prev[conversationId] || []).map((m) => ({
+            ...m,
+            isRead: true,
+          }));
+          return {
+            ...prev,
+            [conversationId]: [...updatedList, incomingMsg],
+          };
+        });
 
         setConversations((prev) =>
           prev.map((c) =>
@@ -554,10 +681,14 @@ export default function App() {
         authUser={authUser}
         onOpenAuth={handleOpenAuthModal}
         onLogout={handleLogout}
+        notifications={notifications}
+        onMarkNotificationRead={handleMarkNotificationRead}
+        onClearAllNotifications={handleClearAllNotifications}
+        activeConversationId={activeConversationId}
       />
 
       {/* Main Content Area based on Active Tab */}
-      <main className="flex-1">
+      <main className={`flex-1 ${authUser && activeTab !== 'landing' && activeTab !== 'messages' ? 'pb-16 lg:pb-0' : ''}`}>
         {activeTab === 'landing' && (
           <LandingPage
             onOpenAuth={handleOpenAuthModal}
@@ -610,12 +741,13 @@ export default function App() {
               onSelectProfile={(profile) => setCompatibilityProfile(profile)}
               onStartChat={(profile) => handleStartChatWithProfile(profile)}
               onOpenPrivacy={() => setActiveTab('privacy')}
+              onBackToDiscovery={() => setActiveTab('discovery')}
             />
           </div>
         )}
 
         {activeTab === 'messages' && (
-          <div className="bg-rose-50/60 h-[calc(100vh-65px)] flex flex-col text-slate-800">
+          <div className="bg-rose-50/60 h-[calc(100dvh-56px)] sm:h-[calc(100dvh-64px)] flex flex-col text-slate-800 overflow-hidden">
             <MessagingCenter
               currentUser={currentUser}
               conversations={conversations}
@@ -624,6 +756,9 @@ export default function App() {
               messages={messages}
               onSendMessage={handleSendMessage}
               privacySettings={privacySettings}
+              onUpdatePrivacySettings={(newSet) =>
+                setPrivacySettings((prev) => ({ ...prev, ...newSet }))
+              }
               aiSettings={aiSettings}
               onToggleAi={handleToggleAi}
               onBlockUser={handleBlockUser}
@@ -643,6 +778,7 @@ export default function App() {
               onUpdateUserBio={(newBio) =>
                 setCurrentUser((prev) => ({ ...prev, bio: newBio }))
               }
+              onBackToDiscovery={() => setActiveTab('discovery')}
             />
           </div>
         )}
@@ -657,6 +793,7 @@ export default function App() {
               }
               onPurgeAccount={handlePurgeAccount}
               onUnblockUser={handleUnblockUser}
+              onBackToDiscovery={() => setActiveTab('discovery')}
             />
           </div>
         )}
@@ -669,6 +806,7 @@ export default function App() {
               authUser={authUser}
               onOpenAuth={handleOpenAuthModal}
               onLogout={handleLogout}
+              onBackToDiscovery={() => setActiveTab('discovery')}
             />
           </div>
         )}
@@ -680,6 +818,7 @@ export default function App() {
             allProfiles={profiles}
             onUpdateProfiles={setProfiles}
             onEnterApp={(tab) => setActiveTab(tab || 'discovery')}
+            onSendNotificationLocal={handleSendNotificationLocal}
           />
         )}
       </main>

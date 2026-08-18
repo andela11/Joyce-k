@@ -45,6 +45,9 @@ export const INITIAL_PRIVACY_SETTINGS: PrivacySettings = {
   readReceipts: true,
   onlineStatusVisible: true,
   blockedUsers: [],
+  callReception: 'all',
+  allowAudioCalls: true,
+  allowVideoCalls: true,
 };
 
 export const INITIAL_AI_SETTINGS: AiAutoResponderSettings = {

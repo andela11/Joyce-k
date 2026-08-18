@@ -18,6 +18,7 @@ export interface UserProfile {
   gender: 'femme' | 'homme' | 'non-binaire';
   interestedIn: ('femme' | 'homme' | 'non-binaire')[];
   photos: string[];
+  videos?: string[];
   bio: string;
   occupation: string;
   city: string;
@@ -58,6 +59,7 @@ export interface AiAutoResponderSettings {
 
 export type DistanceFuzzingLevel = 'exact' | 'approximate' | 'city_only';
 export type EphemeralTimer = 'off' | '24h' | '7d';
+export type CallReceptionPreference = 'all' | 'no_video' | 'no_audio' | 'none';
 
 export interface PrivacySettings {
   ghostMode: boolean; // Hide from public radar
@@ -70,6 +72,20 @@ export interface PrivacySettings {
   readReceipts: boolean;
   onlineStatusVisible: boolean;
   blockedUsers: string[];
+  callReception: CallReceptionPreference; // 'all' | 'no_video' | 'no_audio' | 'none'
+  allowAudioCalls: boolean;
+  allowVideoCalls: boolean;
+}
+
+export interface LoveSticker {
+  id: string;
+  emoji: string;
+  title: string;
+  subtitle?: string;
+  gradient: string;
+  textColor?: string;
+  category?: 'love' | 'joy' | 'date' | 'compliment' | 'custom';
+  isCustom?: boolean;
 }
 
 export interface ChatMessage {
@@ -83,9 +99,11 @@ export interface ChatMessage {
   isAiGenerated?: boolean;
   isRead: boolean;
   expiresAt?: number;
-  mediaType?: 'text' | 'audio' | 'icebreaker' | 'image';
+  mediaType?: 'text' | 'audio' | 'icebreaker' | 'image' | 'sticker';
+  audioUrl?: string;
   audioDuration?: number;
   imageBlurred?: boolean;
+  stickerData?: LoveSticker;
 }
 
 export interface Conversation {
