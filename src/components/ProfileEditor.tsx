@@ -23,10 +23,14 @@ import {
   Pause,
   AlertOctagon,
   Sparkles,
+  Mic,
+  Square,
 } from 'lucide-react';
-import { UserProfile, RelationshipGoal, AuthUser } from '../types';
+import { UserProfile, RelationshipGoal, AuthUser, LoveLanguage } from '../types';
 import { ALL_INTEREST_CATEGORIES } from '../data/categories';
 import { PRESET_CITIES } from '../utils/geoUtils';
+import { VoiceBioPlayer } from './VoiceBioPlayer';
+import { LoveLanguageQuizModal } from './LoveLanguageQuizModal';
 
 interface ProfileEditorProps {
   userProfile: UserProfile;
@@ -50,6 +54,37 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({
   const [showAddPhoto, setShowAddPhoto] = useState(false);
   const [isEnhancing, setIsEnhancing] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [isQuizOpen, setIsQuizOpen] = useState(false);
+  const [isRecordingVoice, setIsRecordingVoice] = useState(false);
+  const [recordingSeconds, setRecordingSeconds] = useState(0);
+  const voiceTimerRef = useRef<any>(null);
+
+  const startVoiceRecording = () => {
+    setIsRecordingVoice(true);
+    setRecordingSeconds(0);
+    voiceTimerRef.current = setInterval(() => {
+      setRecordingSeconds((prev) => {
+        if (prev >= 15) {
+          stopVoiceRecording();
+          return 15;
+        }
+        return prev + 1;
+      });
+    }, 1000);
+  };
+
+  const stopVoiceRecording = () => {
+    setIsRecordingVoice(false);
+    if (voiceTimerRef.current) {
+      clearInterval(voiceTimerRef.current);
+      voiceTimerRef.current = null;
+    }
+    setProfile((prev) => ({
+      ...prev,
+      voiceBioDurationSeconds: Math.max(5, recordingSeconds || 12),
+      voiceBioPrompt: prev.voiceBioPrompt || 'Mon anecdote la plus spontanée...',
+    }));
+  };
 
   // Gallery file upload & AI check
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
@@ -755,6 +790,101 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({
         </div>
       </div>
 
+      {/* Voice Bio Vibe & Love Languages Innovation Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {/* Voice Bio Note Player & Recorder */}
+        <div className="bg-slate-900 border border-slate-800 rounded-[32px] p-5 shadow-xl shadow-slate-950/40 space-y-3.5 text-white">
+          <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">
+            <h3 className="text-sm font-bold text-white flex items-center gap-2">
+              <Mic className="w-4 h-4 text-purple-400" />
+              <span>Voice Bio Vibe</span>
+            </h3>
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-950/80 text-purple-300 border border-purple-800">
+              Note Vocale
+            </span>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-[11px] font-bold text-slate-400">
+              Question ou prompt vocal :
+            </label>
+            <input
+              type="text"
+              value={profile.voiceBioPrompt || ''}
+              onChange={(e) =>
+                setProfile({ ...profile, voiceBioPrompt: e.target.value })
+              }
+              placeholder="Ex: Mon anecdote la plus spontanée..."
+              className="w-full bg-slate-950 border border-slate-800 focus:border-purple-500 rounded-xl px-3 py-2 text-xs text-white"
+            />
+          </div>
+
+          {/* Voice Preview & Recording Trigger */}
+          <div className="space-y-2 pt-1">
+            <VoiceBioPlayer profile={profile} />
+
+            <div className="flex items-center gap-2 pt-1">
+              {!isRecordingVoice ? (
+                <button
+                  type="button"
+                  onClick={startVoiceRecording}
+                  className="flex-1 py-2 px-3 rounded-xl bg-purple-900/60 hover:bg-purple-800/80 border border-purple-700/60 text-purple-200 text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer"
+                >
+                  <Mic className="w-3.5 h-3.5 text-purple-300" />
+                  <span>Enregistrer une nouvelle Voice Note</span>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={stopVoiceRecording}
+                  className="flex-1 py-2 px-3 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold flex items-center justify-center gap-2 animate-pulse cursor-pointer shadow-lg shadow-rose-950"
+                >
+                  <Square className="w-3.5 h-3.5 fill-white" />
+                  <span>Arrêter l'enregistrement ({recordingSeconds}s)</span>
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* 5 Langages de l'Amour Test & Badge */}
+        <div className="bg-slate-900 border border-slate-800 rounded-[32px] p-5 shadow-xl shadow-slate-950/40 space-y-3.5 text-white flex flex-col justify-between">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">
+              <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-pink-400" />
+                <span>Langages de l'Amour</span>
+              </h3>
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-pink-950/80 text-pink-300 border border-pink-800">
+                Alchimie Romantique
+              </span>
+            </div>
+
+            <div className="p-3 bg-slate-950 rounded-2xl border border-slate-800 space-y-1.5">
+              <span className="text-[10px] uppercase font-black tracking-wider text-pink-400">
+                Votre profil amoureux actuel
+              </span>
+              <p className="text-sm font-bold text-white flex items-center gap-2">
+                <span>💖</span>
+                <span>{profile.loveLanguageLabel || 'Moments de qualité'}</span>
+              </p>
+              <p className="text-[11px] text-slate-400 leading-relaxed font-medium">
+                Votre langage dominant est utilisé pour calculer l'alchimie relationnelle avec vos matchs potentiels.
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setIsQuizOpen(true)}
+            className="w-full py-2.5 px-4 rounded-2xl bg-gradient-to-r from-pink-600 to-purple-600 hover:opacity-90 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md shadow-pink-950 transition-all cursor-pointer"
+          >
+            <Sparkles className="w-4 h-4" />
+            <span>Passer / Recalculer le Test des 5 Langages</span>
+          </button>
+        </div>
+      </div>
+
       {/* 50+ Structured Interest Categories Selection */}
       <div className="bg-slate-900 border border-slate-800 rounded-[32px] p-5 shadow-xl shadow-slate-950/40 space-y-5 text-white">
         <div className="flex items-center justify-between border-b border-slate-800 pb-3">
@@ -819,6 +949,20 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({
           </button>
         </div>
       )}
+
+      {/* Love Language Quiz Modal */}
+      <LoveLanguageQuizModal
+        isOpen={isQuizOpen}
+        onClose={() => setIsQuizOpen(false)}
+        currentUser={profile}
+        onSaveLoveLanguage={(lang, label) => {
+          setProfile((prev) => ({
+            ...prev,
+            loveLanguage: lang,
+            loveLanguageLabel: label,
+          }));
+        }}
+      />
     </div>
   );
 };

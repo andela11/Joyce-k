@@ -26,6 +26,7 @@ import {
   Smile,
   Heart,
   Palette,
+  CalendarHeart,
 } from 'lucide-react';
 import {
   UserProfile,
@@ -35,10 +36,12 @@ import {
   AiAutoResponderSettings,
   CallReceptionPreference,
   LoveSticker,
+  DateIdea,
 } from '../types';
 import { ActiveCallModal } from './ActiveCallModal';
 import { AudioMessagePlayer } from './AudioMessagePlayer';
 import { EmojiStickerPicker } from './EmojiStickerPicker';
+import { DateConciergeModal } from './DateConciergeModal';
 
 interface MessagingCenterProps {
   currentUser: UserProfile;
@@ -83,6 +86,8 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
   const [aiSuggestions, setAiSuggestions] = useState<string[]>([]);
   const [showOptionsModal, setShowOptionsModal] = useState(false);
   const [showCallSettingsModal, setShowCallSettingsModal] = useState(false);
+  const [showCallHubPopup, setShowCallHubPopup] = useState(false);
+  const [showFloatingCallBubble, setShowFloatingCallBubble] = useState(false);
 
   // Real Voice Note Recording State
   const [isRecordingVoice, setIsRecordingVoice] = useState(false);
@@ -110,10 +115,21 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
 
   // Emoji & Sticker Picker State
   const [showEmojiStickerPicker, setShowEmojiStickerPicker] = useState(false);
+  const [showDateConciergeModal, setShowDateConciergeModal] = useState(false);
 
   const handleSelectEmoji = (emoji: string) => {
     setInputText((prev) => prev + emoji);
     inputRef.current?.focus();
+  };
+
+  const handleSendDateInvitation = (dateIdea: DateIdea, customNote?: string) => {
+    if (!activeConversationId) return;
+    const inviteText = `✨ INVITATION DATE CONCIERGE IA : ${dateIdea.title}
+📍 Lieu : ${dateIdea.locationType}
+🕒 Créneau : ${dateIdea.suggestedTimeSlot}
+💡 Activité : ${dateIdea.description}${customNote ? `\n\n"${customNote}"` : ''}`;
+
+    onSendMessage(activeConversationId, inviteText);
   };
 
   const handleSendSticker = (sticker: LoveSticker) => {
@@ -430,19 +446,6 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
       return;
     }
 
-    // Check partner simulated restriction
-    if (
-      type === 'video' &&
-      (activeConv?.participant.id === 'user_3' || activeConv?.participant.id === 'user_7')
-    ) {
-      setBlockedCallNotice({
-        type: 'video',
-        reason: 'partner_setting',
-        message: `${activeConv.participant.name} a désactivé les appels vidéo. Vous pouvez passer un appel audio sécurisé.`,
-      });
-      return;
-    }
-
     // Launch Real Camera & Microphone Call Modal
     setActiveCallType(type);
   };
@@ -589,7 +592,7 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
             )}
 
             {/* Conversation Items List */}
-            <div className="flex-1 overflow-y-auto divide-y divide-rose-100/70 min-h-0 overscroll-contain">
+            <div className="flex-1 overflow-y-auto divide-y divide-rose-100/70 min-h-0 overscroll-contain pb-28 md:pb-6">
               {filteredConversations.length > 0 ? (
                 filteredConversations.map((conv) => {
                   const isSelected = conv.id === activeConversationId;
@@ -614,16 +617,46 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
                           className="w-12 h-12 rounded-2xl object-cover border-2 border-rose-200 shadow-xs"
                           referrerPolicy="no-referrer"
                         />
-                        {conv.participant.isOnline && (
-                          <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-emerald-500 border-2 border-white" />
+                        {conv.isAiAutoResponding ? (
+                          <span
+                            className="absolute -bottom-1 -right-1 flex items-center justify-center w-5 h-5 rounded-full bg-amber-500 text-white border-2 border-white text-xs shadow-2xs"
+                            title="Hors ligne • Répondeur IA actif"
+                          >
+                            🤖
+                          </span>
+                        ) : conv.participant.isOnline ? (
+                          <span
+                            className="absolute -bottom-1 -right-1 flex items-center justify-center w-5 h-5 rounded-full bg-emerald-500 text-white border-2 border-white text-xs shadow-2xs"
+                            title="En ligne 😊"
+                          >
+                            😊
+                          </span>
+                        ) : (
+                          <span
+                            className="absolute -bottom-1 -right-1 flex items-center justify-center w-5 h-5 rounded-full bg-slate-300 text-slate-700 border-2 border-white text-xs shadow-2xs"
+                            title="Hors ligne 🥺"
+                          >
+                            🥺
+                          </span>
                         )}
                       </div>
 
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between mb-0.5">
-                          <h4 className="font-bold text-sm text-slate-900 truncate">
-                            {conv.participant.name}
-                          </h4>
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            <h4 className="font-bold text-sm text-slate-900 truncate">
+                              {conv.participant.name}
+                            </h4>
+                            <span className="text-sm select-none shrink-0" title={conv.participant.isOnline ? '😊' : '🥺'}>
+                              {conv.participant.isOnline ? '😊' : '🥺'}
+                            </span>
+                            {conv.isAiAutoResponding && (
+                              <span className="hidden sm:inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded-md bg-amber-100 text-amber-800 border border-amber-300 text-[9px] font-black shrink-0">
+                                <Bot className="w-2.5 h-2.5 text-amber-700" />
+                                IA
+                              </span>
+                            )}
+                          </div>
                           <span className="text-[10px] text-slate-400 font-semibold shrink-0 ml-1">
                             {lastMsg
                               ? new Date(lastMsg.timestamp).toLocaleTimeString([], {
@@ -633,6 +666,13 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
                               : 'Match'}
                           </span>
                         </div>
+
+                        {conv.isAiAutoResponding && !lastMsg && (
+                          <p className="text-[11px] text-amber-700 font-semibold flex items-center gap-1 truncate mb-0.5">
+                            <span className="text-xs">🤖</span>
+                            <span>Répondeur IA actif</span>
+                          </p>
+                        )}
 
                         <p className="text-xs text-slate-600 truncate flex items-center gap-1 font-medium">
                           {lastMsg?.isAiGenerated && (
@@ -739,8 +779,27 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
                       className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl object-cover border-2 border-rose-200 shadow-xs"
                       referrerPolicy="no-referrer"
                     />
-                    {activeConv.participant.isOnline && (
-                      <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-500 border-2 border-white" />
+                    {activeConv.isAiAutoResponding ? (
+                      <span
+                        className="absolute -bottom-1 -right-1 flex items-center justify-center w-5 h-5 rounded-full bg-amber-500 text-white border-2 border-white text-xs shadow-2xs"
+                        title="Hors ligne • Répondeur IA actif"
+                      >
+                        🤖
+                      </span>
+                    ) : activeConv.participant.isOnline ? (
+                      <span
+                        className="absolute -bottom-1 -right-1 flex items-center justify-center w-5 h-5 rounded-full bg-emerald-500 text-white border-2 border-white text-xs shadow-2xs"
+                        title="En ligne 😊"
+                      >
+                        😊
+                      </span>
+                    ) : (
+                      <span
+                        className="absolute -bottom-1 -right-1 flex items-center justify-center w-5 h-5 rounded-full bg-slate-300 text-slate-700 border-2 border-white text-xs shadow-2xs"
+                        title="Hors ligne 🥺"
+                      >
+                        🥺
+                      </span>
                     )}
                   </div>
 
@@ -749,66 +808,24 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
                       <h3 className="font-bold text-xs sm:text-sm text-slate-900 truncate">
                         {activeConv.participant.name}, {activeConv.participant.age}
                       </h3>
-                      <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-rose-100 text-rose-700 font-bold shrink-0">
-                        {activeConv.participant.city}
+                      <span className="text-sm select-none shrink-0" title={activeConv.participant.isOnline ? '😊' : '🥺'}>
+                        {activeConv.participant.isOnline ? '😊' : '🥺'}
                       </span>
                     </div>
-                    <p className="text-[10px] sm:text-[11px] text-emerald-600 font-semibold flex items-center gap-1">
-                      <Lock className="w-2.5 h-2.5" />
-                      <span>
-                        {activeConv.participant.isOnline
-                          ? 'En ligne'
-                          : 'Actif récemment'}{' '}
-                        • Chiffré
-                      </span>
-                    </p>
                   </div>
                 </div>
 
-                {/* Header Action Buttons (Real Calls & Options) */}
-                <div className="flex items-center gap-1 sm:gap-2 shrink-0">
-                  {/* Real Audio Call Button */}
+                {/* Header Action Buttons (Date Concierge, AI Reply & Options) */}
+                <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+                  {/* Date Concierge IA & Safe-Date Angel Button */}
                   <button
-                    id="chat-start-audio-call-btn"
-                    onClick={() => handleStartCall('audio')}
-                    title={
-                      privacySettings.allowAudioCalls === false ||
-                      privacySettings.callReception === 'no_audio' ||
-                      privacySettings.callReception === 'none'
-                        ? 'Appels audio désactivés dans vos paramètres'
-                        : 'Lancer un appel audio sécurisé'
-                    }
-                    className={`p-2 rounded-xl transition-all cursor-pointer flex items-center justify-center ${
-                      privacySettings.allowAudioCalls === false ||
-                      privacySettings.callReception === 'no_audio' ||
-                      privacySettings.callReception === 'none'
-                        ? 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'
-                        : 'text-slate-700 hover:text-rose-600 hover:bg-rose-50 active:scale-95'
-                    }`}
+                    id="chat-date-concierge-btn"
+                    onClick={() => setShowDateConciergeModal(true)}
+                    title="Planificateur de Date IA & Sécurité Safe-Date"
+                    className="flex items-center gap-1 px-2.5 sm:px-3 py-1.5 rounded-xl bg-gradient-to-r from-rose-50 to-orange-50 hover:from-rose-100 hover:to-orange-100 border border-rose-200 text-rose-700 text-xs font-bold transition-all active:scale-95 cursor-pointer shadow-xs"
                   >
-                    <Phone className="w-4 h-4" />
-                  </button>
-
-                  {/* Real Video Call Button */}
-                  <button
-                    id="chat-start-video-call-btn"
-                    onClick={() => handleStartCall('video')}
-                    title={
-                      privacySettings.allowVideoCalls === false ||
-                      privacySettings.callReception === 'no_video' ||
-                      privacySettings.callReception === 'none'
-                        ? 'Appels vidéo désactivés dans vos paramètres'
-                        : 'Lancer un appel vidéo sécurisé'
-                    }
-                    className={`p-2 rounded-xl transition-all cursor-pointer flex items-center justify-center ${
-                      privacySettings.allowVideoCalls === false ||
-                      privacySettings.callReception === 'no_video' ||
-                      privacySettings.callReception === 'none'
-                        ? 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'
-                        : 'text-slate-700 hover:text-rose-600 hover:bg-rose-50 active:scale-95'
-                    }`}
-                  >
-                    <Video className="w-4 h-4" />
+                    <CalendarHeart className="w-3.5 h-3.5 text-rose-600" />
+                    <span className="hidden sm:inline">Date IA</span>
                   </button>
 
                   {/* Trigger AI Auto-reply demo */}
@@ -824,8 +841,8 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
                         isGeneratingAiReply ? 'animate-spin' : ''
                       }`}
                     />
-                    <span className="hidden sm:inline">
-                      {isGeneratingAiReply ? 'IA rédige...' : 'Répondre par IA'}
+                    <span className="hidden md:inline">
+                      {isGeneratingAiReply ? 'IA...' : 'Répondre par IA'}
                     </span>
                   </button>
 
@@ -887,6 +904,34 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
                     </span>
                   </div>
                 </div>
+
+                {/* Partner Offline & AI Auto-responder status card */}
+                {activeConv.isAiAutoResponding && (
+                  <div className="bg-gradient-to-r from-amber-50 to-orange-50/70 border border-amber-200/90 rounded-2xl p-3 flex items-center justify-between gap-3 text-xs text-amber-950 shadow-2xs">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="w-8 h-8 rounded-xl bg-amber-100 border border-amber-300 text-amber-800 flex items-center justify-center shrink-0 shadow-2xs">
+                        <Bot className="w-4 h-4 text-amber-700" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="font-bold text-slate-900 text-xs">
+                            {activeConv.participant.name} est hors ligne
+                          </span>
+                          <span className="px-1.5 py-0.2 rounded-full bg-slate-800 text-amber-300 text-[9px] font-black tracking-wide">
+                            RÉPONDEUR IA ACTIF
+                          </span>
+                        </div>
+                        <p className="text-[10px] sm:text-[11px] text-slate-600 font-medium truncate mt-0.5">
+                          {activeConv.participant.lastActiveText || 'Dernière visite il y a 25 min'} • Son assistant IA prend le relais pour échanger en toute bienveillance.
+                        </p>
+                      </div>
+                    </div>
+                    <span className="text-[10px] font-bold text-amber-800 bg-white/90 border border-amber-200 px-2 py-1 rounded-lg shrink-0 hidden sm:inline-flex items-center gap-1 shadow-2xs">
+                      <Clock className="w-3 h-3 text-amber-600" />
+                      Auto-réponse
+                    </span>
+                  </div>
+                )}
 
                 {activeChatMessages.map((msg) => {
                   return (
@@ -1137,6 +1182,104 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
                     </button>
                   </form>
                 )}
+              </div>
+
+              {/* ========================================================================= */}
+              {/* Floating Call Bubble FAB (Speed-Dial for Audio, Video & Call Settings)    */}
+              {/* ========================================================================= */}
+              <div className="absolute right-3.5 sm:right-5 bottom-18 sm:bottom-20 z-40 flex flex-col items-end gap-2.5 pointer-events-none">
+                {/* Backdrop when open for easy dismissal */}
+                {showFloatingCallBubble && (
+                  <div
+                    onClick={() => setShowFloatingCallBubble(false)}
+                    className="fixed inset-0 z-30 bg-black/20 backdrop-blur-[1px] pointer-events-auto animate-fade-in"
+                  />
+                )}
+
+                {/* Expanded Speed Dial Options Bubble Container */}
+                {showFloatingCallBubble && (
+                  <div className="relative z-40 flex flex-col items-end gap-2.5 mb-1 pointer-events-auto animate-fade-in">
+                    {/* Option 1: Video Call Bubble */}
+                    <div className="flex items-center gap-2.5 group">
+                      <div className="bg-white/95 backdrop-blur-md px-3 py-1.5 rounded-full shadow-lg border border-rose-100 text-xs font-bold text-slate-800 pointer-events-none whitespace-nowrap shadow-rose-100">
+                        <span className="text-rose-600 font-extrabold mr-1">Vidéo HD</span>
+                        <span className="text-[10px] text-slate-500 font-normal">Caméra & Micro</span>
+                      </div>
+                      <button
+                        id="fab-video-call-btn"
+                        onClick={() => {
+                          setShowFloatingCallBubble(false);
+                          handleStartCall('video');
+                        }}
+                        title={`Lancer un appel vidéo HD avec ${activeConv.participant.name}`}
+                        className="w-12 h-12 rounded-full bg-gradient-to-r from-rose-500 via-pink-500 to-rose-600 text-white shadow-xl shadow-rose-300 flex items-center justify-center transition-all hover:scale-110 active:scale-95 cursor-pointer border-2 border-white"
+                      >
+                        <Video className="w-5 h-5" />
+                      </button>
+                    </div>
+
+                    {/* Option 2: Audio Call Bubble */}
+                    <div className="flex items-center gap-2.5 group">
+                      <div className="bg-white/95 backdrop-blur-md px-3 py-1.5 rounded-full shadow-lg border border-emerald-100 text-xs font-bold text-slate-800 pointer-events-none whitespace-nowrap shadow-emerald-100">
+                        <span className="text-emerald-600 font-extrabold mr-1">Appel Voix</span>
+                        <span className="text-[10px] text-slate-500 font-normal">Chiffré WebRTC</span>
+                      </div>
+                      <button
+                        id="fab-audio-call-btn"
+                        onClick={() => {
+                          setShowFloatingCallBubble(false);
+                          handleStartCall('audio');
+                        }}
+                        title={`Lancer un appel audio avec ${activeConv.participant.name}`}
+                        className="w-12 h-12 rounded-full bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-xl shadow-emerald-200 flex items-center justify-center transition-all hover:scale-110 active:scale-95 cursor-pointer border-2 border-white"
+                      >
+                        <Phone className="w-5 h-5" />
+                      </button>
+                    </div>
+
+                    {/* Option 3: Call Security & Settings Bubble */}
+                    <div className="flex items-center gap-2.5 group">
+                      <div className="bg-white/95 backdrop-blur-md px-2.5 py-1 rounded-full shadow-lg border border-slate-100 text-[11px] font-bold text-slate-700 pointer-events-none whitespace-nowrap shadow-slate-100">
+                        <span>Réglages d'appels</span>
+                      </div>
+                      <button
+                        id="fab-call-settings-btn"
+                        onClick={() => {
+                          setShowFloatingCallBubble(false);
+                          setShowCallSettingsModal(true);
+                        }}
+                        title="Préférences d'appels & confidentialité"
+                        className="w-10 h-10 rounded-full bg-slate-800 text-white shadow-lg flex items-center justify-center transition-all hover:scale-110 active:scale-95 cursor-pointer border-2 border-white"
+                      >
+                        <Shield className="w-4 h-4 text-emerald-400" />
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Main Floating Trigger Bubble Button */}
+                <button
+                  id="chat-floating-call-fab-btn"
+                  onClick={() => setShowFloatingCallBubble(!showFloatingCallBubble)}
+                  title={showFloatingCallBubble ? "Fermer le menu des appels" : "Options d'appels instantanés"}
+                  className={`relative z-40 w-12 h-12 sm:w-13 sm:h-13 rounded-full flex items-center justify-center transition-all duration-300 shadow-2xl active:scale-95 cursor-pointer border-2 border-white pointer-events-auto ${
+                    showFloatingCallBubble
+                      ? 'bg-slate-900 text-white rotate-90 shadow-slate-400'
+                      : 'bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 text-white hover:scale-105 shadow-emerald-300'
+                  }`}
+                >
+                  {showFloatingCallBubble ? (
+                    <X className="w-5 h-5 sm:w-6 sm:h-6" />
+                  ) : (
+                    <>
+                      <span className="absolute -top-0.5 -right-0.5 flex h-3 w-3">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-300 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-400 border border-white"></span>
+                      </span>
+                      <Phone className="w-5 h-5 sm:w-6 sm:h-6" />
+                    </>
+                  )}
+                </button>
               </div>
 
               {/* Emoji & Sticker Picker Floating Popover */}
@@ -1394,6 +1537,17 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
                   partner={activeConv.participant}
                   currentUser={currentUser}
                   onEndCall={() => setActiveCallType(null)}
+                />
+              )}
+
+              {/* Date Concierge IA & Safe-Date Angel Modal */}
+              {showDateConciergeModal && activeConv && (
+                <DateConciergeModal
+                  isOpen={showDateConciergeModal}
+                  onClose={() => setShowDateConciergeModal(false)}
+                  currentUser={currentUser}
+                  targetProfile={activeConv.participant}
+                  onSendDateInvitation={handleSendDateInvitation}
                 />
               )}
             </div>

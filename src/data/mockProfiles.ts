@@ -33,6 +33,10 @@ export const INITIAL_USER_PROFILE: UserProfile = {
   lastActiveText: 'En ligne maintenant',
   promptQuestion: 'Mon week-end idéal commence par...',
   promptAnswer: 'Un espresso parfait, dénicher une pépite en friperie et improviser un dîner aux chandelles.',
+  voiceBioPrompt: 'Mon anecdote la plus spontanée...',
+  voiceBioDurationSeconds: 14,
+  loveLanguage: 'quality_time',
+  loveLanguageLabel: 'Moments de qualité',
 };
 
 export const INITIAL_PRIVACY_SETTINGS: PrivacySettings = {
@@ -92,10 +96,14 @@ export const MOCK_PROFILES: UserProfile[] = [
     languages: ['Français', 'Anglais'],
     heightCm: 170,
     verified: true,
-    isOnline: true,
-    lastActiveText: 'En ligne il y a 5 min',
+    isOnline: false,
+    lastActiveText: 'Vu il y a 25 min',
     promptQuestion: 'La meilleure façon de me séduire ?',
     promptAnswer: 'M\'emmener dans une petite librairie de quartier avant d\'aller boire un verre de bon vin.',
+    voiceBioPrompt: 'Ce qui me fait rire aux éclats...',
+    voiceBioDurationSeconds: 15,
+    loveLanguage: 'quality_time',
+    loveLanguageLabel: 'Moments de qualité',
   },
   {
     id: 'user_2',
@@ -129,6 +137,10 @@ export const MOCK_PROFILES: UserProfile[] = [
     lastActiveText: 'En ligne maintenant',
     promptQuestion: 'Mon week-end parfait...',
     promptAnswer: 'Une virée au bord de l\'océan, des grillades aux épices et une playlist afro-jazz au coucher de soleil.',
+    voiceBioPrompt: 'Mon mantra ou philosophie de vie...',
+    voiceBioDurationSeconds: 18,
+    loveLanguage: 'words',
+    loveLanguageLabel: 'Paroles valorisantes',
   },
   {
     id: 'user_3',
@@ -162,6 +174,10 @@ export const MOCK_PROFILES: UserProfile[] = [
     lastActiveText: 'Active aujourd\'hui',
     promptQuestion: 'Ne me juge pas si...',
     promptAnswer: 'Je suis capable de traverser la ville sous la neige pour la meilleure poutine ou les meilleurs croissants de Montréal.',
+    voiceBioPrompt: 'Une habitude secrète un peu bizarre...',
+    voiceBioDurationSeconds: 12,
+    loveLanguage: 'acts_of_service',
+    loveLanguageLabel: 'Petites attentions',
   },
   {
     id: 'user_4',
@@ -195,6 +211,10 @@ export const MOCK_PROFILES: UserProfile[] = [
     lastActiveText: 'En ligne maintenant',
     promptQuestion: 'La conversation parfaite...',
     promptAnswer: 'Celle où on refait le monde en terrasse face à l\'océan sans voir les heures s\'écouler.',
+    voiceBioPrompt: 'Mon plus grand rêve actuel...',
+    voiceBioDurationSeconds: 16,
+    loveLanguage: 'quality_time',
+    loveLanguageLabel: 'Moments de qualité',
   },
   {
     id: 'user_5',
@@ -228,6 +248,10 @@ export const MOCK_PROFILES: UserProfile[] = [
     lastActiveText: 'En ligne il y a 10 min',
     promptQuestion: 'Mon péché mignon ?',
     promptAnswer: 'Un chocolat chaud viennois après une longue garde avec un bon bouquin.',
+    voiceBioPrompt: 'Ce qui me touche au premier regard...',
+    voiceBioDurationSeconds: 14,
+    loveLanguage: 'physical_touch',
+    loveLanguageLabel: 'Tendresse & Contact',
   },
   {
     id: 'user_6',
@@ -261,6 +285,10 @@ export const MOCK_PROFILES: UserProfile[] = [
     lastActiveText: 'En ligne maintenant',
     promptQuestion: 'La conversation parfaite...',
     promptAnswer: 'Celle où on refait le monde jusqu\'à 2 heures du matin dans un estaminet chaleureux.',
+    voiceBioPrompt: 'Un morceau de musique qui me transporte...',
+    voiceBioDurationSeconds: 13,
+    loveLanguage: 'words',
+    loveLanguageLabel: 'Paroles valorisantes',
   },
   {
     id: 'user_7',
@@ -293,6 +321,10 @@ export const MOCK_PROFILES: UserProfile[] = [
     lastActiveText: 'En ligne maintenant',
     promptQuestion: 'Mon super-pouvoir...',
     promptAnswer: 'Dénicher les meilleurs spots secrets de la côte atlantique pour admirer le coucher de soleil.',
+    voiceBioPrompt: 'Ce que je recherche chez une personne...',
+    voiceBioDurationSeconds: 17,
+    loveLanguage: 'gifts',
+    loveLanguageLabel: 'Attentions & Cadeaux sincères',
   },
   {
     id: 'user_8',
@@ -324,5 +356,9 @@ export const MOCK_PROFILES: UserProfile[] = [
     lastActiveText: 'En ligne hier',
     promptQuestion: 'Mon week-end idéal...',
     promptAnswer: 'Un bivouac au sommet avec vue sur le Mont-Blanc et un bon thé chaud.',
+    voiceBioPrompt: 'Une folie que je ferais sur un coup de tête...',
+    voiceBioDurationSeconds: 14,
+    loveLanguage: 'quality_time',
+    loveLanguageLabel: 'Moments de qualité',
   }
 ];

@@ -382,6 +382,51 @@ function generateFallbackCompatibility(userProfile: any, targetProfile: any) {
   };
 }
 
+function generateFallbackDateIdeas(userProfile: any, targetProfile: any) {
+  const common = (userProfile?.interests || []).filter((i: string) =>
+    (targetProfile?.interests || []).includes(i)
+  );
+  const int1 = common[0] || targetProfile?.interests?.[0] || 'la photographie';
+  const int2 = common[1] || targetProfile?.interests?.[1] || 'les musées & expos';
+  const city = targetProfile?.city || userProfile?.city || 'Paris';
+
+  return [
+    {
+      id: `date_idea_${Date.now()}_1`,
+      title: `Chasse aux pépites & Café de spécialité`,
+      theme: `Café & Art de vivre`,
+      locationType: `Boutique de vinyles / librairie cosy puis coffee shop branché`,
+      description: `Rendez-vous dans un lieu chaleureux pour chiner ensemble des pépites autour de ${int1}, suivi d'une dégustation d'espresso ou thé matcha dans un cadre apaisant et propice aux confidences.`,
+      icebreakerQuestion: `Si tu devais choisir un seul vinyle ou livre qui te définit parfaitement, ce serait lequel ?`,
+      estimatedDuration: `1h30 - 2h`,
+      suggestedTimeSlot: `Samedi après-midi à 15h30`,
+      tags: [`Convivial`, `Plein jour`, `Découverte`]
+    },
+    {
+      id: `date_idea_${Date.now()}_2`,
+      title: `Visite nocturne d'expo & Cocktails signatures`,
+      theme: `Culture & Émotion`,
+      locationType: `Galerie d'art contemporain ou musée en nocturne puis bar intimiste`,
+      description: `Une déambulation complice à deux à travers une exposition inspirante axée sur ${int2}, prolongée par un verre dans un lieu tamisé avec ambiance jazz.`,
+      icebreakerQuestion: `Devant une œuvre d'art, tu cherches plutôt à analyser la technique ou à ressentir l'émotion brute ?`,
+      estimatedDuration: `2h - 2h30`,
+      suggestedTimeSlot: `Jeudi ou Vendredi soir à 19h00`,
+      tags: [`Romantique`, `Culturel`, `Élégant`]
+    },
+    {
+      id: `date_idea_${Date.now()}_3`,
+      title: `Balade secrète & Pique-nique gourmand au coucher du soleil`,
+      theme: `Nature & Spontanéité`,
+      locationType: `Bord de fleuve ou parc avec vue panoramique sur ${city}`,
+      description: `Prendre l'air ensemble avec une sélection de douceurs salées/sucrées artisanales pour admirer le coucher de soleil et discuter sans voir le temps filer.`,
+      icebreakerQuestion: `Quel est le voyage ou l'escapade qui a le plus changé ta vision de la vie ?`,
+      estimatedDuration: `1h45`,
+      suggestedTimeSlot: `Dimanche en fin d'après-midi à 18h00`,
+      tags: [`Plein air`, `Sincère`, `Vue magique`]
+    }
+  ];
+}
+
 function generateFallbackEnhancedBio(bio: string, interests: string[], relationshipGoal: string, vibe: string): string {
   const interestList = (interests || []).slice(0, 3).join(', ');
   const base = bio ? bio.trim() : '';
@@ -573,6 +618,100 @@ Renvoie un JSON valide au format :
     console.warn("Icebreakers caught error, providing smart fallback:", error?.message);
     const icebreakers = generateFallbackIcebreakers(req.body?.userProfile, req.body?.targetProfile);
     res.json({ icebreakers });
+  }
+});
+
+// API: Generate Tailored Date Ideas & Scenarios (Date Concierge IA)
+app.post("/api/ai/date-ideas", async (req, res) => {
+  try {
+    const { userProfile, targetProfile } = req.body;
+    const commonInterests = (userProfile?.interests || []).filter((i: string) =>
+      (targetProfile?.interests || []).includes(i)
+    );
+
+    const prompt = `Tu es un conciergerie romantique IA haut de gamme pour l'application de rencontre "joyce-k".
+Propose 3 scénarios de premier rendez-vous (Date) uniques, originaux et sur-mesure pour ce couple potentiel :
+- Membre 1 : ${userProfile?.name || 'Alexandre'}, ${userProfile?.age || 28} ans, ville : ${userProfile?.city || 'Paris'}. Passions : ${(userProfile?.interests || []).join(', ')}.
+- Membre 2 : ${targetProfile?.name || 'Camille'}, ${targetProfile?.age || 27} ans, ville : ${targetProfile?.city || 'Paris'}. Passions : ${(targetProfile?.interests || []).join(', ')}.
+- Passions communes : ${commonInterests.length > 0 ? commonInterests.join(', ') : 'Découverte, bonne cuisine, culture et art de vivre'}.
+
+Génère 3 idées concrètes (non-génériques, chaleureuses, sécurisantes dans un lieu public vivant et convivial).
+Réponds STRICTEMENT en JSON avec la structure :
+{
+  "dateIdeas": [
+    {
+      "id": "date_1",
+      "title": "Titre séduisant du date",
+      "theme": "Café & Vinyle / Expo & Cocktails / etc.",
+      "locationType": "Quartier ou type de lieu (ex: Galerie d'art & Speakeasy cosy)",
+      "description": "Description captivante de l'activité étape par étape (2-3 phrases).",
+      "icebreakerQuestion": "Une question complice et amusante à se poser pendant le date",
+      "estimatedDuration": "1h30 - 2h",
+      "suggestedTimeSlot": "Vendredi soir à 19h30 ou Samedi après-midi",
+      "tags": ["Culture", "Intime", "Gourmand"]
+    }
+  ]
+}`;
+
+    const text = await safeGenerateContent(prompt, {
+      responseMimeType: "application/json",
+      temperature: 0.8,
+    });
+
+    if (text) {
+      try {
+        const parsed = JSON.parse(text);
+        if (Array.isArray(parsed.dateIdeas) && parsed.dateIdeas.length > 0) {
+          return res.json(parsed);
+        }
+      } catch {}
+    }
+
+    // Fallback smart date scenarios
+    const fallbackIdeas = generateFallbackDateIdeas(userProfile, targetProfile);
+    res.json({ dateIdeas: fallbackIdeas });
+  } catch (error: any) {
+    console.warn("Date ideas caught error, providing smart fallback:", error?.message);
+    const fallbackIdeas = generateFallbackDateIdeas(req.body?.userProfile, req.body?.targetProfile);
+    res.json({ dateIdeas: fallbackIdeas });
+  }
+});
+
+// API: Daily Blind Match Question & Topic
+app.post("/api/ai/blind-question", async (req, res) => {
+  try {
+    const prompt = `Génère 1 question philosophique, insolite, romantique et profonde en français pour l'événement "Blind-Match Hour" d'une application de rencontres.
+La question doit pousser à se dévoiler avec sincérité, humour et émotion sans parler de critères physiques.
+Réponds STRICTEMENT en JSON :
+{
+  "question": "Votre question ici",
+  "theme": "Philosophie & Valeurs / Rêves & Voyages / Romance",
+  "icebreakerPrompt": "Une amorce de discussion en 1 phrase"
+}`;
+
+    const text = await safeGenerateContent(prompt, {
+      responseMimeType: "application/json",
+      temperature: 0.85,
+    });
+
+    if (text) {
+      try {
+        const parsed = JSON.parse(text);
+        if (parsed.question) return res.json(parsed);
+      } catch {}
+    }
+
+    res.json({
+      question: "Si tu pouvais revivre un seul souvenir précis pour la toute première fois, lequel choisirais-tu et pourquoi ?",
+      theme: "Émotions & Nostalgie",
+      icebreakerPrompt: "Raconte-moi un moment qui t'a profondément marqué(e)...",
+    });
+  } catch (error: any) {
+    res.json({
+      question: "Quelle est la petite chose ordinaire du quotidien qui te rend instantanément heureux(se) ?",
+      theme: "Sensibilité & Partage",
+      icebreakerPrompt: "Partageons nos petits bonheurs simples !",
+    });
   }
 });
 

@@ -19,10 +19,17 @@ import {
   Info,
   Bookmark,
   Video,
+  Phone,
+  MessageCircle,
+  Mic,
+  Volume2,
+  Sparkles,
 } from 'lucide-react';
-import { UserProfile, PrivacySettings } from '../types';
+import { UserProfile, PrivacySettings, LoveLanguage } from '../types';
 import { calculateDistanceKm, formatFuzzedDistance } from '../utils/geoUtils';
 import { ALL_INTEREST_CATEGORIES } from '../data/categories';
+import { VoiceBioPlayer } from './VoiceBioPlayer';
+import { LoveLanguageQuizModal } from './LoveLanguageQuizModal';
 
 interface DiscoverySwipeProps {
   currentUser: UserProfile;
@@ -34,6 +41,9 @@ interface DiscoverySwipeProps {
   onPass: (profile: UserProfile) => void;
   onOpenCompatibility: (profile: UserProfile) => void;
   onSelectProfileFromList?: (profile: UserProfile) => void;
+  onStartCall?: (profile: UserProfile, type: 'audio' | 'video') => void;
+  onStartChat?: (profile: UserProfile) => void;
+  onUpdateCurrentUser?: (updated: UserProfile) => void;
 }
 
 export const DiscoverySwipe: React.FC<DiscoverySwipeProps> = ({
@@ -45,6 +55,9 @@ export const DiscoverySwipe: React.FC<DiscoverySwipeProps> = ({
   onLike,
   onPass,
   onOpenCompatibility,
+  onStartCall,
+  onStartChat,
+  onUpdateCurrentUser,
 }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
@@ -52,6 +65,7 @@ export const DiscoverySwipe: React.FC<DiscoverySwipeProps> = ({
   const [history, setHistory] = useState<number[]>([]);
   const [swipeDirection, setSwipeDirection] = useState<'left' | 'right' | 'up' | null>(null);
   const [showSuperLikeBurst, setShowSuperLikeBurst] = useState(false);
+  const [isQuizModalOpen, setIsQuizModalOpen] = useState(false);
 
   const lastTapRef = useRef<number>(0);
 
@@ -678,10 +692,32 @@ export const DiscoverySwipe: React.FC<DiscoverySwipeProps> = ({
                   </p>
                 </div>
 
-                {/* Relationship Goal Banner */}
-                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-rose-50 text-xs font-bold text-rose-700 border border-rose-200">
-                  <Heart className="w-3.5 h-3.5 text-rose-500 fill-rose-500" />
-                  <span>Recherche : {activeProfile.relationshipGoal}</span>
+                {/* Relationship Goal & Love Language Banners */}
+                <div className="flex flex-wrap items-center gap-2">
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-rose-50 text-xs font-bold text-rose-700 border border-rose-200">
+                    <Heart className="w-3.5 h-3.5 text-rose-500 fill-rose-500" />
+                    <span>Recherche : {activeProfile.relationshipGoal}</span>
+                  </div>
+
+                  {activeProfile.loveLanguageLabel && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setIsQuizModalOpen(true);
+                      }}
+                      onPointerDown={(e) => e.stopPropagation()}
+                      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-purple-50 hover:bg-purple-100 text-xs font-bold text-purple-700 border border-purple-200 shadow-2xs transition-all cursor-pointer"
+                      title="Cliquez pour comparer vos langages de l'amour"
+                    >
+                      <Sparkles className="w-3.5 h-3.5 text-purple-500" />
+                      <span>Langage : {activeProfile.loveLanguageLabel}</span>
+                    </button>
+                  )}
+                </div>
+
+                {/* Voice Bio Note Player Innovation */}
+                <div className="pt-1">
+                  <VoiceBioPlayer profile={activeProfile} />
                 </div>
 
                 {/* Verified Trust Banner with Blue Check */}
@@ -780,6 +816,27 @@ export const DiscoverySwipe: React.FC<DiscoverySwipeProps> = ({
                     </div>
                   </div>
                 )}
+
+                {/* Direct Message Action */}
+                <div className="pt-2 border-t border-rose-100 flex items-center gap-2">
+                  <button
+                    id={`swipe-chat-btn-${activeProfile.id}`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (onStartChat) {
+                        onStartChat(activeProfile);
+                      } else {
+                        onOpenCompatibility(activeProfile);
+                      }
+                    }}
+                    onPointerDown={(e) => e.stopPropagation()}
+                    title={`Écrire un message privé à ${activeProfile.name}`}
+                    className="flex-1 py-2.5 px-4 rounded-2xl bg-gradient-to-r from-rose-500 via-pink-500 to-orange-400 hover:from-rose-600 hover:to-orange-500 text-white font-bold text-xs flex items-center justify-center gap-2 transition-all active:scale-95 shadow-md shadow-rose-200 cursor-pointer"
+                  >
+                    <MessageCircle className="w-4 h-4 shrink-0" />
+                    <span>Discuter avec {activeProfile.name}</span>
+                  </button>
+                </div>
               </div>
 
               {/* Action Bar (Rewind, Pass, Favorite, Super-Like, Like, Deep AI) */}
@@ -910,6 +967,23 @@ export const DiscoverySwipe: React.FC<DiscoverySwipeProps> = ({
           </button>
         </div>
       )}
+
+      {/* Love Language Quiz Modal */}
+      <LoveLanguageQuizModal
+        isOpen={isQuizModalOpen}
+        onClose={() => setIsQuizModalOpen(false)}
+        currentUser={currentUser}
+        targetProfile={activeProfile}
+        onSaveLoveLanguage={(lang, label) => {
+          if (onUpdateCurrentUser) {
+            onUpdateCurrentUser({
+              ...currentUser,
+              loveLanguage: lang,
+              loveLanguageLabel: label,
+            });
+          }
+        }}
+      />
     </div>
   );
 };

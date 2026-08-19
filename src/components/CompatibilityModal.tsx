@@ -8,8 +8,11 @@ import {
   Zap,
   CheckCircle2,
   RefreshCw,
+  Sparkles,
+  Mic,
 } from 'lucide-react';
 import { UserProfile, CompatibilityReport } from '../types';
+import { VoiceBioPlayer } from './VoiceBioPlayer';
 
 interface CompatibilityModalProps {
   userProfile: UserProfile;
@@ -157,6 +160,11 @@ export const CompatibilityModal: React.FC<CompatibilityModalProps> = ({
             </div>
           </div>
 
+          {/* Voice Bio Note Player */}
+          <div className="pt-1">
+            <VoiceBioPlayer profile={targetProfile} />
+          </div>
+
           {loading ? (
             <div className="py-12 flex flex-col items-center justify-center gap-3">
               <RefreshCw className="w-8 h-8 text-rose-500 animate-spin" />
@@ -186,6 +194,33 @@ export const CompatibilityModal: React.FC<CompatibilityModalProps> = ({
                 <p className="text-xs text-slate-700 font-medium mt-2.5 leading-relaxed">
                   {report.summary}
                 </p>
+              </div>
+
+              {/* Love Language Harmony Matrix */}
+              <div className="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-2xl p-4 shadow-xs space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold uppercase tracking-wider text-purple-900 flex items-center gap-1.5">
+                    <Sparkles className="w-4 h-4 text-purple-600" />
+                    Harmonie des Langages de l'Amour
+                  </span>
+                  <span className="px-2 py-0.5 rounded-full bg-purple-600 text-white font-black text-[10px]">
+                    96% Alchimie
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 gap-2 pt-1 text-xs">
+                  <div className="p-2 rounded-xl bg-white/80 border border-purple-100">
+                    <span className="text-[10px] text-slate-500 block">Vous :</span>
+                    <span className="font-bold text-slate-800">
+                      {userProfile.loveLanguageLabel || 'Moments de qualité'}
+                    </span>
+                  </div>
+                  <div className="p-2 rounded-xl bg-white/80 border border-purple-100">
+                    <span className="text-[10px] text-slate-500 block">{targetProfile.name} :</span>
+                    <span className="font-bold text-purple-700">
+                      {targetProfile.loveLanguageLabel || 'Paroles valorisantes'}
+                    </span>
+                  </div>
+                </div>
               </div>
 
               {/* Shared Interests Highlights */}

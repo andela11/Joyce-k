@@ -7,6 +7,8 @@ import {
   X,
   Compass,
   Zap,
+  Phone,
+  Video,
 } from 'lucide-react';
 import { UserProfile } from '../types';
 
@@ -15,6 +17,7 @@ interface MatchCelebrationModalProps {
   matchedProfile: UserProfile;
   onClose: () => void;
   onSendMessage: (targetProfile: UserProfile, message?: string) => void;
+  onStartCall?: (targetProfile: UserProfile, type: 'audio' | 'video') => void;
 }
 
 export const MatchCelebrationModal: React.FC<MatchCelebrationModalProps> = ({
@@ -22,6 +25,7 @@ export const MatchCelebrationModal: React.FC<MatchCelebrationModalProps> = ({
   matchedProfile,
   onClose,
   onSendMessage,
+  onStartCall,
 }) => {
   const [icebreakers, setIcebreakers] = useState<string[]>([]);
   const [loadingIcebreakers, setLoadingIcebreakers] = useState(false);
@@ -192,23 +196,54 @@ export const MatchCelebrationModal: React.FC<MatchCelebrationModalProps> = ({
           )}
         </div>
 
-        {/* Actions */}
-        <div className="relative z-10 pt-5 flex items-center gap-2">
-          <button
-            id="celebration-open-chat-btn"
-            onClick={() => onSendMessage(matchedProfile)}
-            className="flex-1 py-3 px-4 rounded-2xl bg-gradient-to-r from-rose-500 to-orange-500 hover:from-rose-600 hover:to-orange-600 text-white font-bold text-sm shadow-lg shadow-rose-200 flex items-center justify-center gap-2 transition-all active:scale-95"
-          >
-            <MessageCircle className="w-4 h-4" />
-            Écrire un message
-          </button>
-          <button
-            id="celebration-keep-swiping-btn"
-            onClick={onClose}
-            className="py-3 px-4 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm transition-colors"
-          >
-            Continuer
-          </button>
+        {/* Actions (Direct Video & Audio Calls + Message + Continue) */}
+        <div className="relative z-10 pt-5 space-y-2.5">
+          {/* Quick Call Row */}
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              id="celebration-audio-call-btn"
+              onClick={() => {
+                if (onStartCall) onStartCall(matchedProfile, 'audio');
+              }}
+              className="py-2.5 px-3 rounded-2xl bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-700 font-bold text-xs flex items-center justify-center gap-1.5 transition-all active:scale-95 shadow-xs cursor-pointer"
+            >
+              <div className="w-5 h-5 rounded-full bg-emerald-600 text-white flex items-center justify-center">
+                <Phone className="w-3 h-3" />
+              </div>
+              <span>Appel Audio</span>
+            </button>
+
+            <button
+              id="celebration-video-call-btn"
+              onClick={() => {
+                if (onStartCall) onStartCall(matchedProfile, 'video');
+              }}
+              className="py-2.5 px-3 rounded-2xl bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 font-bold text-xs flex items-center justify-center gap-1.5 transition-all active:scale-95 shadow-xs cursor-pointer"
+            >
+              <div className="w-5 h-5 rounded-full bg-rose-600 text-white flex items-center justify-center">
+                <Video className="w-3 h-3" />
+              </div>
+              <span>Appel Vidéo 🎥</span>
+            </button>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              id="celebration-open-chat-btn"
+              onClick={() => onSendMessage(matchedProfile)}
+              className="flex-1 py-3 px-4 rounded-2xl bg-gradient-to-r from-rose-500 to-orange-500 hover:from-rose-600 hover:to-orange-600 text-white font-bold text-sm shadow-lg shadow-rose-200 flex items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer"
+            >
+              <MessageCircle className="w-4 h-4" />
+              Écrire un message
+            </button>
+            <button
+              id="celebration-keep-swiping-btn"
+              onClick={onClose}
+              className="py-3 px-4 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm transition-colors cursor-pointer"
+            >
+              Continuer
+            </button>
+          </div>
         </div>
       </div>
     </div>

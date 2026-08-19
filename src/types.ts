@@ -11,6 +11,13 @@ export interface LocationData {
   fuzzedDistanceKm?: number;
 }
 
+export type LoveLanguage =
+  | 'words' // Paroles valorisantes
+  | 'quality_time' // Moments de qualité
+  | 'gifts' // Cadeaux sincères
+  | 'acts_of_service' // Petites attentions & Services rendus
+  | 'physical_touch'; // Contact & Tendresse
+
 export interface UserProfile {
   id: string;
   name: string;
@@ -34,6 +41,11 @@ export interface UserProfile {
   lastActiveText: string;
   promptQuestion?: string;
   promptAnswer?: string;
+  voiceBioPrompt?: string;
+  voiceBioAudioUrl?: string;
+  voiceBioDurationSeconds?: number;
+  loveLanguage?: LoveLanguage;
+  loveLanguageLabel?: string;
 }
 
 export type PersonalityTone =
@@ -149,6 +161,38 @@ export interface AppNotification {
   actionTab?: ActiveTab;
 }
 
+export interface DateIdea {
+  id: string;
+  title: string;
+  theme: string;
+  locationType: string;
+  description: string;
+  icebreakerQuestion: string;
+  estimatedDuration: string;
+  suggestedTimeSlot: string;
+  tags: string[];
+}
+
+export interface SafeDateGuardian {
+  contactName: string;
+  contactPhone: string;
+  meetingLocation: string;
+  startTime: string;
+  durationMinutes: number;
+  active: boolean;
+  lastCheckIn?: number;
+  status: 'safe' | 'alert' | 'pending';
+}
+
+export interface BlindMatchSession {
+  partner: UserProfile;
+  dailyQuestion: string;
+  timeRemainingSeconds: number;
+  userRevealed: boolean;
+  partnerRevealed: boolean;
+  revealed: boolean;
+}
+
 export type ActiveTab =
   | 'landing'
   | 'discovery'
@@ -156,6 +200,7 @@ export type ActiveTab =
   | 'radar'
   | 'messages'
   | 'ai_wingman'
+  | 'blind_match'
   | 'privacy'
   | 'profile'
   | 'admin';

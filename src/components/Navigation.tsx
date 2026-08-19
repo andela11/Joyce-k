@@ -27,8 +27,10 @@ import {
   Clock,
   ExternalLink,
   ChevronRight,
+  Phone,
+  Video,
 } from 'lucide-react';
-import { ActiveTab, PrivacySettings, AiAutoResponderSettings, AuthUser, AppNotification } from '../types';
+import { ActiveTab, PrivacySettings, AiAutoResponderSettings, AuthUser, AppNotification, Conversation, UserProfile } from '../types';
 import { JoyceKLogo } from './JoyceKLogo';
 
 interface NavigationProps {
@@ -46,6 +48,8 @@ interface NavigationProps {
   onMarkNotificationRead?: (id: string) => void;
   onClearAllNotifications?: () => void;
   activeConversationId?: string | null;
+  conversations?: Conversation[];
+  onStartCall?: (profile: UserProfile, type: 'audio' | 'video') => void;
 }
 
 export const Navigation: React.FC<NavigationProps> = ({
@@ -63,16 +67,24 @@ export const Navigation: React.FC<NavigationProps> = ({
   onMarkNotificationRead,
   onClearAllNotifications,
   activeConversationId = null,
+  conversations = [],
+  onStartCall,
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [callBubbleOpen, setCallBubbleOpen] = useState(false);
   const notifDropdownRef = useRef<HTMLDivElement>(null);
+  const callBubbleRef = useRef<HTMLDivElement>(null);
   const isLandingMode = !authUser || activeTab === 'landing';
+
+  // Find active call candidate: active conversation partner or first conversation participant
+  const activeChatConv = conversations.find((c) => c.id === activeConversationId);
+  const targetCallProfile = activeChatConv?.participant || conversations[0]?.participant;
 
   // Calculate unread notifications
   const unreadNotifsCount = notifications.filter((n) => !n.read).length;
 
-  // Close notifications dropdown when clicking outside
+  // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (
@@ -80,6 +92,12 @@ export const Navigation: React.FC<NavigationProps> = ({
         !notifDropdownRef.current.contains(e.target as Node)
       ) {
         setNotificationsOpen(false);
+      }
+      if (
+        callBubbleRef.current &&
+        !callBubbleRef.current.contains(e.target as Node)
+      ) {
+        setCallBubbleOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -188,6 +206,12 @@ export const Navigation: React.FC<NavigationProps> = ({
       badge: aiSettings.enabled ? 'ON' : null,
     },
     {
+      id: 'blind_match' as ActiveTab,
+      label: 'Blind-Match',
+      icon: EyeOff,
+      badge: '21h',
+    },
+    {
       id: 'privacy' as ActiveTab,
       label: 'Sécurité & IA',
       icon: ShieldCheck,
@@ -276,8 +300,8 @@ export const Navigation: React.FC<NavigationProps> = ({
         className="sticky top-0 z-40 w-full bg-white/95 backdrop-blur-md border-b border-orange-100/90 text-slate-800 px-3 sm:px-4 lg:px-6 h-14 sm:h-16 flex items-center shadow-xs transition-all"
       >
         <div className="w-full max-w-7xl mx-auto flex items-center justify-between gap-2 sm:gap-4">
-          {/* Left: Brand Logo */}
-          <div className="flex items-center gap-2 shrink-0">
+          {/* Left: Brand Logo & Call Hub Bubble */}
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
             <div
               id="brand-logo-btn"
               onClick={() => setActiveTab(authUser ? 'discovery' : 'landing')}
@@ -291,6 +315,157 @@ export const Navigation: React.FC<NavigationProps> = ({
                 <JoyceKLogo size="md" variant="light-bg" showTagline={false} />
               </div>
             </div>
+
+            {/* Little Call Bubble beside Joyce-K */}
+            {authUser && (
+              <div className="relative" ref={callBubbleRef}>
+                <button
+                  id="navbar-call-bubble-btn"
+                  onClick={() => setCallBubbleOpen(!callBubbleOpen)}
+                  title="Centre d'appels chiffrés Joyce-K (Audio & Vidéo)"
+                  className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full border text-xs font-bold transition-all active:scale-95 cursor-pointer shadow-2xs ${
+                    callBubbleOpen
+                      ? 'bg-rose-600 text-white border-rose-600 shadow-md shadow-rose-200'
+                      : 'bg-emerald-50 hover:bg-emerald-100/90 text-emerald-800 border-emerald-200'
+                  }`}
+                >
+                  <div className="relative flex items-center justify-center">
+                    <Phone className="w-3.5 h-3.5 text-emerald-600" />
+                    <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                  </div>
+                  <span className="hidden xs:inline sm:inline font-bold">Appels</span>
+                  <span className="text-[10px] opacity-70">▾</span>
+                </button>
+
+                {/* Call Bubble Popover */}
+                {callBubbleOpen && (
+                  <div
+                    id="navbar-call-bubble-dropdown"
+                    className="absolute left-0 top-full mt-2 w-72 sm:w-80 bg-white rounded-3xl p-4 shadow-2xl border border-rose-100 z-50 animate-fade-in space-y-3"
+                  >
+                    <div className="flex items-center justify-between border-b border-rose-100 pb-2.5">
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold">
+                          <Phone className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <h4 className="font-bold text-xs text-slate-900">
+                            Appels Sécurisés Joyce-K
+                          </h4>
+                          <p className="text-[10px] text-slate-500 font-medium">
+                            Chiffré WebRTC • Sans numéro partagé
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => setCallBubbleOpen(false)}
+                        className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-rose-50"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+
+                    {/* Target Profile or Match Information */}
+                    {targetCallProfile ? (
+                      <div className="bg-rose-50/70 border border-rose-100 rounded-2xl p-2.5 flex items-center gap-2.5">
+                        <img
+                          src={targetCallProfile.photos[0]}
+                          alt={targetCallProfile.name}
+                          className="w-9 h-9 rounded-xl object-cover border border-rose-200 shrink-0"
+                          referrerPolicy="no-referrer"
+                        />
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-bold text-xs text-slate-900 truncate">
+                              {targetCallProfile.name}, {targetCallProfile.age}
+                            </span>
+                            <span className="text-xs">{targetCallProfile.isOnline ? '😊' : '🥺'}</span>
+                          </div>
+                          <p className="text-[10px] text-slate-500 truncate">
+                            {targetCallProfile.city} • Match prêt pour appel
+                          </p>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-[11px] text-slate-600 bg-rose-50/50 p-2.5 rounded-xl border border-rose-100">
+                        Passez des appels audio et vidéo protégés de bout en bout avec vos matchs.
+                      </p>
+                    )}
+
+                    {/* Action 1: Audio Call */}
+                    <button
+                      id="navbar-start-audio-call-btn"
+                      onClick={() => {
+                        setCallBubbleOpen(false);
+                        if (targetCallProfile && onStartCall) {
+                          onStartCall(targetCallProfile, 'audio');
+                        } else {
+                          setActiveTab('messages');
+                        }
+                      }}
+                      className="w-full p-2.5 rounded-2xl bg-emerald-50 hover:bg-emerald-100/80 border border-emerald-200 text-left flex items-center gap-3 transition-all cursor-pointer group shadow-2xs"
+                    >
+                      <div className="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-md shadow-emerald-200 group-hover:scale-105 transition-transform">
+                        <Phone className="w-4 h-4" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between">
+                          <span className="font-bold text-xs text-emerald-950">Appel Audio HD</span>
+                          <span className="text-[9px] px-1.5 py-0.2 rounded-md bg-emerald-200/80 text-emerald-900 font-bold">Voix</span>
+                        </div>
+                        <p className="text-[10px] text-emerald-700 mt-0.5 leading-snug">
+                          {targetCallProfile ? `Appeler ${targetCallProfile.name}` : 'Appel vocal sécurisé'}
+                        </p>
+                      </div>
+                    </button>
+
+                    {/* Action 2: Video Call */}
+                    <button
+                      id="navbar-start-video-call-btn"
+                      onClick={() => {
+                        setCallBubbleOpen(false);
+                        if (targetCallProfile && onStartCall) {
+                          onStartCall(targetCallProfile, 'video');
+                        } else {
+                          setActiveTab('messages');
+                        }
+                      }}
+                      className="w-full p-2.5 rounded-2xl bg-gradient-to-r from-rose-50 to-pink-50 hover:from-rose-100 hover:to-pink-100 border border-rose-200 text-left flex items-center gap-3 transition-all cursor-pointer group shadow-2xs"
+                    >
+                      <div className="w-9 h-9 rounded-xl bg-gradient-to-r from-rose-500 to-pink-600 text-white flex items-center justify-center shrink-0 shadow-md shadow-rose-200 group-hover:scale-105 transition-transform">
+                        <Video className="w-4 h-4" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between">
+                          <span className="font-bold text-xs text-rose-950">Appel Vidéo HD</span>
+                          <span className="text-[9px] px-1.5 py-0.2 rounded-md bg-rose-200/80 text-rose-900 font-bold">Caméra</span>
+                        </div>
+                        <p className="text-[10px] text-rose-700 mt-0.5 leading-snug">
+                          {targetCallProfile ? `Visio avec ${targetCallProfile.name}` : 'Visio caméra temps réel'}
+                        </p>
+                      </div>
+                    </button>
+
+                    {/* Bottom Preferences Link */}
+                    <div className="pt-2 border-t border-rose-100 flex items-center justify-between text-[10px] text-slate-500">
+                      <span className="flex items-center gap-1 text-emerald-700 font-semibold">
+                        <Shield className="w-3 h-3 text-emerald-600" />
+                        Chiffré WebRTC
+                      </span>
+                      <button
+                        onClick={() => {
+                          setCallBubbleOpen(false);
+                          setActiveTab('privacy');
+                        }}
+                        className="text-rose-600 hover:text-rose-700 font-bold hover:underline cursor-pointer"
+                      >
+                        Réglages d'appels
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Center: Desktop Navigation Tabs (Visible on lg+ screens) */}

@@ -17,6 +17,8 @@ import { MatchCelebrationModal } from './components/MatchCelebrationModal';
 import { AuthModal } from './components/AuthModal';
 import { AdminDashboard } from './components/AdminDashboard';
 import { FavoritesView } from './components/FavoritesView';
+import { ActiveCallModal } from './components/ActiveCallModal';
+import { BlindMatchView } from './components/BlindMatchView';
 import {
   UserProfile,
   ActiveTab,
@@ -125,8 +127,9 @@ export default function App() {
       console.warn('Failed to parse conversations from localStorage:', e);
     }
 
-    // Initial pre-loaded conversation with Camille to test right away
+    // Initial pre-loaded conversations to test right away
     const camille = MOCK_PROFILES[0];
+    const aicha = MOCK_PROFILES[1];
     return [
       {
         id: 'conv_user_1',
@@ -136,6 +139,15 @@ export default function App() {
         isAiAutoResponding: true,
         autoRepliesCount: 0,
         commonInterests: ['Photographie argentique', 'Musées & Expos', 'Cuisine italienne'],
+      },
+      {
+        id: 'conv_user_2',
+        participant: aicha,
+        unreadCount: 0,
+        matchedAt: Date.now() - 3600000 * 5,
+        isAiAutoResponding: false,
+        autoRepliesCount: 0,
+        commonInterests: ['Design afro-contemporain', 'Jazz live', 'Architecture'],
       },
     ];
   });
@@ -148,7 +160,7 @@ export default function App() {
       console.warn('Failed to parse messages from localStorage:', e);
     }
 
-    // Initial chat history with Camille
+    // Initial chat history with Camille & Aicha
     return {
       conv_user_1: [
         {
@@ -160,6 +172,18 @@ export default function App() {
           timestamp: Date.now() - 3600000 * 2,
           isSelf: false,
           isRead: false,
+        },
+      ],
+      conv_user_2: [
+        {
+          id: 'msg_2',
+          conversationId: 'conv_user_2',
+          senderId: 'user_2',
+          receiverId: 'current_user',
+          text: "Hello Alexandre ! Très sympa tes projets de design d'espace. Tu travailles sur quels types de chantiers en ce moment ?",
+          timestamp: Date.now() - 3600000 * 4,
+          isSelf: false,
+          isRead: true,
         },
       ],
     };
@@ -616,6 +640,16 @@ export default function App() {
     setActiveTab('messages');
   };
 
+  // Start Call with Profile from anywhere in the app
+  const [activeCall, setActiveCall] = useState<{
+    type: 'audio' | 'video';
+    partner: UserProfile;
+  } | null>(null);
+
+  const handleStartCallWithProfile = (profile: UserProfile, type: 'audio' | 'video') => {
+    setActiveCall({ type, partner: profile });
+  };
+
   // Handle Auth Login/Signup Success
   const handleLoginSuccess = (user: AuthUser, updatedProfile?: Partial<UserProfile>) => {
     setAuthUser(user);
@@ -685,6 +719,8 @@ export default function App() {
         onMarkNotificationRead={handleMarkNotificationRead}
         onClearAllNotifications={handleClearAllNotifications}
         activeConversationId={activeConversationId}
+        conversations={conversations}
+        onStartCall={handleStartCallWithProfile}
       />
 
       {/* Main Content Area based on Active Tab */}
@@ -708,6 +744,9 @@ export default function App() {
               onLike={handleLikeProfile}
               onPass={handlePassProfile}
               onOpenCompatibility={(profile) => setCompatibilityProfile(profile)}
+              onStartCall={handleStartCallWithProfile}
+              onStartChat={handleStartChatWithProfile}
+              onUpdateCurrentUser={(updated) => setCurrentUser(updated)}
             />
           </div>
         )}
@@ -723,6 +762,7 @@ export default function App() {
               onToggleFavorite={handleToggleFavorite}
               onOpenCompatibility={(profile) => setCompatibilityProfile(profile)}
               onStartChat={(profile) => handleStartChatWithProfile(profile)}
+              onStartCall={handleStartCallWithProfile}
               onGoToDiscovery={() => setActiveTab('discovery')}
               onExploreMore={() => setActiveTab('discovery')}
             />
@@ -779,6 +819,24 @@ export default function App() {
                 setCurrentUser((prev) => ({ ...prev, bio: newBio }))
               }
               onBackToDiscovery={() => setActiveTab('discovery')}
+            />
+          </div>
+        )}
+
+        {activeTab === 'blind_match' && (
+          <div className="pb-8 bg-rose-50/60 min-h-[calc(100vh-70px)] text-slate-800">
+            <BlindMatchView
+              currentUser={currentUser}
+              onMatchRevealed={(partner) => {
+                // Add partner to favorites or matches
+                if (!favoriteIds.includes(partner.id)) {
+                  setFavoriteIds((prev) => [...prev, partner.id]);
+                }
+              }}
+              onOpenDirectChat={(partnerId) => {
+                const partner = profiles.find((p) => p.id === partnerId) || MOCK_PROFILES[2];
+                handleStartChatWithProfile(partner);
+              }}
             />
           </div>
         )}
@@ -844,6 +902,20 @@ export default function App() {
           onSendMessage={(target, initialMsg) =>
             handleStartChatWithProfile(target, initialMsg)
           }
+          onStartCall={(target, type) => {
+            setCelebrationProfile(null);
+            handleStartCallWithProfile(target, type);
+          }}
+        />
+      )}
+
+      {/* Real Interactive Audio / Video WebRTC Call Modal */}
+      {activeCall && (
+        <ActiveCallModal
+          callType={activeCall.type}
+          partner={activeCall.partner}
+          currentUser={currentUser}
+          onEndCall={() => setActiveCall(null)}
         />
       )}
 
