@@ -43,6 +43,20 @@ import {
   getScopedKey,
   GENDER_DEFAULT_AVATARS,
   checkIsAdmin,
+  loadUserConversations,
+  saveUserConversations,
+  loadUserMessages,
+  saveUserMessages,
+  loadUserFavorites,
+  saveUserFavorites,
+  loadUserLiked,
+  saveUserLiked,
+  loadUserPassed,
+  saveUserPassed,
+  loadUserPrivacy,
+  saveUserPrivacy,
+  loadUserAiSettings,
+  saveUserAiSettings,
 } from './utils/userUtils';
 import { auth, onAuthStateChanged, signOut } from './lib/firebase';
 
@@ -56,7 +70,6 @@ export default function App() {
       const saved = localStorage.getItem('amour_affinites_auth');
       if (saved) {
         const parsed = JSON.parse(saved);
-        // Recalculate isAdmin dynamically to ensure only the real admin has privileges
         const isAdmin = checkIsAdmin(parsed.email);
         return {
           ...parsed,
@@ -84,12 +97,99 @@ export default function App() {
         }
         return createDedicatedUserProfile(parsedAuth);
       }
-      return INITIAL_USER_PROFILE;
     } catch (e) {
       console.warn('Failed to parse user profile from localStorage:', e);
-      return INITIAL_USER_PROFILE;
     }
+    return createDedicatedUserProfile({
+      id: 'guest_user',
+      name: 'Visiteur',
+      email: 'visiteur@joycek.app',
+      photoUrl: GENDER_DEFAULT_AVATARS.homme,
+      provider: 'guest',
+      isLoggedIn: false,
+      createdAt: new Date().toISOString(),
+    });
   });
+
+  // Privacy Settings (strictly scoped per user)
+  const [privacySettings, setPrivacySettings] = useState<PrivacySettings>(() =>
+    loadUserPrivacy(authUser?.id)
+  );
+
+  // AI Auto-Responder Settings (strictly scoped per user)
+  const [aiSettings, setAiSettings] = useState<AiAutoResponderSettings>(() =>
+    loadUserAiSettings(authUser?.id)
+  );
+
+  // Available Profiles
+  const [profiles, setProfiles] = useState<UserProfile[]>(MOCK_PROFILES);
+
+  // Favorites Profile IDs (strictly scoped per user)
+  const [favoriteIds, setFavoriteIds] = useState<string[]>(() =>
+    loadUserFavorites(authUser?.id)
+  );
+
+  // Liked Profile IDs (strictly scoped per user)
+  const [likedProfileIds, setLikedProfileIds] = useState<string[]>(() =>
+    loadUserLiked(authUser?.id)
+  );
+
+  // Passed / Unliked Profile IDs (strictly scoped per user)
+  const [passedProfileIds, setPassedProfileIds] = useState<string[]>(() =>
+    loadUserPassed(authUser?.id)
+  );
+
+  // Conversations (strictly scoped per user)
+  const [conversations, setConversations] = useState<Conversation[]>(() =>
+    loadUserConversations(authUser?.id)
+  );
+
+  // Messages (strictly scoped per user)
+  const [messages, setMessages] = useState<Record<string, ChatMessage[]>>(() =>
+    loadUserMessages(authUser?.id)
+  );
+
+  const [activeConversationId, setActiveConversationId] = useState<string | null>(() => {
+    const userConvs = loadUserConversations(authUser?.id);
+    return userConvs.length > 0 ? userConvs[0].id : null;
+  });
+
+  // Switch all active application state to match a target user profile
+  const switchUserData = useCallback((targetAuthUser: AuthUser | null, profile?: UserProfile | null) => {
+    if (targetAuthUser) {
+      const uid = targetAuthUser.id;
+      const loadedProfile = profile || createDedicatedUserProfile(targetAuthUser);
+      setCurrentUser(loadedProfile);
+      const userConvs = loadUserConversations(uid);
+      setConversations(userConvs);
+      setMessages(loadUserMessages(uid));
+      setFavoriteIds(loadUserFavorites(uid));
+      setLikedProfileIds(loadUserLiked(uid));
+      setPassedProfileIds(loadUserPassed(uid));
+      setPrivacySettings(loadUserPrivacy(uid));
+      setAiSettings(loadUserAiSettings(uid));
+      setActiveConversationId(userConvs.length > 0 ? userConvs[0].id : null);
+    } else {
+      const guestProfile = createDedicatedUserProfile({
+        id: 'guest_user',
+        name: 'Visiteur',
+        email: 'visiteur@joycek.app',
+        photoUrl: GENDER_DEFAULT_AVATARS.homme,
+        provider: 'guest',
+        isLoggedIn: false,
+        createdAt: new Date().toISOString(),
+      });
+      setCurrentUser(guestProfile);
+      setConversations([]);
+      setMessages({});
+      setFavoriteIds([]);
+      setLikedProfileIds([]);
+      setPassedProfileIds([]);
+      setPrivacySettings(INITIAL_PRIVACY_SETTINGS);
+      setAiSettings(INITIAL_AI_SETTINGS);
+      setActiveConversationId(null);
+    }
+  }, []);
 
   // Sync user profile from Firestore / LocalStorage on mount or when authUser changes
   useEffect(() => {
@@ -135,166 +235,17 @@ export default function App() {
 
         const profile = await fetchUserProfile(uid);
         if (profile) {
-          setCurrentUser(profile);
+          switchUserData(currentAuth, profile);
         } else {
           const newProfile = createDedicatedUserProfile(currentAuth);
-          setCurrentUser(newProfile);
+          switchUserData(currentAuth, newProfile);
           await persistUserProfile(newProfile);
         }
       }
     });
 
     return () => unsubscribe();
-  }, []);
-
-  // Privacy Settings
-  const [privacySettings, setPrivacySettings] = useState<PrivacySettings>(() => {
-    try {
-      const saved = localStorage.getItem('amour_affinites_privacy');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        return {
-          ...INITIAL_PRIVACY_SETTINGS,
-          ...parsed,
-          blockedUsers: Array.isArray(parsed.blockedUsers) ? parsed.blockedUsers : [],
-        };
-      }
-      return INITIAL_PRIVACY_SETTINGS;
-    } catch (e) {
-      console.warn('Failed to parse privacy settings from localStorage:', e);
-      return INITIAL_PRIVACY_SETTINGS;
-    }
-  });
-
-  // AI Auto-Responder Settings
-  const [aiSettings, setAiSettings] = useState<AiAutoResponderSettings>(() => {
-    try {
-      const saved = localStorage.getItem('amour_affinites_ai');
-      return saved ? JSON.parse(saved) : INITIAL_AI_SETTINGS;
-    } catch (e) {
-      console.warn('Failed to parse ai settings from localStorage:', e);
-      return INITIAL_AI_SETTINGS;
-    }
-  });
-
-  // Available Profiles
-  const [profiles, setProfiles] = useState<UserProfile[]>(MOCK_PROFILES);
-
-  // Favorites Profile IDs
-  const [favoriteIds, setFavoriteIds] = useState<string[]>(() => {
-    try {
-      const saved = localStorage.getItem('amour_affinites_favorites');
-      if (saved) return JSON.parse(saved);
-    } catch (e) {
-      console.warn('Failed to parse favorites from localStorage:', e);
-    }
-    // Pre-loaded favorite with Camille and Aminata
-    return ['user_1', 'user_2'];
-  });
-
-  // Liked Profile IDs
-  const [likedProfileIds, setLikedProfileIds] = useState<string[]>(() => {
-    try {
-      const saved = localStorage.getItem('amour_affinites_liked');
-      if (saved) return JSON.parse(saved);
-    } catch (e) {
-      console.warn('Failed to parse liked profiles from localStorage:', e);
-    }
-    return ['user_1', 'user_2'];
-  });
-
-  // Passed / Unliked Profile IDs
-  const [passedProfileIds, setPassedProfileIds] = useState<string[]>(() => {
-    try {
-      const saved = localStorage.getItem('amour_affinites_passed');
-      if (saved) return JSON.parse(saved);
-    } catch (e) {
-      console.warn('Failed to parse passed profiles from localStorage:', e);
-    }
-    return [];
-  });
-
-  // Conversations and Messages
-  const [conversations, setConversations] = useState<Conversation[]>(() => {
-    try {
-      const saved = localStorage.getItem('amour_affinites_convs');
-      if (saved) return JSON.parse(saved);
-    } catch (e) {
-      console.warn('Failed to parse conversations from localStorage:', e);
-    }
-
-    // Initial pre-loaded conversations to test right away
-    const camille = MOCK_PROFILES[0];
-    const aicha = MOCK_PROFILES[1];
-    return [
-      {
-        id: 'conv_user_1',
-        participant: camille,
-        unreadCount: 1,
-        matchedAt: Date.now() - 3600000 * 2,
-        isAiAutoResponding: true,
-        autoRepliesCount: 0,
-        commonInterests: ['Photographie argentique', 'Musées & Expos', 'Cuisine italienne'],
-      },
-      {
-        id: 'conv_user_2',
-        participant: aicha,
-        unreadCount: 0,
-        matchedAt: Date.now() - 3600000 * 5,
-        isAiAutoResponding: false,
-        autoRepliesCount: 0,
-        commonInterests: ['Design afro-contemporain', 'Jazz live', 'Architecture'],
-      },
-    ];
-  });
-
-  const [messages, setMessages] = useState<Record<string, ChatMessage[]>>(() => {
-    try {
-      const saved = localStorage.getItem('amour_affinites_messages');
-      if (saved) return JSON.parse(saved);
-    } catch (e) {
-      console.warn('Failed to parse messages from localStorage:', e);
-    }
-
-    // Initial chat history with Camille & Aicha
-    return {
-      conv_user_1: [
-        {
-          id: 'msg_1',
-          conversationId: 'conv_user_1',
-          senderId: 'user_1',
-          receiverId: 'current_user',
-          text: "Coucou Alexandre ! J'ai vu qu'on adorait tous les deux la photo argentique et les expos d'art. Tu développes tes propres pellicules ?",
-          timestamp: Date.now() - 3600000 * 2,
-          isSelf: false,
-          isRead: false,
-        },
-      ],
-      conv_user_2: [
-        {
-          id: 'msg_2',
-          conversationId: 'conv_user_2',
-          senderId: 'user_2',
-          receiverId: 'current_user',
-          text: "Hello Alexandre ! Très sympa tes projets de design d'espace. Tu travailles sur quels types de chantiers en ce moment ?",
-          timestamp: Date.now() - 3600000 * 4,
-          isSelf: false,
-          isRead: true,
-        },
-      ],
-    };
-  });
-
-  // Save messages to LocalStorage
-  useEffect(() => {
-    try {
-      localStorage.setItem('amour_affinites_messages', JSON.stringify(messages));
-    } catch (e) {
-      console.warn('Failed to save messages to localStorage:', e);
-    }
-  }, [messages]);
-
-  const [activeConversationId, setActiveConversationId] = useState<string | null>('conv_user_1');
+  }, [switchUserData]);
 
   // Notifications State
   const [notifications, setNotifications] = useState<AppNotification[]>(() => {
@@ -455,36 +406,52 @@ export default function App() {
   }, [authUser]);
 
   useEffect(() => {
-    localStorage.setItem('amour_affinites_user', JSON.stringify(currentUser));
-  }, [currentUser]);
+    if (authUser?.id && currentUser && currentUser.id === authUser.id) {
+      persistUserProfile(currentUser);
+    }
+  }, [authUser?.id, currentUser]);
 
   useEffect(() => {
-    localStorage.setItem('amour_affinites_privacy', JSON.stringify(privacySettings));
-  }, [privacySettings]);
+    if (authUser?.id) {
+      saveUserPrivacy(authUser.id, privacySettings);
+    }
+  }, [authUser?.id, privacySettings]);
 
   useEffect(() => {
-    localStorage.setItem('amour_affinites_ai', JSON.stringify(aiSettings));
-  }, [aiSettings]);
+    if (authUser?.id) {
+      saveUserAiSettings(authUser.id, aiSettings);
+    }
+  }, [authUser?.id, aiSettings]);
 
   useEffect(() => {
-    localStorage.setItem('amour_affinites_convs', JSON.stringify(conversations));
-  }, [conversations]);
+    if (authUser?.id) {
+      saveUserConversations(authUser.id, conversations);
+    }
+  }, [authUser?.id, conversations]);
 
   useEffect(() => {
-    localStorage.setItem('amour_affinites_messages', JSON.stringify(messages));
-  }, [messages]);
+    if (authUser?.id) {
+      saveUserMessages(authUser.id, messages);
+    }
+  }, [authUser?.id, messages]);
 
   useEffect(() => {
-    localStorage.setItem('amour_affinites_favorites', JSON.stringify(favoriteIds));
-  }, [favoriteIds]);
+    if (authUser?.id) {
+      saveUserFavorites(authUser.id, favoriteIds);
+    }
+  }, [authUser?.id, favoriteIds]);
 
   useEffect(() => {
-    localStorage.setItem('amour_affinites_liked', JSON.stringify(likedProfileIds));
-  }, [likedProfileIds]);
+    if (authUser?.id) {
+      saveUserLiked(authUser.id, likedProfileIds);
+    }
+  }, [authUser?.id, likedProfileIds]);
 
   useEffect(() => {
-    localStorage.setItem('amour_affinites_passed', JSON.stringify(passedProfileIds));
-  }, [passedProfileIds]);
+    if (authUser?.id) {
+      saveUserPassed(authUser.id, passedProfileIds);
+    }
+  }, [authUser?.id, passedProfileIds]);
 
   // Total unread messages count
   const unreadCount = conversations.reduce((acc, c) => acc + (c.unreadCount || 0), 0);
@@ -804,8 +771,8 @@ export default function App() {
       console.warn('LocalStorage auth save error:', e);
     }
 
-    const profileToUse = fullProfile || createDedicatedUserProfile(user);
-    setCurrentUser(profileToUse);
+    const profileToUse = fullProfile || (await fetchUserProfile(user.id)) || createDedicatedUserProfile(user);
+    switchUserData(user, profileToUse);
     await persistUserProfile(profileToUse);
 
     // Direct Redirection: Admin -> 'admin', User -> 'discovery' (profile swipes)
@@ -816,7 +783,7 @@ export default function App() {
     }
   };
 
-  // Handle Logout (returns to landing page)
+  // Handle Logout (returns to landing page with clean slate)
   const handleLogout = async () => {
     try {
       await signOut(auth);
@@ -825,17 +792,7 @@ export default function App() {
     }
     localStorage.removeItem('amour_affinites_auth');
     setAuthUser(null);
-    const guestProfile = createDedicatedUserProfile({
-      id: 'guest_user',
-      name: 'Visiteur',
-      email: 'visiteur@joycek.app',
-      photoUrl: GENDER_DEFAULT_AVATARS.homme,
-      provider: 'guest',
-      isLoggedIn: false,
-      createdAt: new Date().toISOString(),
-    });
-    setCurrentUser(guestProfile);
-    setActiveConversationId(null);
+    switchUserData(null);
     setActiveTab('landing');
   };
 
@@ -847,13 +804,19 @@ export default function App() {
 
   // Purge Account (RGPD)
   const handlePurgeAccount = () => {
-    localStorage.clear();
+    if (authUser?.id) {
+      localStorage.removeItem(getScopedKey(authUser.id, 'profile'));
+      localStorage.removeItem(getScopedKey(authUser.id, 'convs'));
+      localStorage.removeItem(getScopedKey(authUser.id, 'messages'));
+      localStorage.removeItem(getScopedKey(authUser.id, 'favorites'));
+      localStorage.removeItem(getScopedKey(authUser.id, 'liked'));
+      localStorage.removeItem(getScopedKey(authUser.id, 'passed'));
+      localStorage.removeItem(getScopedKey(authUser.id, 'privacy'));
+      localStorage.removeItem(getScopedKey(authUser.id, 'ai'));
+    }
+    localStorage.removeItem('amour_affinites_auth');
     setAuthUser(null);
-    setCurrentUser(INITIAL_USER_PROFILE);
-    setPrivacySettings(INITIAL_PRIVACY_SETTINGS);
-    setAiSettings(INITIAL_AI_SETTINGS);
-    setConversations([]);
-    setMessages({});
+    switchUserData(null);
     setActiveTab('landing');
   };
 

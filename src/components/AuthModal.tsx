@@ -33,11 +33,13 @@ import {
   doc,
   setDoc,
   getDoc,
+  signOut,
 } from '../lib/firebase';
 import {
   createDedicatedUserProfile,
   fetchUserProfile,
   persistUserProfile,
+  getScopedKey,
   GENDER_DEFAULT_AVATARS,
   checkIsAdmin,
 } from '../utils/userUtils';
@@ -281,6 +283,15 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       let fullProfile: UserProfile | null = null;
 
       if (mode === 'signup') {
+        // Sign out any active session before creating a fresh user
+        if (auth.currentUser) {
+          try {
+            await signOut(auth);
+          } catch {
+            // ignore
+          }
+        }
+
         // Real Firebase User Registration
         try {
           const userCredential = await createUserWithEmailAndPassword(auth, cleanEmail, password);
@@ -330,6 +341,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           photos: [userPhoto],
           bio: `Bonjour, je m'appelle ${userName} et je réside à ${selectedCityObj.name}. Heureux(se) d'être sur Joyce-K pour faire de belles rencontres authentiques.`,
         });
+
+        // Initialize fresh empty scoped storage for this brand new user
+        localStorage.removeItem(getScopedKey(uid, 'convs'));
+        localStorage.removeItem(getScopedKey(uid, 'messages'));
+        localStorage.removeItem(getScopedKey(uid, 'favorites'));
+        localStorage.removeItem(getScopedKey(uid, 'liked'));
+        localStorage.removeItem(getScopedKey(uid, 'passed'));
 
         await persistUserProfile(fullProfile);
 

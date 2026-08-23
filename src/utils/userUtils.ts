@@ -1,4 +1,4 @@
-import { UserProfile, AuthUser, PrivacySettings, AiAutoResponderSettings } from '../types';
+import { UserProfile, AuthUser, PrivacySettings, AiAutoResponderSettings, Conversation } from '../types';
 import { db, doc, getDoc, setDoc } from '../lib/firebase';
 import { INITIAL_PRIVACY_SETTINGS, INITIAL_AI_SETTINGS } from '../data/mockProfiles';
 
@@ -82,6 +82,195 @@ export function createDedicatedUserProfile(
  */
 export function getScopedKey(uid: string, key: string): string {
   return `joycek_${key}_${uid}`;
+}
+
+/**
+ * Load user-scoped conversations
+ */
+export function loadUserConversations(uid?: string | null): Conversation[] {
+  if (!uid) return [];
+  try {
+    const saved = localStorage.getItem(getScopedKey(uid, 'convs'));
+    if (saved) return JSON.parse(saved);
+  } catch (e) {
+    console.warn('Error loading scoped conversations:', e);
+  }
+  return [];
+}
+
+/**
+ * Save user-scoped conversations
+ */
+export function saveUserConversations(uid: string | undefined | null, convs: Conversation[]): void {
+  if (!uid) return;
+  try {
+    localStorage.setItem(getScopedKey(uid, 'convs'), JSON.stringify(convs));
+  } catch (e) {
+    console.warn('Error saving scoped conversations:', e);
+  }
+}
+
+/**
+ * Load user-scoped messages
+ */
+export function loadUserMessages(uid?: string | null): Record<string, any[]> {
+  if (!uid) return {};
+  try {
+    const saved = localStorage.getItem(getScopedKey(uid, 'messages'));
+    if (saved) return JSON.parse(saved);
+  } catch (e) {
+    console.warn('Error loading scoped messages:', e);
+  }
+  return {};
+}
+
+/**
+ * Save user-scoped messages
+ */
+export function saveUserMessages(uid: string | undefined | null, messages: Record<string, any[]>): void {
+  if (!uid) return;
+  try {
+    localStorage.setItem(getScopedKey(uid, 'messages'), JSON.stringify(messages));
+  } catch (e) {
+    console.warn('Error saving scoped messages:', e);
+  }
+}
+
+/**
+ * Load user-scoped favorites
+ */
+export function loadUserFavorites(uid?: string | null): string[] {
+  if (!uid) return [];
+  try {
+    const saved = localStorage.getItem(getScopedKey(uid, 'favorites'));
+    if (saved) return JSON.parse(saved);
+  } catch (e) {
+    console.warn('Error loading scoped favorites:', e);
+  }
+  return [];
+}
+
+/**
+ * Save user-scoped favorites
+ */
+export function saveUserFavorites(uid: string | undefined | null, favorites: string[]): void {
+  if (!uid) return;
+  try {
+    localStorage.setItem(getScopedKey(uid, 'favorites'), JSON.stringify(favorites));
+  } catch (e) {
+    console.warn('Error saving scoped favorites:', e);
+  }
+}
+
+/**
+ * Load user-scoped liked profiles
+ */
+export function loadUserLiked(uid?: string | null): string[] {
+  if (!uid) return [];
+  try {
+    const saved = localStorage.getItem(getScopedKey(uid, 'liked'));
+    if (saved) return JSON.parse(saved);
+  } catch (e) {
+    console.warn('Error loading scoped liked:', e);
+  }
+  return [];
+}
+
+/**
+ * Save user-scoped liked profiles
+ */
+export function saveUserLiked(uid: string | undefined | null, liked: string[]): void {
+  if (!uid) return;
+  try {
+    localStorage.setItem(getScopedKey(uid, 'liked'), JSON.stringify(liked));
+  } catch (e) {
+    console.warn('Error saving scoped liked:', e);
+  }
+}
+
+/**
+ * Load user-scoped passed profiles
+ */
+export function loadUserPassed(uid?: string | null): string[] {
+  if (!uid) return [];
+  try {
+    const saved = localStorage.getItem(getScopedKey(uid, 'passed'));
+    if (saved) return JSON.parse(saved);
+  } catch (e) {
+    console.warn('Error loading scoped passed:', e);
+  }
+  return [];
+}
+
+/**
+ * Save user-scoped passed profiles
+ */
+export function saveUserPassed(uid: string | undefined | null, passed: string[]): void {
+  if (!uid) return;
+  try {
+    localStorage.setItem(getScopedKey(uid, 'passed'), JSON.stringify(passed));
+  } catch (e) {
+    console.warn('Error saving scoped passed:', e);
+  }
+}
+
+/**
+ * Load user-scoped privacy settings
+ */
+export function loadUserPrivacy(uid?: string | null): PrivacySettings {
+  if (!uid) return INITIAL_PRIVACY_SETTINGS;
+  try {
+    const saved = localStorage.getItem(getScopedKey(uid, 'privacy'));
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      return {
+        ...INITIAL_PRIVACY_SETTINGS,
+        ...parsed,
+        blockedUsers: Array.isArray(parsed.blockedUsers) ? parsed.blockedUsers : [],
+      };
+    }
+  } catch (e) {
+    console.warn('Error loading scoped privacy:', e);
+  }
+  return INITIAL_PRIVACY_SETTINGS;
+}
+
+/**
+ * Save user-scoped privacy settings
+ */
+export function saveUserPrivacy(uid: string | undefined | null, privacy: PrivacySettings): void {
+  if (!uid) return;
+  try {
+    localStorage.setItem(getScopedKey(uid, 'privacy'), JSON.stringify(privacy));
+  } catch (e) {
+    console.warn('Error saving scoped privacy:', e);
+  }
+}
+
+/**
+ * Load user-scoped AI responder settings
+ */
+export function loadUserAiSettings(uid?: string | null): AiAutoResponderSettings {
+  if (!uid) return INITIAL_AI_SETTINGS;
+  try {
+    const saved = localStorage.getItem(getScopedKey(uid, 'ai'));
+    if (saved) return JSON.parse(saved);
+  } catch (e) {
+    console.warn('Error loading scoped ai settings:', e);
+  }
+  return INITIAL_AI_SETTINGS;
+}
+
+/**
+ * Save user-scoped AI responder settings
+ */
+export function saveUserAiSettings(uid: string | undefined | null, ai: AiAutoResponderSettings): void {
+  if (!uid) return;
+  try {
+    localStorage.setItem(getScopedKey(uid, 'ai'), JSON.stringify(ai));
+  } catch (e) {
+    console.warn('Error saving scoped ai settings:', e);
+  }
 }
 
 /**
