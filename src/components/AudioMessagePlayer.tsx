@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Play, Pause, Volume2, Sparkles } from 'lucide-react';
+import { Play, Pause, Volume2 } from 'lucide-react';
 
 interface AudioMessagePlayerProps {
   audioUrl?: string;

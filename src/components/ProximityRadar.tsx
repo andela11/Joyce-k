@@ -4,14 +4,17 @@ import {
   MapPin,
   Locate,
   Shield,
-  EyeOff,
   User,
   Heart,
   MessageCircle,
-  Sliders,
+  Phone,
   CheckCircle2,
-  Navigation as NavIcon,
   ChevronLeft,
+  Globe2,
+  Check,
+  X,
+  Compass,
+  Lock,
 } from 'lucide-react';
 import { UserProfile, PrivacySettings } from '../types';
 import {
@@ -19,14 +22,27 @@ import {
   formatFuzzedDistance,
   PRESET_CITIES,
 } from '../utils/geoUtils';
+import {
+  detectCountryFromPhoneNumber,
+  COUNTRY_PHONE_DATABASE,
+  CountryPhoneInfo,
+} from '../utils/phoneCountryUtils';
 
 interface ProximityRadarProps {
   currentUser: UserProfile;
   profiles: UserProfile[];
   privacySettings: PrivacySettings;
-  onUpdateUserLocation: (city: string, lat: number, lng: number) => void;
+  matchedProfileIds?: string[];
+  onUpdateUserLocation: (
+    city: string,
+    lat: number,
+    lng: number,
+    country?: string,
+    phoneNumber?: string
+  ) => void;
   onSelectProfile: (profile: UserProfile) => void;
   onStartChat: (profile: UserProfile) => void;
+  onLike?: (profile: UserProfile) => void;
   onOpenPrivacy: () => void;
   onBackToDiscovery?: () => void;
 }
@@ -35,9 +51,11 @@ export const ProximityRadar: React.FC<ProximityRadarProps> = ({
   currentUser,
   profiles,
   privacySettings,
+  matchedProfileIds = [],
   onUpdateUserLocation,
   onSelectProfile,
   onStartChat,
+  onLike,
   onOpenPrivacy,
   onBackToDiscovery,
 }) => {
@@ -45,6 +63,35 @@ export const ProximityRadar: React.FC<ProximityRadarProps> = ({
   const [isLocating, setIsLocating] = useState(false);
   const [geoError, setGeoError] = useState<string | null>(null);
   const [selectedPinProfile, setSelectedPinProfile] = useState<UserProfile | null>(null);
+  const [showCenterUserModal, setShowCenterUserModal] = useState(false);
+
+  // Phone number state
+  const [phoneNumberInput, setPhoneNumberInput] = useState<string>(
+    currentUser?.phoneNumber || '+237 6 99 88 77 66'
+  );
+  const [activeLocationModal, setActiveLocationModal] = useState<{
+    isOpen: boolean;
+    photoUrl: string;
+    userName: string;
+    countryName: string;
+    countryFlag: string;
+    phoneCode: string;
+    phoneNumber: string;
+    city: string;
+    lat: number;
+    lng: number;
+    profilesCount: number;
+  } | null>(null);
+
+  // Detect country based on current phone number
+  const detectedCountry: CountryPhoneInfo = detectCountryFromPhoneNumber(
+    phoneNumberInput || currentUser?.phoneNumber
+  );
+
+  // Exact profile photo of the user
+  const userExactPhoto =
+    currentUser?.photos?.[0] ||
+    'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&auto=format&fit=crop&q=80';
 
   // Calculate distance for all profiles
   const profilesWithDistance = (profiles || [])
@@ -61,10 +108,13 @@ export const ProximityRadar: React.FC<ProximityRadarProps> = ({
       const commonCount = userInterests.filter((i) =>
         profileInterests.includes(i)
       ).length;
+      const profileCountryInfo = detectCountryFromPhoneNumber(p.phoneNumber);
+
       return {
         ...p,
         distance,
         commonCount,
+        detectedCountry: profileCountryInfo,
       };
     })
     .sort((a, b) => a.distance - b.distance);
@@ -73,100 +123,234 @@ export const ProximityRadar: React.FC<ProximityRadarProps> = ({
     (p) => p.distance <= radarRadius
   );
 
-  const handleGetCurrentLocation = () => {
-    if (!navigator.geolocation) {
-      setGeoError("La géolocalisation n'est pas supportée par ce navigateur.");
-      return;
-    }
+  // Launch localization based on phone number & GPS
+  const handleLaunchLocalization = (customPhone?: string) => {
     setIsLocating(true);
     setGeoError(null);
 
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        setIsLocating(false);
-        onUpdateUserLocation(
-          'Position Actuelle (GPS)',
-          position.coords.latitude,
-          position.coords.longitude
-        );
-      },
-      (error) => {
-        setIsLocating(false);
-        setGeoError(
-          "Impossible d'accéder au GPS. Vous pouvez sélectionner une ville dans la liste."
-        );
-        console.warn('Geolocation error:', error);
-      },
-      { timeout: 10000, enableHighAccuracy: true }
-    );
+    const phoneToUse = customPhone || phoneNumberInput || currentUser?.phoneNumber || '+237 6 99 88 77 66';
+    const country = detectCountryFromPhoneNumber(phoneToUse);
+
+    // If browser GPS is available, attempt high precision while linking to phone country
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setIsLocating(false);
+          const localizedCity = `${country.defaultCity} (${country.name})`;
+          onUpdateUserLocation(
+            localizedCity,
+            position.coords.latitude,
+            position.coords.longitude,
+            country.name,
+            phoneToUse
+          );
+
+          // Trigger Exact Photo & Detected Country presentation modal
+          setActiveLocationModal({
+            isOpen: true,
+            photoUrl: userExactPhoto,
+            userName: currentUser?.name || 'Vous',
+            countryName: country.name,
+            countryFlag: country.flag,
+            phoneCode: country.code,
+            phoneNumber: phoneToUse,
+            city: localizedCity,
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+            profilesCount: nearbyProfiles.length,
+          });
+        },
+        (error) => {
+          setIsLocating(false);
+          console.warn('GPS unavailable, using Phone Country Geolocation:', error);
+
+          // Fallback to Country Geographic Center from phone number
+          const localizedCity = `${country.defaultCity}, ${country.name}`;
+          onUpdateUserLocation(
+            localizedCity,
+            country.lat,
+            country.lng,
+            country.name,
+            phoneToUse
+          );
+
+          // Show Exact Photo & Country Banner
+          setActiveLocationModal({
+            isOpen: true,
+            photoUrl: userExactPhoto,
+            userName: currentUser?.name || 'Vous',
+            countryName: country.name,
+            countryFlag: country.flag,
+            phoneCode: country.code,
+            phoneNumber: phoneToUse,
+            city: localizedCity,
+            lat: country.lat,
+            lng: country.lng,
+            profilesCount: nearbyProfiles.length,
+          });
+        },
+        { timeout: 6000, enableHighAccuracy: true }
+      );
+    } else {
+      setIsLocating(false);
+      const localizedCity = `${country.defaultCity}, ${country.name}`;
+      onUpdateUserLocation(
+        localizedCity,
+        country.lat,
+        country.lng,
+        country.name,
+        phoneToUse
+      );
+
+      setActiveLocationModal({
+        isOpen: true,
+        photoUrl: userExactPhoto,
+        userName: currentUser?.name || 'Vous',
+        countryName: country.name,
+        countryFlag: country.flag,
+        phoneCode: country.code,
+        phoneNumber: phoneToUse,
+        city: localizedCity,
+        lat: country.lat,
+        lng: country.lng,
+        profilesCount: nearbyProfiles.length,
+      });
+    }
   };
 
   return (
     <div id="proximity-radar-view" className="max-w-6xl mx-auto px-3 sm:px-6 py-4 sm:py-6 space-y-6">
-      {/* Top Banner */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white border border-rose-100 rounded-[32px] p-4 sm:p-6 shadow-xl shadow-rose-100/60">
-        <div>
-          <div className="flex items-center gap-2 mb-1 flex-wrap">
-            {onBackToDiscovery && (
-              <button
-                id="radar-back-to-discovery-btn"
-                onClick={onBackToDiscovery}
-                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-slate-100 hover:bg-rose-50 text-slate-700 hover:text-rose-600 border border-slate-200 transition-colors cursor-pointer mr-1"
-                title="Retourner aux Swipes"
-              >
-                <ChevronLeft className="w-4 h-4" />
-                <span>Retour</span>
-              </button>
-            )}
-            <div className="p-2 rounded-2xl bg-rose-100 text-rose-600 border border-rose-200">
-              <Radio className="w-5 h-5 animate-pulse" />
+      {/* Top Banner with Phone Number & Country Localization Launcher */}
+      <div className="bg-white border border-rose-100 rounded-[32px] p-4 sm:p-6 shadow-xl shadow-rose-100/60 flex flex-col gap-4">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2 mb-1 flex-wrap">
+              {onBackToDiscovery && (
+                <button
+                  id="radar-back-to-discovery-btn"
+                  onClick={() => onBackToDiscovery()}
+                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-slate-100 hover:bg-rose-50 text-slate-700 hover:text-rose-600 border border-slate-200 transition-colors cursor-pointer mr-1"
+                  title="Retourner aux Swipes"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                  <span>Retour</span>
+                </button>
+              )}
+              <div className="p-2 rounded-2xl bg-rose-100 text-rose-600 border border-rose-200">
+                <Radio className="w-5 h-5 animate-pulse" />
+              </div>
+              <h1 className="text-xl sm:text-2xl font-black text-slate-900">
+                Radar de Proximité & Localisation par Numéro
+              </h1>
             </div>
-            <h1 className="text-xl sm:text-2xl font-black text-slate-900">
-              Radar de Proximité & Géolocalisation
-            </h1>
+            <p className="text-xs text-slate-500 max-w-xl font-medium">
+              Lancez la géolocalisation pour identifier instantanément votre pays d'après votre numéro de téléphone et afficher votre photo de profil certifiée.
+            </p>
           </div>
-          <p className="text-xs text-slate-500 max-w-xl font-medium">
-            Découvrez en temps réel les célibataires partageant vos centres
-            d'intérêt autour de vous, tout en protégeant vos coordonnées réelles
-            grâce au chiffrement géographique.
-          </p>
+
+          {/* Quick Info Badge: Detected Country from Phone */}
+          <div className="flex items-center gap-3 bg-gradient-to-r from-rose-50 to-orange-50 border border-rose-200 rounded-2xl p-2.5 sm:px-4 shrink-0">
+            <div className="relative">
+              <img
+                src={userExactPhoto}
+                alt={currentUser?.name}
+                className="w-11 h-11 rounded-full object-cover border-2 border-rose-400 shadow-md ring-2 ring-rose-200"
+                referrerPolicy="no-referrer"
+              />
+              <span className="absolute -bottom-1 -right-1 text-sm bg-white rounded-full p-0.5 shadow-xs border border-rose-200">
+                {detectedCountry.flag}
+              </span>
+            </div>
+            <div className="text-left">
+              <div className="text-[10px] uppercase font-bold tracking-wider text-rose-600 flex items-center gap-1">
+                <Globe2 className="w-3 h-3" />
+                Pays détecté (Téléphone)
+              </div>
+              <div className="text-sm font-black text-slate-900 flex items-center gap-1.5">
+                <span>{detectedCountry.flag}</span>
+                <span>{detectedCountry.name}</span>
+                <span className="text-xs font-bold text-slate-400">({detectedCountry.code})</span>
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* Location & GPS action */}
-        <div className="flex items-center gap-2 flex-wrap">
-          <button
-            id="use-gps-locate-btn"
-            onClick={handleGetCurrentLocation}
-            disabled={isLocating}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-2xl bg-gradient-to-r from-rose-500 to-orange-500 hover:from-rose-600 hover:to-orange-600 text-white font-bold text-xs shadow-md shadow-rose-200 transition-all active:scale-95 disabled:opacity-50"
-          >
-            <Locate className={`w-4 h-4 ${isLocating ? 'animate-spin' : ''}`} />
-            <span>{isLocating ? 'Localisation...' : 'Me Géolocaliser'}</span>
-          </button>
+        {/* Action Bar: Phone input & Launch Localization Button */}
+        <div className="pt-3 border-t border-rose-100 flex flex-col md:flex-row md:items-center justify-between gap-3 bg-rose-50/40 -mx-4 -mb-4 sm:-mx-6 sm:-mb-6 p-4 sm:p-5 rounded-b-[32px]">
+          <div className="flex-1 flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
+            {/* Phone Number Input with Auto Country Detection */}
+            <div className="relative flex-1">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-rose-500 font-bold text-xs">
+                <Phone className="w-4 h-4 mr-1.5" />
+                <span className="text-base mr-1">{detectedCountry.flag}</span>
+              </div>
+              <input
+                id="radar-phone-number-input"
+                type="text"
+                value={phoneNumberInput}
+                onChange={(e) => setPhoneNumberInput(e.target.value)}
+                placeholder="Ex: +237 6 99 88 77 66 ou +33 6..."
+                className="w-full bg-white border border-rose-200 text-slate-900 font-bold text-xs rounded-2xl pl-16 pr-3 py-2.5 focus:ring-2 focus:ring-rose-400 focus:border-rose-400 shadow-sm"
+              />
+            </div>
 
-          {/* Quick Worldwide City Presets */}
-          <select
-            id="city-preset-select"
-            value={currentUser.city}
-            onChange={(e) => {
-              const city = PRESET_CITIES.find(
-                (c) => `${c.name}, ${c.country}` === e.target.value || c.name === e.target.value
-              );
-              if (city) {
-                onUpdateUserLocation(`${city.name}, ${city.country}`, city.lat, city.lng);
-              }
-            }}
-            className="bg-rose-50/80 border border-rose-200 text-slate-800 font-semibold text-xs rounded-2xl px-3 py-2 focus:ring-rose-500 focus:border-rose-500 shadow-sm"
-          >
-            {PRESET_CITIES.map((c) => (
-              <option key={c.name} value={`${c.name}, ${c.country}`}>
-                {c.flag} {c.name}, {c.country} ({c.region})
-              </option>
-            ))}
-          </select>
+            {/* Country Selector shortcut */}
+            <select
+              id="radar-country-selector"
+              value={detectedCountry.code}
+              onChange={(e) => {
+                const found = COUNTRY_PHONE_DATABASE.find((c) => c.code === e.target.value);
+                if (found) {
+                  setPhoneNumberInput(found.example);
+                }
+              }}
+              className="bg-white border border-rose-200 text-slate-800 font-bold text-xs rounded-2xl px-3 py-2.5 focus:ring-rose-500 focus:border-rose-500 shadow-sm shrink-0"
+            >
+              {COUNTRY_PHONE_DATABASE.map((c) => (
+                <option key={`${c.code}-${c.name}`} value={c.code}>
+                  {c.flag} {c.name} ({c.code})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Big Launch Localization Button */}
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              id="launch-phone-localization-btn"
+              onClick={() => handleLaunchLocalization()}
+              disabled={isLocating}
+              className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-2.5 rounded-2xl bg-gradient-to-r from-rose-500 via-rose-600 to-orange-500 hover:from-rose-600 hover:to-orange-600 text-white font-black text-xs shadow-lg shadow-rose-200 transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
+            >
+              <Locate className={`w-4 h-4 ${isLocating ? 'animate-spin' : ''}`} />
+              <span>{isLocating ? 'Localisation en cours...' : '📍 Lancer la Localisation'}</span>
+            </button>
+
+            {/* Quick Worldwide City Presets */}
+            <select
+              id="city-preset-select"
+              value={currentUser.city}
+              onChange={(e) => {
+                const city = PRESET_CITIES.find(
+                  (c) => `${c.name}, ${c.country}` === e.target.value || c.name === e.target.value
+                );
+                if (city) {
+                  onUpdateUserLocation(`${city.name}, ${city.country}`, city.lat, city.lng);
+                }
+              }}
+              className="hidden sm:block bg-white border border-rose-200 text-slate-800 font-semibold text-xs rounded-2xl px-3 py-2.5 focus:ring-rose-500 focus:border-rose-500 shadow-sm"
+            >
+              {PRESET_CITIES.map((c) => (
+                <option key={c.name} value={`${c.name}, ${c.country}`}>
+                  {c.flag} {c.name}, {c.country}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
       </div>
 
+      {/* Geolocation Notice or Error */}
       {geoError && (
         <div className="p-3 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-xs font-medium flex items-center justify-between shadow-sm">
           <span>{geoError}</span>
@@ -190,14 +374,14 @@ export const ProximityRadar: React.FC<ProximityRadarProps> = ({
                 ? 'Distance précise'
                 : privacySettings.distanceFuzzing === 'approximate'
                 ? 'Flou géographique (+/- 2 à 5 km)'
-                : 'Ville uniquement (GPS caché)'}
+                : 'Ville uniquement (GPS protégé)'}
             </strong>
           </span>
         </div>
         <button
           id="radar-adjust-privacy-btn"
-          onClick={onOpenPrivacy}
-          className="text-rose-600 hover:text-rose-700 font-bold underline text-xs shrink-0"
+          onClick={() => onOpenPrivacy?.()}
+          className="text-rose-600 hover:text-rose-700 font-bold underline text-xs shrink-0 cursor-pointer"
         >
           Modifier
         </button>
@@ -256,22 +440,42 @@ export const ProximityRadar: React.FC<ProximityRadarProps> = ({
               <div className="w-1/2 h-1/2 bg-gradient-to-br from-rose-400/30 via-rose-300/10 to-transparent rounded-tl-full" />
             </div>
 
-            {/* Center User Blip */}
-            <div className="relative z-20 flex flex-col items-center">
-              <div className="w-7 h-7 rounded-full bg-gradient-to-r from-rose-500 to-orange-500 border-2 border-white shadow-lg shadow-rose-300 flex items-center justify-center text-white">
-                <MapPin className="w-4 h-4" />
+            {/* Center User Blip - SHOWS EXACT PROFILE PHOTO & COUNTRY BADGE */}
+            <button
+              id="center-user-profile-blip"
+              onClick={() => setShowCenterUserModal(true)}
+              className="relative z-30 flex flex-col items-center group cursor-pointer transition-transform hover:scale-110"
+              title="Voir mon profil géolocalisé et mon pays"
+            >
+              {/* Pulsing Aura */}
+              <span className="absolute -inset-2 rounded-full bg-rose-500/20 animate-ping" />
+
+              {/* Exact User Profile Photo */}
+              <div className="relative">
+                <img
+                  src={userExactPhoto}
+                  alt={currentUser?.name || 'Vous'}
+                  className="w-11 h-11 rounded-full object-cover border-2 border-white shadow-xl ring-2 ring-rose-500 group-hover:ring-orange-500"
+                  referrerPolicy="no-referrer"
+                />
+                {/* Mini Country Flag overlay */}
+                <span className="absolute -bottom-1 -right-1 text-xs bg-white rounded-full px-1 py-0.2 shadow-sm border border-rose-200">
+                  {detectedCountry.flag}
+                </span>
               </div>
-              <span className="text-[9px] font-bold text-slate-800 bg-white/95 px-2 py-0.5 rounded-full mt-0.5 border border-rose-200 shadow-sm">
-                Vous
-              </span>
-            </div>
+
+              {/* Name & Country Badge */}
+              <div className="flex items-center gap-1 text-[9px] font-black text-slate-800 bg-white/95 px-2 py-0.5 rounded-full mt-1 border border-rose-200 shadow-sm">
+                <span>{currentUser?.name || 'Vous'}</span>
+                <span className="text-rose-600">({detectedCountry.name})</span>
+              </div>
+            </button>
 
             {/* Nearby Profile Blips */}
             {nearbyProfiles.slice(0, 8).map((p, index) => {
-              // Calculate simulated polar position inside circle based on index and distance ratio
               const ratio = Math.min(1, Math.max(0.2, p.distance / radarRadius));
               const angle = (index * (360 / Math.min(8, nearbyProfiles.length)) + 25) * (Math.PI / 180);
-              const maxRadiusPx = 110; // max radius inside circle
+              const maxRadiusPx = 110;
               const x = Math.cos(angle) * ratio * maxRadiusPx;
               const y = Math.sin(angle) * ratio * maxRadiusPx;
 
@@ -280,27 +484,29 @@ export const ProximityRadar: React.FC<ProximityRadarProps> = ({
                   key={p.id}
                   id={`radar-blip-${p.id}`}
                   onClick={() => setSelectedPinProfile(p)}
-                  title={`${p.name} (${Math.round(p.distance)} km)`}
+                  title={`${p.name} (${Math.round(p.distance)} km) - ${p.detectedCountry?.name || ''}`}
                   style={{
                     transform: `translate(${x}px, ${y}px)`,
                   }}
-                  className="absolute z-20 group transition-transform hover:scale-125"
+                  className="absolute z-20 group transition-transform hover:scale-125 cursor-pointer"
                 >
                   <div className="relative">
                     <img
-                      src={p.photos[0]}
+                      src={p.photos?.[0] || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800'}
                       alt={p.name}
                       className="w-8 h-8 rounded-full object-cover border-2 border-rose-400 shadow-md group-hover:border-orange-500"
                       referrerPolicy="no-referrer"
                     />
-                    <span className="absolute -bottom-1 -right-1 w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-white shadow-sm" />
+                    <span className="absolute -bottom-1 -right-1 text-[9px] bg-white rounded-full px-0.5 border border-slate-200 shadow-2xs">
+                      {p.detectedCountry?.flag || '🌍'}
+                    </span>
                   </div>
                 </button>
               );
             })}
           </div>
 
-          {/* Quick Stats */}
+          {/* Quick Stats & Coordinates */}
           <div className="w-full pt-4 border-t border-rose-100 text-center z-10 text-xs text-slate-500 flex items-center justify-around">
             <div>
               <span className="font-black text-rose-600 text-base block">
@@ -310,10 +516,11 @@ export const ProximityRadar: React.FC<ProximityRadarProps> = ({
             </div>
             <div className="h-6 w-[1px] bg-rose-100" />
             <div>
-              <span className="font-black text-emerald-600 text-base block">
-                {currentUser.city}
+              <span className="font-black text-emerald-600 text-sm block flex items-center justify-center gap-1">
+                <span>{detectedCountry.flag}</span>
+                <span>{currentUser.city}</span>
               </span>
-              <span className="font-medium">Point de repère</span>
+              <span className="font-medium">Position active</span>
             </div>
           </div>
         </div>
@@ -342,11 +549,11 @@ export const ProximityRadar: React.FC<ProximityRadarProps> = ({
                     className="bg-white border border-rose-100 hover:border-rose-300 rounded-3xl p-4 shadow-lg shadow-rose-100/50 hover:shadow-xl transition-all group flex flex-col justify-between"
                   >
                     <div>
-                      {/* Avatar + Distance + Online */}
+                      {/* Avatar + Distance + Country */}
                       <div className="flex items-start gap-3 mb-2.5">
                         <div className="relative shrink-0">
                           <img
-                            src={profile.photos[0]}
+                            src={profile.photos?.[0] || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800'}
                             alt={profile.name}
                             className="w-14 h-14 rounded-2xl object-cover border-2 border-rose-100 group-hover:border-rose-400 transition-colors shadow-sm"
                             referrerPolicy="no-referrer"
@@ -357,6 +564,12 @@ export const ProximityRadar: React.FC<ProximityRadarProps> = ({
                               className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-emerald-500 border-2 border-white shadow-sm"
                             />
                           )}
+                          <span
+                            title={`Pays : ${profile.detectedCountry?.name || ''}`}
+                            className="absolute -bottom-1 -left-1 text-xs bg-white rounded-full px-1 shadow-2xs border border-rose-200"
+                          >
+                            {profile.detectedCountry?.flag || '🌍'}
+                          </span>
                         </div>
 
                         <div className="flex-1 min-w-0">
@@ -393,8 +606,8 @@ export const ProximityRadar: React.FC<ProximityRadarProps> = ({
 
                       {/* Common interests pills */}
                       <div className="flex flex-wrap gap-1 mb-3">
-                        {profile.interests.slice(0, 3).map((interest) => {
-                          const isCommon = currentUser.interests.includes(interest);
+                        {(profile.interests || []).slice(0, 3).map((interest) => {
+                          const isCommon = (currentUser?.interests || []).includes(interest);
                           return (
                             <span
                               key={interest}
@@ -404,7 +617,7 @@ export const ProximityRadar: React.FC<ProximityRadarProps> = ({
                                   : 'bg-rose-50 text-slate-600 border border-rose-100'
                               }`}
                             >
-                              {isCommon ? '✨ ' : ''}
+                              {isCommon ? '• ' : ''}
                               {interest}
                             </span>
                           );
@@ -414,18 +627,32 @@ export const ProximityRadar: React.FC<ProximityRadarProps> = ({
 
                     {/* Action buttons */}
                     <div className="flex items-center gap-2 pt-2.5 border-t border-rose-100">
-                      <button
-                        id={`proximity-chat-btn-${profile.id}`}
-                        onClick={() => onStartChat(profile)}
-                        className="flex-1 py-2 px-3 rounded-2xl bg-gradient-to-r from-rose-500 to-orange-500 hover:from-rose-600 hover:to-orange-600 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-rose-200 transition-all active:scale-95"
-                      >
-                        <MessageCircle className="w-3.5 h-3.5" />
-                        <span>Message</span>
-                      </button>
+                      {matchedProfileIds.includes(profile.id) ? (
+                        <button
+                          id={`proximity-chat-btn-${profile.id}`}
+                          onClick={() => onStartChat(profile)}
+                          className="flex-1 py-2 px-3 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-emerald-200 transition-all active:scale-95 cursor-pointer"
+                        >
+                          <MessageCircle className="w-3.5 h-3.5" />
+                          <span>Message (Match)</span>
+                        </button>
+                      ) : (
+                        <button
+                          id={`proximity-like-btn-${profile.id}`}
+                          onClick={() => {
+                            if (onLike) onLike(profile);
+                            else onSelectProfile(profile);
+                          }}
+                          className="flex-1 py-2 px-3 rounded-2xl bg-gradient-to-r from-rose-500 to-orange-500 hover:from-rose-600 hover:to-orange-600 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-rose-200 transition-all active:scale-95 cursor-pointer"
+                        >
+                          <Heart className="w-3.5 h-3.5 fill-white" />
+                          <span>Liker • Matcher</span>
+                        </button>
+                      )}
                       <button
                         id={`proximity-view-profile-btn-${profile.id}`}
                         onClick={() => onSelectProfile(profile)}
-                        className="p-2 rounded-2xl bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 transition-colors shadow-xs"
+                        className="p-2 rounded-2xl bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 transition-colors shadow-xs cursor-pointer"
                         title="Voir le profil complet"
                       >
                         <User className="w-4 h-4" />
@@ -442,12 +669,12 @@ export const ProximityRadar: React.FC<ProximityRadarProps> = ({
                 Aucun profil détecté dans ce rayon ({radarRadius} km)
               </h4>
               <p className="text-xs text-slate-500 font-medium">
-                Augmentez le rayon du radar ou testez une autre ville comme Paris ou Lyon.
+                Augmentez le rayon du radar ou testez une autre ville/pays via votre numéro de téléphone.
               </p>
               <button
                 id="expand-radar-btn"
                 onClick={() => setRadarRadius(50)}
-                className="px-5 py-2.5 rounded-2xl bg-gradient-to-r from-rose-500 to-orange-500 text-white text-xs font-bold shadow-md shadow-rose-200 hover:scale-105 transition-all"
+                className="px-5 py-2.5 rounded-2xl bg-gradient-to-r from-rose-500 to-orange-500 text-white text-xs font-bold shadow-md shadow-rose-200 hover:scale-105 transition-all cursor-pointer"
               >
                 Élargir à 50 km
               </button>
@@ -455,6 +682,246 @@ export const ProximityRadar: React.FC<ProximityRadarProps> = ({
           )}
         </div>
       </div>
+
+      {/* MODAL 1: Active Localization Result Modal (Showing Exact Photo + Country from Phone) */}
+      {activeLocationModal?.isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white border border-rose-200 rounded-[36px] max-w-md w-full p-6 shadow-2xl space-y-5 text-slate-800 relative overflow-hidden animate-in zoom-in-95 duration-200">
+            {/* Header Accent */}
+            <div className="absolute top-0 inset-x-0 h-2 bg-gradient-to-r from-rose-500 via-orange-500 to-rose-600" />
+
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="p-2 rounded-2xl bg-rose-100 text-rose-600">
+                  <Compass className="w-5 h-5 animate-spin" />
+                </span>
+                <h3 className="text-base font-black text-slate-900">
+                  Géolocalisation & Pays Identifié
+                </h3>
+              </div>
+              <button
+                onClick={() => setActiveLocationModal(null)}
+                className="p-1.5 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Exact Profile Photo Card & Country Badge */}
+            <div className="flex flex-col items-center text-center space-y-3 bg-gradient-to-b from-rose-50/80 to-white border border-rose-100 rounded-3xl p-5 shadow-inner">
+              <div className="relative">
+                {/* Glowing Radar Rings around Exact Photo */}
+                <div className="absolute -inset-2 rounded-full bg-gradient-to-r from-rose-500 to-orange-500 opacity-30 animate-pulse blur-sm" />
+                <img
+                  src={activeLocationModal.photoUrl}
+                  alt={activeLocationModal.userName}
+                  className="w-24 h-24 rounded-full object-cover border-4 border-white shadow-xl relative z-10"
+                  referrerPolicy="no-referrer"
+                />
+                <span className="absolute bottom-0 right-0 z-20 text-2xl bg-white rounded-full p-1 shadow-md border-2 border-rose-200">
+                  {activeLocationModal.countryFlag}
+                </span>
+              </div>
+
+              <div>
+                <h4 className="text-lg font-black text-slate-900 flex items-center justify-center gap-1.5">
+                  <span>{activeLocationModal.userName}</span>
+                  <CheckCircle2 className="w-4 h-4 text-blue-500 fill-blue-50" />
+                </h4>
+                <p className="text-xs font-bold text-slate-500">Photo de profil certifiée</p>
+              </div>
+
+              {/* Identified Country Badge */}
+              <div className="w-full bg-white border border-rose-200 rounded-2xl p-3 shadow-xs space-y-1">
+                <div className="text-[10px] uppercase font-black tracking-wider text-rose-600 flex items-center justify-center gap-1">
+                  <Globe2 className="w-3.5 h-3.5" />
+                  Pays identifié d'après votre numéro de téléphone :
+                </div>
+                <div className="text-base font-black text-slate-900 flex items-center justify-center gap-2">
+                  <span className="text-xl">{activeLocationModal.countryFlag}</span>
+                  <span>{activeLocationModal.countryName}</span>
+                  <span className="text-xs font-bold text-slate-400">({activeLocationModal.phoneCode})</span>
+                </div>
+                <div className="text-[11px] font-semibold text-slate-600 pt-1 border-t border-slate-100 flex items-center justify-center gap-2">
+                  <Phone className="w-3 h-3 text-rose-500" />
+                  <span>{activeLocationModal.phoneNumber}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Location Details Grid */}
+            <div className="grid grid-cols-2 gap-2.5 text-xs">
+              <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100 text-center">
+                <span className="text-slate-400 font-medium block text-[10px]">Position active</span>
+                <span className="font-bold text-slate-900">{activeLocationModal.city}</span>
+              </div>
+              <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100 text-center">
+                <span className="text-slate-400 font-medium block text-[10px]">Radar proximité</span>
+                <span className="font-bold text-rose-600">{activeLocationModal.profilesCount} profil(s)</span>
+              </div>
+            </div>
+
+            {/* Confirm & Close Button */}
+            <button
+              onClick={() => setActiveLocationModal(null)}
+              className="w-full py-3 rounded-2xl bg-gradient-to-r from-rose-500 to-orange-500 text-white font-black text-xs shadow-lg shadow-rose-200 hover:scale-[1.02] active:scale-95 transition-all cursor-pointer"
+            >
+              Parfait, Explorer les profils à proximité
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 2: Center User Details Modal */}
+      {showCenterUserModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white border border-rose-200 rounded-[36px] max-w-sm w-full p-6 shadow-2xl space-y-4 text-slate-800 relative">
+            <div className="flex items-center justify-between">
+              <h3 className="text-base font-black text-slate-900">
+                Votre balise de géolocalisation
+              </h3>
+              <button
+                onClick={() => setShowCenterUserModal(false)}
+                className="p-1.5 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-700"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="flex flex-col items-center text-center space-y-3">
+              <div className="relative">
+                <img
+                  src={userExactPhoto}
+                  alt={currentUser?.name}
+                  className="w-20 h-20 rounded-full object-cover border-4 border-rose-400 shadow-xl"
+                  referrerPolicy="no-referrer"
+                />
+                <span className="absolute bottom-0 right-0 text-xl bg-white rounded-full p-0.5 shadow border border-rose-200">
+                  {detectedCountry.flag}
+                </span>
+              </div>
+
+              <div>
+                <h4 className="text-base font-black text-slate-900">{currentUser?.name}</h4>
+                <p className="text-xs font-semibold text-rose-600">
+                  {detectedCountry.flag} {detectedCountry.name} ({detectedCountry.code})
+                </p>
+              </div>
+
+              <div className="w-full text-xs space-y-1.5 bg-slate-50 p-3.5 rounded-2xl border border-slate-100 text-left">
+                <div className="flex justify-between">
+                  <span className="text-slate-400 font-medium">Téléphone :</span>
+                  <span className="font-bold text-slate-800">{phoneNumberInput}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-400 font-medium">Ville actuelle :</span>
+                  <span className="font-bold text-slate-800">{currentUser.city}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-400 font-medium">Statut Radar :</span>
+                  <span className="font-bold text-emerald-600 flex items-center gap-1">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+                    Actif & Synchronisé
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <button
+              onClick={() => {
+                setShowCenterUserModal(false);
+                handleLaunchLocalization();
+              }}
+              className="w-full py-2.5 rounded-2xl bg-gradient-to-r from-rose-500 to-orange-500 text-white font-bold text-xs shadow-md shadow-rose-200 hover:scale-105 active:scale-95 transition-all cursor-pointer"
+            >
+              Relancer la localisation
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 3: Selected Pin Profile Details */}
+      {selectedPinProfile && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white border border-rose-200 rounded-[36px] max-w-sm w-full p-6 shadow-2xl space-y-4 text-slate-800 relative">
+            <div className="flex items-center justify-between">
+              <h3 className="text-base font-black text-slate-900">
+                Profil détecté sur le radar
+              </h3>
+              <button
+                onClick={() => setSelectedPinProfile(null)}
+                className="p-1.5 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-700"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="flex flex-col items-center text-center space-y-3">
+              <div className="relative">
+                <img
+                  src={selectedPinProfile.photos?.[0]}
+                  alt={selectedPinProfile.name}
+                  className="w-20 h-20 rounded-2xl object-cover border-2 border-rose-400 shadow-lg"
+                  referrerPolicy="no-referrer"
+                />
+                <span className="absolute -bottom-1 -right-1 text-base bg-white rounded-full px-1 shadow border border-rose-200">
+                  {detectCountryFromPhoneNumber(selectedPinProfile.phoneNumber).flag}
+                </span>
+              </div>
+
+              <div>
+                <h4 className="text-base font-black text-slate-900">
+                  {selectedPinProfile.name}, {selectedPinProfile.age}
+                </h4>
+                <p className="text-xs text-slate-500 font-medium">{selectedPinProfile.occupation}</p>
+                <p className="text-xs font-bold text-rose-600 mt-0.5">
+                  📍 {selectedPinProfile.city}
+                </p>
+              </div>
+
+              <div className="w-full flex items-center gap-2 pt-2">
+                {matchedProfileIds.includes(selectedPinProfile.id) ? (
+                  <button
+                    onClick={() => {
+                      const prof = selectedPinProfile;
+                      setSelectedPinProfile(null);
+                      onStartChat(prof);
+                    }}
+                    className="flex-1 py-2.5 px-3 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold text-xs shadow-md shadow-emerald-200 hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    <MessageCircle className="w-3.5 h-3.5" />
+                    <span>Discuter (Match Confirmé)</span>
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => {
+                      const prof = selectedPinProfile;
+                      setSelectedPinProfile(null);
+                      if (onLike) onLike(prof);
+                      else onSelectProfile(prof);
+                    }}
+                    className="flex-1 py-2.5 px-3 rounded-2xl bg-gradient-to-r from-rose-500 to-orange-500 text-white font-bold text-xs shadow-md shadow-rose-200 hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    <Heart className="w-3.5 h-3.5 fill-white" />
+                    <span>Liker pour Matcher</span>
+                  </button>
+                )}
+                <button
+                  onClick={() => {
+                    const prof = selectedPinProfile;
+                    setSelectedPinProfile(null);
+                    onSelectProfile(prof);
+                  }}
+                  className="p-2.5 rounded-2xl bg-rose-50 text-rose-600 border border-rose-200 hover:bg-rose-100 transition-colors cursor-pointer"
+                  title="Voir profil complet"
+                >
+                  <User className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

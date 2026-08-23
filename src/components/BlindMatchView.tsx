@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Sparkles,
   Eye,
   EyeOff,
   Clock,
@@ -22,19 +21,26 @@ import { MOCK_PROFILES } from '../data/mockProfiles';
 
 interface BlindMatchViewProps {
   currentUser: UserProfile;
+  profiles?: UserProfile[];
   onMatchRevealed: (partner: UserProfile) => void;
-  onOpenDirectChat: (partnerId: string) => void;
+  onOpenDirectChat: (partner: UserProfile, blindMessages?: ChatMessage[]) => void;
 }
 
 export const BlindMatchView: React.FC<BlindMatchViewProps> = ({
   currentUser,
+  profiles = [],
   onMatchRevealed,
   onOpenDirectChat,
 }) => {
-  // Blind partner for the session
-  const [partner, setPartner] = useState<UserProfile>(() => {
-    return MOCK_PROFILES[2] || MOCK_PROFILES[1]; // Clara or Aïcha
-  });
+  // Filter eligible candidate profiles
+  const eligibleCandidates = React.useMemo(() => {
+    const pool = profiles.length > 0 ? profiles : MOCK_PROFILES;
+    const filtered = pool.filter((p) => p.id !== currentUser.id);
+    return filtered.length > 0 ? filtered : MOCK_PROFILES;
+  }, [profiles, currentUser.id]);
+
+  const [partnerIndex, setPartnerIndex] = useState(0);
+  const partner = eligibleCandidates[partnerIndex % eligibleCandidates.length] || MOCK_PROFILES[2];
 
   const [dailyTopic, setDailyTopic] = useState<{
     question: string;
@@ -53,18 +59,38 @@ export const BlindMatchView: React.FC<BlindMatchViewProps> = ({
   const [partnerRevealed, setPartnerRevealed] = useState(false);
   const [isFullyRevealed, setIsFullyRevealed] = useState(false);
   const [inputText, setInputText] = useState('');
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>(() => [
     {
-      id: 'blind_msg_0',
-      conversationId: 'blind_session',
+      id: `blind_msg_${partner.id}_0`,
+      conversationId: `conv_${partner.id}`,
       senderId: partner.id,
       receiverId: currentUser.id,
-      text: `Hello ! Très intrigué(e) par cette question du jour. Pour ma part, ce serait sans hésitation mon premier voyage improvisé en solitaire où j'ai découvert ma passion ! Et toi ?`,
+      text: `Hello ! Très intrigué(e) par cette question du jour. Pour ma part, ce serait sans hésitation mon premier voyage improvisé où j'ai découvert ma passion ! Et toi ?`,
       timestamp: Date.now() - 45000,
       isSelf: false,
       isRead: true,
     },
   ]);
+
+  // Reset messages when partner changes before reveal
+  const handleChangePartner = () => {
+    if (isFullyRevealed || userRevealed) return;
+    const nextIdx = partnerIndex + 1;
+    setPartnerIndex(nextIdx);
+    const nextPartner = eligibleCandidates[nextIdx % eligibleCandidates.length] || MOCK_PROFILES[2];
+    setChatMessages([
+      {
+        id: `blind_msg_${nextPartner.id}_0`,
+        conversationId: `conv_${nextPartner.id}`,
+        senderId: nextPartner.id,
+        receiverId: currentUser.id,
+        text: `Hello ! Je participe aussi à la session Blind-Match de ce soir. Que penses-tu de la question du jour ?`,
+        timestamp: Date.now() - 30000,
+        isSelf: false,
+        isRead: true,
+      },
+    ]);
+  };
 
   // Fetch AI Question on mount
   useEffect(() => {
@@ -119,7 +145,7 @@ export const BlindMatchView: React.FC<BlindMatchViewProps> = ({
           conversationId: 'blind_session',
           senderId: partner.id,
           receiverId: currentUser.id,
-          text: `J'adore nos échanges et notre feeling ! J'ai cliqué pour révéler mon identité ✨ À toi de jouer !`,
+          text: `J'adore nos échanges et notre feeling ! J'ai cliqué pour révéler mon identité. À toi de jouer !`,
           timestamp: Date.now(),
           isSelf: false,
           isRead: true,
@@ -154,7 +180,7 @@ export const BlindMatchView: React.FC<BlindMatchViewProps> = ({
         <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="space-y-1">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-500/20 text-purple-200 border border-purple-400/30 text-xs font-black uppercase tracking-wider">
-              <Sparkles className="w-3.5 h-3.5 text-purple-300 animate-pulse" />
+              <Zap className="w-3.5 h-3.5 text-purple-300" />
               <span>Événement Blind-Match • 21h</span>
             </div>
             <h2 className="text-xl sm:text-2xl font-black tracking-tight">
@@ -188,7 +214,7 @@ export const BlindMatchView: React.FC<BlindMatchViewProps> = ({
             {/* Mystery Avatar Container */}
             <div className="relative w-44 h-44 mx-auto rounded-3xl overflow-hidden border-4 border-purple-100 shadow-xl group">
               <img
-                src={partner.photos[0]}
+                src={partner?.photos?.[0] || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800'}
                 alt="Blind Match"
                 className={`w-full h-full object-cover transition-all duration-700 ${
                   isFullyRevealed ? 'filter-none scale-100' : 'filter blur-2xl scale-110'
@@ -231,48 +257,60 @@ export const BlindMatchView: React.FC<BlindMatchViewProps> = ({
                 Vos affinités et passions communes :
               </span>
               <div className="flex flex-wrap gap-1.5">
-                {partner.interests.map((interest) => (
+                {(partner.interests || []).map((interest) => (
                   <span
                     key={interest}
                     className="px-2.5 py-1 rounded-xl bg-purple-50 text-purple-700 border border-purple-200 text-xs font-semibold"
                   >
-                    ✨ {interest}
+                    • {interest}
                   </span>
                 ))}
               </div>
             </div>
 
-            {/* Reveal Action Button */}
-            <div className="pt-2">
+            {/* Reveal Action Button & Partner Switching */}
+            <div className="pt-2 space-y-2">
               {!isFullyRevealed ? (
-                <button
-                  onClick={handleRevealClick}
-                  disabled={userRevealed}
-                  className={`w-full py-3 px-4 rounded-2xl font-black text-xs transition-all flex items-center justify-center gap-2 shadow-lg cursor-pointer ${
-                    userRevealed
-                      ? 'bg-emerald-600 text-white shadow-emerald-200'
-                      : 'bg-gradient-to-r from-purple-600 via-rose-600 to-orange-500 hover:opacity-95 text-white shadow-rose-200 active:scale-95'
-                  }`}
-                >
-                  {userRevealed ? (
-                    <>
-                      <Check className="w-4 h-4" />
-                      <span>En attente de révélation mutuelle...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Eye className="w-4 h-4" />
-                      <span>Révéler nos profils & photos</span>
-                    </>
+                <>
+                  <button
+                    onClick={handleRevealClick}
+                    disabled={userRevealed}
+                    className={`w-full py-3 px-4 rounded-2xl font-black text-xs transition-all flex items-center justify-center gap-2 shadow-lg cursor-pointer ${
+                      userRevealed
+                        ? 'bg-emerald-600 text-white shadow-emerald-200'
+                        : 'bg-gradient-to-r from-purple-600 via-rose-600 to-orange-500 hover:opacity-95 text-white shadow-rose-200 active:scale-95'
+                    }`}
+                  >
+                    {userRevealed ? (
+                      <>
+                        <Check className="w-4 h-4" />
+                        <span>En attente de révélation mutuelle...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Eye className="w-4 h-4" />
+                        <span>Révéler nos profils & photos</span>
+                      </>
+                    )}
+                  </button>
+
+                  {!userRevealed && eligibleCandidates.length > 1 && (
+                    <button
+                      onClick={handleChangePartner}
+                      className="w-full py-2 px-3 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-700 text-[11px] font-bold transition-colors flex items-center justify-center gap-1.5 cursor-pointer border border-purple-200"
+                    >
+                      <RefreshCw className="w-3.5 h-3.5" />
+                      <span>Explorer un autre profil mystère</span>
+                    </button>
                   )}
-                </button>
+                </>
               ) : (
                 <button
-                  onClick={() => onOpenDirectChat(partner.id)}
+                  onClick={() => onOpenDirectChat(partner, chatMessages)}
                   className="w-full py-3 px-4 rounded-2xl font-black text-xs bg-slate-900 hover:bg-slate-800 text-white transition-all flex items-center justify-center gap-2 shadow-md cursor-pointer active:scale-95"
                 >
                   <MessageCircle className="w-4 h-4 text-rose-400" />
-                  <span>Poursuivre la conversation dans la messagerie</span>
+                  <span>Poursuivre avec {partner.name} dans la messagerie</span>
                   <ArrowRight className="w-4 h-4 ml-1" />
                 </button>
               )}
@@ -285,7 +323,7 @@ export const BlindMatchView: React.FC<BlindMatchViewProps> = ({
           {/* Topic Banner */}
           <div className="p-3.5 bg-gradient-to-r from-purple-50 via-rose-50 to-orange-50 border-b border-rose-100 flex items-start gap-2.5">
             <div className="w-8 h-8 rounded-xl bg-purple-200 text-purple-800 flex items-center justify-center shrink-0 shadow-xs">
-              <Sparkles className="w-4 h-4" />
+              <Zap className="w-4 h-4" />
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-1.5">

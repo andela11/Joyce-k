@@ -21,14 +21,14 @@ import {
   Video,
   Phone,
   MessageCircle,
-  Mic,
   Volume2,
-  Sparkles,
+  Lock,
+  Award,
+  ShieldCheck,
 } from 'lucide-react';
 import { UserProfile, PrivacySettings, LoveLanguage } from '../types';
 import { calculateDistanceKm, formatFuzzedDistance } from '../utils/geoUtils';
 import { ALL_INTEREST_CATEGORIES } from '../data/categories';
-import { VoiceBioPlayer } from './VoiceBioPlayer';
 import { LoveLanguageQuizModal } from './LoveLanguageQuizModal';
 
 interface DiscoverySwipeProps {
@@ -36,6 +36,7 @@ interface DiscoverySwipeProps {
   profiles: UserProfile[];
   privacySettings: PrivacySettings;
   favoriteIds?: string[];
+  matchedProfileIds?: string[];
   onToggleFavorite?: (profileId: string) => void;
   onLike: (profile: UserProfile, isSuperLike?: boolean) => void;
   onPass: (profile: UserProfile) => void;
@@ -51,6 +52,7 @@ export const DiscoverySwipe: React.FC<DiscoverySwipeProps> = ({
   profiles,
   privacySettings,
   favoriteIds = [],
+  matchedProfileIds = [],
   onToggleFavorite,
   onLike,
   onPass,
@@ -71,9 +73,14 @@ export const DiscoverySwipe: React.FC<DiscoverySwipeProps> = ({
 
   // Motion values for fluid horizontal drag gestures only
   const dragX = useMotionValue(0);
-  const rotate = useTransform(dragX, [-200, 200], [-18, 18]);
-  const likeOpacity = useTransform(dragX, [30, 120], [0, 1]);
-  const nopeOpacity = useTransform(dragX, [-30, -120], [0, 1]);
+  const rotate = useTransform(dragX, [-240, 240], [-16, 16]);
+  const likeOpacity = useTransform(dragX, [20, 85], [0, 1]);
+  const nopeOpacity = useTransform(dragX, [-20, -85], [0, 1]);
+
+  // Background card deck reaction while dragging
+  const nextCardScale = useTransform(dragX, [-200, 0, 200], [1, 0.94, 1]);
+  const nextCardOpacity = useTransform(dragX, [-200, 0, 200], [1, 0.72, 1]);
+  const nextCardY = useTransform(dragX, [-200, 0, 200], [0, 12, 0]);
 
   // Filter States
   const [selectedRegion, setSelectedRegion] = useState<string>('all');
@@ -86,6 +93,7 @@ export const DiscoverySwipe: React.FC<DiscoverySwipeProps> = ({
   // Filter the available profiles
   const filteredProfiles = (profiles || []).filter((p) => {
     if (!p) return false;
+    if (currentUser?.id && p.id === currentUser.id) return false;
     if ((privacySettings?.blockedUsers || []).includes(p.id)) return false;
     if (p.age < minAge || p.age > maxAge) return false;
     if (verifiedOnly && !p.verified) return false;
@@ -144,11 +152,8 @@ export const DiscoverySwipe: React.FC<DiscoverySwipeProps> = ({
 
     setHistory((prev) => [...prev, currentIndex]);
     
-    // Reset motion values after exit
-    setTimeout(() => {
-      dragX.set(0);
-      setSwipeDirection(null);
-    }, 280);
+    // Reset motion value immediately for next card
+    dragX.set(0);
 
     if (liked) {
       onLike(activeProfile, superLike);
@@ -165,7 +170,7 @@ export const DiscoverySwipe: React.FC<DiscoverySwipeProps> = ({
     setTimeout(() => {
       setShowSuperLikeBurst(false);
       handleNext(true, true);
-    }, 400);
+    }, 320);
   };
 
   const handleDoubleTap = () => {
@@ -190,14 +195,14 @@ export const DiscoverySwipe: React.FC<DiscoverySwipeProps> = ({
     setSwipeDirection(null);
   };
 
-  const nextPhoto = (e: React.MouseEvent) => {
-    e.stopPropagation();
+  const nextPhoto = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
     if (!activeProfile) return;
     setCurrentPhotoIndex((prev) => (prev + 1) % activeProfile.photos.length);
   };
 
-  const prevPhoto = (e: React.MouseEvent) => {
-    e.stopPropagation();
+  const prevPhoto = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
     if (!activeProfile) return;
     setCurrentPhotoIndex(
       (prev) => (prev - 1 + activeProfile.photos.length) % activeProfile.photos.length
@@ -229,15 +234,23 @@ export const DiscoverySwipe: React.FC<DiscoverySwipeProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [activeProfile, history]);
 
-  // Handle horizontal drag end
+  // Handle horizontal & vertical gesture completion with velocity detection
   const handleDragEnd = (_: any, info: any) => {
-    const thresholdX = 95;
+    const ox = info.offset.x;
+    const vx = info.velocity.x;
+    const oy = info.offset.y;
+    const vy = info.velocity.y;
 
-    if (info.offset.x > thresholdX) {
-      // Swiped Right (Like)
+    // Fast flick or confident drag distance
+    const isSwipeRight = ox > 70 || (ox > 20 && vx > 260);
+    const isSwipeLeft = ox < -70 || (ox < -20 && vx < -260);
+    const isSwipeUp = oy < -90 || (oy < -25 && vy < -300);
+
+    if (isSwipeUp) {
+      triggerSuperLikeBurst();
+    } else if (isSwipeRight) {
       handleNext(true, false);
-    } else if (info.offset.x < -thresholdX) {
-      // Swiped Left (Pass)
+    } else if (isSwipeLeft) {
       handleNext(false, false);
     }
   };
@@ -418,7 +431,7 @@ export const DiscoverySwipe: React.FC<DiscoverySwipeProps> = ({
               >
                 Tous
               </button>
-              {currentUser.interests.map((interest) => (
+              {(currentUser?.interests || []).map((interest) => (
                 <button
                   key={interest}
                   id={`filter-interest-${interest.replace(/\s+/g, '-')}`}
@@ -440,44 +453,56 @@ export const DiscoverySwipe: React.FC<DiscoverySwipeProps> = ({
       {/* Main Card Swiper Area */}
       {activeProfile ? (
         <div className="relative max-w-md mx-auto">
-          {/* Background Card Preview (Deck Depth Effect) */}
+          {/* Background Card Preview (Deck Depth Effect with dynamic scale/opacity reacting to drag) */}
           {nextProfile && (
-            <div
+            <motion.div
               aria-hidden="true"
-              className="absolute inset-0 bg-white/90 border border-rose-100/80 rounded-[36px] overflow-hidden shadow-lg shadow-rose-100/40 pointer-events-none transform scale-[0.94] translate-y-3 opacity-70 transition-all duration-300 z-0"
+              style={{
+                scale: nextCardScale,
+                opacity: nextCardOpacity,
+                y: nextCardY,
+              }}
+              className="absolute inset-0 bg-white/90 border border-rose-100/80 rounded-[36px] overflow-hidden shadow-lg shadow-rose-100/40 pointer-events-none z-0 will-change-transform"
             >
               <div className="aspect-[3/4] sm:aspect-[4/5] w-full bg-slate-100 overflow-hidden">
                 <img
-                  src={nextProfile.photos[0]}
+                  src={nextProfile.photos?.[0] || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800'}
                   alt={nextProfile.name}
-                  className="w-full h-full object-cover object-center filter blur-[1px]"
+                  className="w-full h-full object-cover object-center filter blur-[0.5px]"
                   referrerPolicy="no-referrer"
                 />
               </div>
-            </div>
+            </motion.div>
           )}
 
-          {/* Active Card with Framer Motion Horizontal Drag and Exit Transitions */}
-          <AnimatePresence mode="popLayout">
+          {/* Active Card with High Performance Framer Motion Drag and Exit Transitions */}
+          <AnimatePresence mode="popLayout" initial={false}>
             <motion.div
               key={activeProfile.id}
               id={`discovery-profile-card-${activeProfile.id}`}
               drag="x"
+              dragDirectionLock
               dragConstraints={{ left: 0, right: 0 }}
-              dragElastic={0.65}
+              dragElastic={0.6}
+              dragMomentum={false}
               onDragEnd={handleDragEnd}
               style={{ x: dragX, rotate }}
-              initial={{ scale: 0.96, opacity: 0, y: 15 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{
-                x: swipeDirection === 'right' ? 500 : swipeDirection === 'left' ? -500 : 0,
-                y: swipeDirection === 'up' ? -500 : 0,
-                scale: swipeDirection === 'up' ? 1.08 : 0.95,
-                opacity: 0,
-                rotate: swipeDirection === 'right' ? 22 : swipeDirection === 'left' ? -22 : 0,
-                transition: { duration: 0.28, ease: 'easeOut' },
+              initial={{ scale: 0.95, opacity: 0.8, y: 12 }}
+              animate={{
+                scale: 1,
+                opacity: 1,
+                y: 0,
+                transition: { type: 'spring', stiffness: 420, damping: 28 },
               }}
-              className="relative bg-white border border-rose-100 rounded-[36px] overflow-hidden shadow-2xl shadow-rose-200/60 cursor-grab active:cursor-grabbing z-10 select-none touch-pan-y"
+              exit={{
+                x: swipeDirection === 'right' ? 450 : swipeDirection === 'left' ? -450 : 0,
+                y: swipeDirection === 'up' ? -450 : 0,
+                scale: swipeDirection === 'up' ? 1.08 : 0.92,
+                opacity: 0,
+                rotate: swipeDirection === 'right' ? 18 : swipeDirection === 'left' ? -18 : 0,
+                transition: { duration: 0.22, ease: [0.32, 0.72, 0, 1] },
+              }}
+              className="relative bg-white border border-rose-100 rounded-[36px] overflow-hidden shadow-2xl shadow-rose-200/60 cursor-grab active:cursor-grabbing z-10 select-none will-change-transform touch-pan-y"
             >
               {/* Floating Swiping Stamps (Like, Nope) */}
               <motion.div
@@ -519,21 +544,21 @@ export const DiscoverySwipe: React.FC<DiscoverySwipeProps> = ({
               {/* Photo & Carousel (Supports double tap/click for Super Like) */}
               <div
                 className="relative aspect-[3/4] sm:aspect-[4/5] w-full bg-slate-100 overflow-hidden cursor-pointer"
-                onClick={handleDoubleTap}
-                onDoubleClick={triggerSuperLikeBurst}
+                onClick={() => handleDoubleTap()}
+                onDoubleClick={() => triggerSuperLikeBurst()}
                 title="Tapez 2 fois pour Super Liker ⭐"
               >
                 <img
-                  src={activeProfile.photos[currentPhotoIndex] || activeProfile.photos[0]}
+                  src={activeProfile.photos?.[currentPhotoIndex] || activeProfile.photos?.[0] || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800'}
                   alt={activeProfile.name}
                   className="w-full h-full object-cover object-center transition-opacity duration-300 pointer-events-none"
                   referrerPolicy="no-referrer"
                 />
 
                 {/* Photo indicator dashes */}
-                {activeProfile.photos.length > 1 && (
+                {(activeProfile.photos || []).length > 1 && (
                   <div className="absolute top-3 inset-x-3 flex gap-1.5 z-20">
-                    {activeProfile.photos.map((_, idx) => (
+                    {(activeProfile.photos || []).map((_, idx) => (
                       <div
                         key={idx}
                         className={`h-1.5 flex-1 rounded-full transition-all duration-200 ${
@@ -551,7 +576,7 @@ export const DiscoverySwipe: React.FC<DiscoverySwipeProps> = ({
                   <>
                     <button
                       id="prev-photo-btn"
-                      onClick={prevPhoto}
+                      onClick={() => prevPhoto()}
                       onPointerDown={(e) => e.stopPropagation()}
                       className="absolute left-2 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/40 text-white hover:bg-black/60 transition-all z-20"
                       aria-label="Photo précédente"
@@ -560,7 +585,7 @@ export const DiscoverySwipe: React.FC<DiscoverySwipeProps> = ({
                     </button>
                     <button
                       id="next-photo-btn"
-                      onClick={nextPhoto}
+                      onClick={() => nextPhoto()}
                       onPointerDown={(e) => e.stopPropagation()}
                       className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/40 text-white hover:bg-black/60 transition-all z-20"
                       aria-label="Photo suivante"
@@ -709,15 +734,10 @@ export const DiscoverySwipe: React.FC<DiscoverySwipeProps> = ({
                       className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-purple-50 hover:bg-purple-100 text-xs font-bold text-purple-700 border border-purple-200 shadow-2xs transition-all cursor-pointer"
                       title="Cliquez pour comparer vos langages de l'amour"
                     >
-                      <Sparkles className="w-3.5 h-3.5 text-purple-500" />
+                      <Award className="w-3.5 h-3.5 text-purple-600" />
                       <span>Langage : {activeProfile.loveLanguageLabel}</span>
                     </button>
                   )}
-                </div>
-
-                {/* Voice Bio Note Player Innovation */}
-                <div className="pt-1">
-                  <VoiceBioPlayer profile={activeProfile} />
                 </div>
 
                 {/* Verified Trust Banner with Blue Check */}
@@ -766,7 +786,7 @@ export const DiscoverySwipe: React.FC<DiscoverySwipeProps> = ({
                               : 'bg-rose-50 text-rose-800 font-semibold border border-rose-200'
                           }`}
                         >
-                          {isCommon ? '✨ ' : ''}
+                          {isCommon ? '• ' : ''}
                           {interest}
                         </span>
                       );
@@ -817,25 +837,43 @@ export const DiscoverySwipe: React.FC<DiscoverySwipeProps> = ({
                   </div>
                 )}
 
-                {/* Direct Message Action */}
-                <div className="pt-2 border-t border-rose-100 flex items-center gap-2">
-                  <button
-                    id={`swipe-chat-btn-${activeProfile.id}`}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (onStartChat) {
-                        onStartChat(activeProfile);
-                      } else {
-                        onOpenCompatibility(activeProfile);
-                      }
-                    }}
-                    onPointerDown={(e) => e.stopPropagation()}
-                    title={`Écrire un message privé à ${activeProfile.name}`}
-                    className="flex-1 py-2.5 px-4 rounded-2xl bg-gradient-to-r from-rose-500 via-pink-500 to-orange-400 hover:from-rose-600 hover:to-orange-500 text-white font-bold text-xs flex items-center justify-center gap-2 transition-all active:scale-95 shadow-md shadow-rose-200 cursor-pointer"
-                  >
-                    <MessageCircle className="w-4 h-4 shrink-0" />
-                    <span>Discuter avec {activeProfile.name}</span>
-                  </button>
+                {/* Match Status & Discussion Action Bar */}
+                <div className="pt-2 border-t border-rose-100 flex flex-col gap-2">
+                  {matchedProfileIds.includes(activeProfile.id) ? (
+                    <button
+                      id={`swipe-chat-btn-${activeProfile.id}`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (onStartChat) onStartChat(activeProfile);
+                      }}
+                      onPointerDown={(e) => e.stopPropagation()}
+                      title={`Ouvrir la messagerie avec ${activeProfile.name}`}
+                      className="w-full py-2.5 px-4 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold text-xs flex items-center justify-center gap-2 transition-all active:scale-95 shadow-md shadow-emerald-200 cursor-pointer"
+                    >
+                      <MessageCircle className="w-4 h-4 shrink-0" />
+                      <span>Match Mutuel Confirmé • Discuter avec {activeProfile.name}</span>
+                    </button>
+                  ) : (
+                    <div className="space-y-1.5">
+                      <button
+                        id={`swipe-like-match-btn-${activeProfile.id}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onLike(activeProfile);
+                        }}
+                        onPointerDown={(e) => e.stopPropagation()}
+                        title={`Liker ${activeProfile.name} pour tenter un match`}
+                        className="w-full py-2.5 px-4 rounded-2xl bg-gradient-to-r from-rose-500 via-pink-500 to-orange-400 hover:from-rose-600 hover:to-orange-500 text-white font-bold text-xs flex items-center justify-center gap-2 transition-all active:scale-95 shadow-md shadow-rose-200 cursor-pointer"
+                      >
+                        <Heart className="w-4 h-4 shrink-0 fill-white" />
+                        <span>Liker pour matcher avec {activeProfile.name}</span>
+                      </button>
+                      <p className="text-[10px] text-center text-slate-500 font-medium flex items-center justify-center gap-1">
+                        <Lock className="w-3 h-3 text-slate-400" />
+                        <span>Messagerie privée débloquée uniquement après un Match mutuel</span>
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
 

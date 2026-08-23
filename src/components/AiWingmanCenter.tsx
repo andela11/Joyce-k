@@ -59,7 +59,7 @@ export const AiWingmanCenter: React.FC<AiWingmanCenterProps> = ({
       id: 'charmant_esprit',
       label: 'Charmant & Spirituel',
       desc: 'Élégant, cultivé, avec une pointe de répartie et d\'esprit fin.',
-      icon: '✨',
+      icon: '💎',
     },
     {
       id: 'romantique_doux',
@@ -107,7 +107,7 @@ export const AiWingmanCenter: React.FC<AiWingmanCenterProps> = ({
             name: 'Léa (Match Test)',
             age: 27,
             city: currentUser.city,
-            interests: currentUser.interests.slice(0, 3),
+            interests: (currentUser?.interests || []).slice(0, 3),
             bio: 'Testeur de charme et de réactivité !',
           },
           chatHistory: newHistory.map((m) => ({
@@ -150,8 +150,8 @@ export const AiWingmanCenter: React.FC<AiWingmanCenterProps> = ({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          bio: currentUser.bio,
-          interests: currentUser.interests,
+          bio: currentUser?.bio || '',
+          interests: currentUser?.interests || [],
           vibe: bioVibe,
           relationshipGoal: currentUser.relationshipGoal,
         }),
@@ -176,7 +176,7 @@ export const AiWingmanCenter: React.FC<AiWingmanCenterProps> = ({
             {onBackToDiscovery && (
               <button
                 id="ai-wingman-back-btn"
-                onClick={onBackToDiscovery}
+                onClick={() => onBackToDiscovery()}
                 className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-white/20 hover:bg-white/30 text-white border border-white/40 transition-colors cursor-pointer mr-1"
                 title="Retourner aux Swipes"
               >
@@ -435,7 +435,7 @@ export const AiWingmanCenter: React.FC<AiWingmanCenterProps> = ({
                 onChange={(e) => setBioVibe(e.target.value)}
                 className="flex-1 bg-rose-50/70 border border-rose-200 text-slate-800 font-semibold text-xs rounded-xl px-3 py-2 focus:ring-rose-500 shadow-sm"
               >
-                <option value="Élégant & Pétillant">✨ Élégant & Pétillant</option>
+                <option value="Élégant & Pétillant">💎 Élégant & Pétillant</option>
                 <option value="Humour & Spontané">😄 Humour & Spontané</option>
                 <option value="Poétique & Aventure">🌿 Poétique & Aventure</option>
                 <option value="Direct & Passionné">🔥 Direct & Passionné</option>

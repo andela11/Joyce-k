@@ -12,6 +12,11 @@ const PORT = 3000;
 app.use(express.json({ limit: '20mb' }));
 app.use(express.urlencoded({ limit: '20mb', extended: true }));
 
+// Health check endpoint
+app.get("/api/health", (req, res) => {
+  res.json({ status: "ok", app: "joyce-k", timestamp: new Date().toISOString() });
+});
+
 // Server-side Gemini AI client initialization
 const getAiClient = () => {
   const apiKey = process.env.GEMINI_API_KEY;

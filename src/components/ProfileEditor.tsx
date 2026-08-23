@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   User,
   Zap,
@@ -22,14 +22,15 @@ import {
   Play,
   Pause,
   AlertOctagon,
-  Sparkles,
-  Mic,
-  Square,
+  Phone,
+  Compass,
+  Locate,
+  Award,
 } from 'lucide-react';
 import { UserProfile, RelationshipGoal, AuthUser, LoveLanguage } from '../types';
 import { ALL_INTEREST_CATEGORIES } from '../data/categories';
 import { PRESET_CITIES } from '../utils/geoUtils';
-import { VoiceBioPlayer } from './VoiceBioPlayer';
+import { detectCountryFromPhoneNumber, COUNTRY_PHONE_DATABASE } from '../utils/phoneCountryUtils';
 import { LoveLanguageQuizModal } from './LoveLanguageQuizModal';
 
 interface ProfileEditorProps {
@@ -55,36 +56,10 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({
   const [isEnhancing, setIsEnhancing] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [isQuizOpen, setIsQuizOpen] = useState(false);
-  const [isRecordingVoice, setIsRecordingVoice] = useState(false);
-  const [recordingSeconds, setRecordingSeconds] = useState(0);
-  const voiceTimerRef = useRef<any>(null);
 
-  const startVoiceRecording = () => {
-    setIsRecordingVoice(true);
-    setRecordingSeconds(0);
-    voiceTimerRef.current = setInterval(() => {
-      setRecordingSeconds((prev) => {
-        if (prev >= 15) {
-          stopVoiceRecording();
-          return 15;
-        }
-        return prev + 1;
-      });
-    }, 1000);
-  };
-
-  const stopVoiceRecording = () => {
-    setIsRecordingVoice(false);
-    if (voiceTimerRef.current) {
-      clearInterval(voiceTimerRef.current);
-      voiceTimerRef.current = null;
-    }
-    setProfile((prev) => ({
-      ...prev,
-      voiceBioDurationSeconds: Math.max(5, recordingSeconds || 12),
-      voiceBioPrompt: prev.voiceBioPrompt || 'Mon anecdote la plus spontanée...',
-    }));
-  };
+  useEffect(() => {
+    setProfile(userProfile);
+  }, [userProfile]);
 
   // Gallery file upload & AI check
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
@@ -189,7 +164,7 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({
       }));
       setNewVideoUrl('');
       setShowAddVideo(false);
-      setVideoSuccessMsg('Vidéo réelle certifiée et ajoutée avec succès ! ✨');
+      setVideoSuccessMsg('Vidéo réelle certifiée et ajoutée avec succès !');
       setTimeout(() => setVideoSuccessMsg(null), 4000);
     } catch (err) {
       console.warn('Video upload fallback verification:', err);
@@ -371,7 +346,7 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({
           {onBackToDiscovery && (
             <button
               id="profile-back-to-discovery-btn"
-              onClick={onBackToDiscovery}
+              onClick={() => onBackToDiscovery()}
               className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white border border-slate-700 transition-colors cursor-pointer text-xs font-bold shrink-0"
               title="Retourner aux Swipes et Profils"
             >
@@ -381,8 +356,8 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({
           )}
           <div className="relative">
             <img
-              src={profile.photos[0]}
-              alt={profile.name}
+              src={profile?.photos?.[0] || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800'}
+              alt={profile?.name || 'Profil'}
               className="w-16 h-16 rounded-2xl object-cover border-2 border-rose-500 shadow-md shadow-rose-950"
               referrerPolicy="no-referrer"
             />
@@ -436,7 +411,7 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({
         {onOpenAuth && (
           <button
             id="profile-auth-manage-btn"
-            onClick={onOpenAuth}
+            onClick={() => onOpenAuth('signup')}
             className="px-4 py-2 rounded-2xl border border-slate-700 bg-slate-800 hover:bg-slate-750 text-white text-xs font-bold transition-all flex items-center gap-1.5 self-stretch sm:self-auto justify-center shadow-xs"
           >
             <LogIn className="w-3.5 h-3.5" />
@@ -751,7 +726,7 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({
             className="w-full bg-slate-950 border border-slate-800 text-white font-semibold text-xs rounded-xl p-2.5 focus:border-rose-500 shadow-sm"
           >
             <option value="Relation sérieuse">💍 Relation sérieuse</option>
-            <option value="Rencontres & Découverte">✨ Rencontres & Découverte</option>
+            <option value="Rencontres & Découverte">🌟 Rencontres & Découverte</option>
             <option value="Coup de foudre">⚡ Coup de foudre</option>
             <option value="Amitié & Plus si affinités">🤝 Amitié & Plus si affinités</option>
           </select>
@@ -790,96 +765,174 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({
         </div>
       </div>
 
-      {/* Voice Bio Vibe & Love Languages Innovation Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {/* Voice Bio Note Player & Recorder */}
-        <div className="bg-slate-900 border border-slate-800 rounded-[32px] p-5 shadow-xl shadow-slate-950/40 space-y-3.5 text-white">
-          <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">
-            <h3 className="text-sm font-bold text-white flex items-center gap-2">
-              <Mic className="w-4 h-4 text-purple-400" />
-              <span>Voice Bio Vibe</span>
-            </h3>
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-950/80 text-purple-300 border border-purple-800">
-              Note Vocale
-            </span>
-          </div>
+      {/* Phone Number & Country Identification Section */}
+      {(() => {
+        const phoneCountry = detectCountryFromPhoneNumber(profile.phoneNumber || '+237 6 99 88 77 66');
+        const exactPhoto = profile.photos?.[0] || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800';
 
-          <div className="space-y-2">
-            <label className="text-[11px] font-bold text-slate-400">
-              Question ou prompt vocal :
-            </label>
-            <input
-              type="text"
-              value={profile.voiceBioPrompt || ''}
-              onChange={(e) =>
-                setProfile({ ...profile, voiceBioPrompt: e.target.value })
-              }
-              placeholder="Ex: Mon anecdote la plus spontanée..."
-              className="w-full bg-slate-950 border border-slate-800 focus:border-purple-500 rounded-xl px-3 py-2 text-xs text-white"
-            />
-          </div>
+        return (
+          <div className="bg-gradient-to-r from-slate-900 via-slate-900 to-slate-950 border border-rose-950/60 rounded-[32px] p-5 sm:p-6 shadow-xl shadow-slate-950/50 space-y-4 text-white">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-2xl bg-rose-500/10 text-rose-400 border border-rose-500/20">
+                  <Phone className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-white flex items-center gap-1.5">
+                    Numéro de Téléphone & Pays de Rattachement
+                  </h3>
+                  <p className="text-[11px] text-slate-400 font-medium">
+                    Votre pays et votre géolocalisation sont détectés à partir de votre indicatif téléphonique.
+                  </p>
+                </div>
+              </div>
 
-          {/* Voice Preview & Recording Trigger */}
-          <div className="space-y-2 pt-1">
-            <VoiceBioPlayer profile={profile} />
+              {/* Exact Photo & Detected Country Live Preview Badge */}
+              <div className="flex items-center gap-2.5 bg-slate-950/80 border border-slate-800 rounded-2xl px-3 py-1.5 shrink-0">
+                <div className="relative">
+                  <img
+                    src={exactPhoto}
+                    alt={profile.name}
+                    className="w-8 h-8 rounded-full object-cover border border-rose-500 ring-2 ring-rose-500/30"
+                    referrerPolicy="no-referrer"
+                  />
+                  <span className="absolute -bottom-1 -right-1 text-xs bg-slate-900 rounded-full px-0.5 border border-slate-700">
+                    {phoneCountry.flag}
+                  </span>
+                </div>
+                <div className="text-left">
+                  <div className="text-[9px] uppercase font-bold text-rose-400">Pays détecté</div>
+                  <div className="text-xs font-black text-white flex items-center gap-1">
+                    <span>{phoneCountry.flag}</span>
+                    <span>{phoneCountry.name}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
 
-            <div className="flex items-center gap-2 pt-1">
-              {!isRecordingVoice ? (
-                <button
-                  type="button"
-                  onClick={startVoiceRecording}
-                  className="flex-1 py-2 px-3 rounded-xl bg-purple-900/60 hover:bg-purple-800/80 border border-purple-700/60 text-purple-200 text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer"
+            {/* Inputs & Instant Location Launcher */}
+            <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
+              <div className="sm:col-span-6 relative">
+                <label className="text-[11px] font-bold text-slate-300 block mb-1">
+                  Numéro de téléphone :
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-rose-400 font-bold text-xs">
+                    <span className="text-base mr-1">{phoneCountry.flag}</span>
+                  </div>
+                  <input
+                    id="profile-phone-input"
+                    type="text"
+                    value={profile.phoneNumber || ''}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      const detected = detectCountryFromPhoneNumber(val);
+                      setProfile({
+                        ...profile,
+                        phoneNumber: val,
+                        country: detected.name,
+                      });
+                    }}
+                    placeholder="+237 6XX XX XX XX ou +33 6..."
+                    className="w-full bg-slate-950 border border-slate-800 text-white font-bold text-xs rounded-xl pl-10 pr-3 py-2.5 focus:border-rose-500 shadow-sm"
+                  />
+                </div>
+              </div>
+
+              <div className="sm:col-span-3">
+                <label className="text-[11px] font-bold text-slate-300 block mb-1">
+                  Indicatif / Pays :
+                </label>
+                <select
+                  id="profile-country-code-select"
+                  value={phoneCountry.code}
+                  onChange={(e) => {
+                    const found = COUNTRY_PHONE_DATABASE.find((c) => c.code === e.target.value);
+                    if (found) {
+                      setProfile({
+                        ...profile,
+                        phoneNumber: found.example,
+                        country: found.name,
+                        city: `${found.defaultCity}, ${found.name}`,
+                        lat: found.lat,
+                        lng: found.lng,
+                      });
+                    }
+                  }}
+                  className="w-full bg-slate-950 border border-slate-800 text-white font-semibold text-xs rounded-xl p-2.5 focus:border-rose-500 shadow-sm"
                 >
-                  <Mic className="w-3.5 h-3.5 text-purple-300" />
-                  <span>Enregistrer une nouvelle Voice Note</span>
-                </button>
-              ) : (
+                  {COUNTRY_PHONE_DATABASE.map((c) => (
+                    <option key={`${c.code}-${c.name}`} value={c.code}>
+                      {c.flag} {c.name} ({c.code})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="sm:col-span-3 sm:pt-5">
                 <button
+                  id="profile-sync-location-from-phone-btn"
                   type="button"
-                  onClick={stopVoiceRecording}
-                  className="flex-1 py-2 px-3 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold flex items-center justify-center gap-2 animate-pulse cursor-pointer shadow-lg shadow-rose-950"
+                  onClick={() => {
+                    const detected = detectCountryFromPhoneNumber(profile.phoneNumber);
+                    setProfile({
+                      ...profile,
+                      country: detected.name,
+                      city: `${detected.defaultCity}, ${detected.name}`,
+                      lat: detected.lat,
+                      lng: detected.lng,
+                    });
+                    setSaveSuccess(true);
+                    setTimeout(() => setSaveSuccess(false), 2500);
+                  }}
+                  className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-rose-500 to-orange-500 hover:from-rose-600 hover:to-orange-600 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-rose-950 transition-all cursor-pointer"
                 >
-                  <Square className="w-3.5 h-3.5 fill-white" />
-                  <span>Arrêter l'enregistrement ({recordingSeconds}s)</span>
+                  <Locate className="w-3.5 h-3.5" />
+                  <span>📍 Localiser par pays</span>
                 </button>
-              )}
+              </div>
             </div>
           </div>
+        );
+      })()}
+
+      {/* Langages de l'Amour & Alchimie Relationnelle */}
+      <div className="bg-slate-900 border border-slate-800 rounded-[32px] p-6 shadow-xl shadow-slate-950/40 space-y-4 text-white">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-3">
+          <div>
+            <h3 className="text-sm font-bold text-white flex items-center gap-2">
+              <Heart className="w-4 h-4 text-rose-500 fill-rose-500" />
+              <span>Langage de l'Amour & Alchimie Émotionnelle</span>
+            </h3>
+            <p className="text-[11px] text-slate-400 font-medium mt-0.5">
+              Votre langage dominant affine l'analyse de compatibilité avec vos futurs matchs.
+            </p>
+          </div>
+          <span className="self-start sm:self-auto text-[10px] font-extrabold px-3 py-1 rounded-full bg-rose-950/80 text-rose-300 border border-rose-800 uppercase tracking-wider">
+            Test Psychologique
+          </span>
         </div>
 
-        {/* 5 Langages de l'Amour Test & Badge */}
-        <div className="bg-slate-900 border border-slate-800 rounded-[32px] p-5 shadow-xl shadow-slate-950/40 space-y-3.5 text-white flex flex-col justify-between">
-          <div className="space-y-3">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">
-              <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-pink-400" />
-                <span>Langages de l'Amour</span>
-              </h3>
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-pink-950/80 text-pink-300 border border-pink-800">
-                Alchimie Romantique
-              </span>
-            </div>
-
-            <div className="p-3 bg-slate-950 rounded-2xl border border-slate-800 space-y-1.5">
-              <span className="text-[10px] uppercase font-black tracking-wider text-pink-400">
-                Votre profil amoureux actuel
-              </span>
-              <p className="text-sm font-bold text-white flex items-center gap-2">
-                <span>💖</span>
-                <span>{profile.loveLanguageLabel || 'Moments de qualité'}</span>
-              </p>
-              <p className="text-[11px] text-slate-400 leading-relaxed font-medium">
-                Votre langage dominant est utilisé pour calculer l'alchimie relationnelle avec vos matchs potentiels.
-              </p>
-            </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
+          <div className="p-4 bg-slate-950 rounded-2xl border border-slate-800 space-y-1.5">
+            <span className="text-[10px] uppercase font-black tracking-wider text-rose-400">
+              Votre dominante actuelle
+            </span>
+            <p className="text-base font-black text-white flex items-center gap-2">
+              <Award className="w-4 h-4 text-amber-400" />
+              <span>{profile.loveLanguageLabel || 'Moments de qualité'}</span>
+            </p>
+            <p className="text-xs text-slate-400 leading-relaxed font-medium">
+              Ce critère est pris en compte dans le calcul d'affinité mutuelle pour assurer des connexions sincères.
+            </p>
           </div>
 
           <button
             type="button"
             onClick={() => setIsQuizOpen(true)}
-            className="w-full py-2.5 px-4 rounded-2xl bg-gradient-to-r from-pink-600 to-purple-600 hover:opacity-90 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md shadow-pink-950 transition-all cursor-pointer"
+            className="w-full py-3.5 px-4 rounded-2xl bg-gradient-to-r from-rose-600 to-orange-500 hover:from-rose-500 hover:to-orange-400 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md shadow-rose-950 transition-all cursor-pointer"
           >
-            <Sparkles className="w-4 h-4" />
+            <ShieldCheck className="w-4 h-4 text-white" />
             <span>Passer / Recalculer le Test des 5 Langages</span>
           </button>
         </div>
@@ -890,7 +943,7 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({
         <div className="flex items-center justify-between border-b border-slate-800 pb-3">
           <div>
             <h3 className="text-sm font-bold text-white flex items-center gap-2">
-              <Heart className="w-4 h-4 text-amber-400" /> Vos Centres d'Intérêt ({profile.interests.length} sélectionnés)
+              <Heart className="w-4 h-4 text-amber-400" /> Vos Centres d'Intérêt ({(profile.interests || []).length} sélectionnés)
             </h3>
             <p className="text-[11px] text-slate-400 font-medium">
               Ces badges guident notre algorithme d'affinités et l'IA wingman sur joyce-k.
@@ -907,7 +960,7 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({
               </span>
               <div className="flex flex-wrap gap-1.5">
                 {category.tags.map((tag) => {
-                  const isSelected = profile.interests.includes(tag);
+                  const isSelected = (profile.interests || []).includes(tag);
                   return (
                     <button
                       key={tag}
@@ -930,25 +983,35 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({
         </div>
       </div>
 
-      {/* Account Session & Logout Card */}
-      {authUser && onLogout && (
-        <div className="bg-slate-900 border border-slate-800 rounded-[32px] p-5 shadow-xl shadow-slate-950/40 flex flex-col sm:flex-row items-center justify-between gap-4 text-white">
-          <div>
-            <h4 className="text-sm font-bold text-white">Session Active</h4>
-            <p className="text-xs text-slate-400">
-              Connecté en tant que <strong>{authUser.name}</strong> ({authUser.email})
-            </p>
-          </div>
-          <button
-            id="profile-logout-btn"
-            onClick={onLogout}
-            className="w-full sm:w-auto px-5 py-2.5 rounded-2xl bg-rose-950/60 hover:bg-rose-900/80 border border-rose-900/50 text-rose-300 font-bold text-xs flex items-center justify-center gap-2 transition-all"
-          >
-            <LogOut className="w-4 h-4 text-rose-400" />
-            <span>Se Déconnecter de Joyce-K</span>
-          </button>
+      {/* Save Profile Bottom Action Bar */}
+      <div className="bg-slate-900 border border-slate-800 rounded-[32px] p-5 shadow-xl shadow-slate-950/40 flex flex-col sm:flex-row items-center justify-between gap-4 text-white">
+        <div>
+          <h4 className="text-sm font-bold text-white flex items-center gap-2">
+            <Save className="w-4 h-4 text-rose-400" />
+            <span>Enregistrer vos modifications</span>
+          </h4>
+          <p className="text-xs text-slate-400">
+            Mettez à jour vos photos, vidéos, bio et préférences d'affinités sur votre profil Joyce-K.
+          </p>
         </div>
-      )}
+        <button
+          id="profile-save-bottom-btn"
+          onClick={handleSave}
+          className="w-full sm:w-auto px-6 py-3.5 rounded-2xl bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-600 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-rose-950/50 hover:scale-[1.02] active:scale-95 transition-all cursor-pointer"
+        >
+          {saveSuccess ? (
+            <>
+              <CheckCircle2 className="w-5 h-5 text-white" />
+              <span>Enregistré avec succès !</span>
+            </>
+          ) : (
+            <>
+              <Save className="w-5 h-5 text-white" />
+              <span>Enregistrer mon profil</span>
+            </>
+          )}
+        </button>
+      </div>
 
       {/* Love Language Quiz Modal */}
       <LoveLanguageQuizModal

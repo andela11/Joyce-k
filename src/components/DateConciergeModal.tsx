@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Sparkles,
   CalendarHeart,
   Shield,
   MapPin,
@@ -18,6 +17,7 @@ import {
   Flame,
   Info,
   BellRing,
+  Zap,
 } from 'lucide-react';
 import { UserProfile, DateIdea, SafeDateGuardian } from '../types';
 
@@ -163,7 +163,7 @@ export const DateConciergeModal: React.FC<DateConciergeModalProps> = ({
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            <Sparkles className="w-4 h-4 text-rose-500" />
+            <CalendarHeart className="w-4 h-4 text-rose-500" />
             <span>Scénarios de Date IA</span>
           </button>
           <button
@@ -185,14 +185,14 @@ export const DateConciergeModal: React.FC<DateConciergeModalProps> = ({
             <div className="space-y-4">
               <div className="bg-rose-50 border border-rose-200/80 rounded-2xl p-3.5 flex items-start gap-3 text-xs text-slate-700">
                 <div className="p-2 rounded-xl bg-rose-100 text-rose-600 shrink-0">
-                  <Sparkles className="w-4 h-4" />
+                  <Zap className="w-4 h-4" />
                 </div>
                 <div>
                   <p className="font-bold text-slate-900">
                     L'IA analyse vos affinités communes avec {targetProfile.name} :
                   </p>
                   <div className="flex flex-wrap gap-1.5 mt-1.5">
-                    {targetProfile.interests.slice(0, 4).map((interest) => (
+                    {(targetProfile?.interests || []).slice(0, 4).map((interest) => (
                       <span
                         key={interest}
                         className="px-2 py-0.5 rounded-full bg-white text-rose-700 font-semibold border border-rose-200 text-[10px]"
@@ -221,7 +221,7 @@ export const DateConciergeModal: React.FC<DateConciergeModalProps> = ({
                       onClick={fetchDateIdeas}
                       className="text-[11px] font-bold text-rose-600 hover:underline cursor-pointer flex items-center gap-1"
                     >
-                      <Sparkles className="w-3 h-3" />
+                      <Zap className="w-3 h-3" />
                       Régénérer
                     </button>
                   </div>

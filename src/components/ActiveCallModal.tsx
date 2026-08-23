@@ -12,7 +12,7 @@ import {
   RotateCcw,
   Shield,
   Lock,
-  Sparkles,
+  Zap,
   AlertCircle,
   Heart,
 } from 'lucide-react';
@@ -132,7 +132,7 @@ export const ActiveCallModal: React.FC<ActiveCallModalProps> = ({
   const triggerSendHearts = (originX?: number, originY?: number, isFromPartner = false) => {
     playHeartChime();
 
-    const emojis = ['💖', '❤️', '💕', '🥰', '💓', '✨', '💗', '🔥'];
+    const emojis = ['💖', '❤️', '💕', '🥰', '💓', '💗', '🔥'];
     const colors = ['#f43f5e', '#ec4899', '#e11d48', '#fb7185', '#fda4af', '#f59e0b'];
     const newHearts: FloatingHeart[] = [];
 
@@ -451,7 +451,7 @@ export const ActiveCallModal: React.FC<ActiveCallModalProps> = ({
               {/* Remote Partner Video (or simulated live portrait) */}
               <div className="w-full h-full relative overflow-hidden bg-slate-900 flex items-center justify-center">
                 <img
-                  src={partner.photos[0]}
+                  src={partner?.photos?.[0] || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800'}
                   alt={partner.name}
                   className="w-full h-full object-cover brightness-90 filter"
                   referrerPolicy="no-referrer"
@@ -479,7 +479,7 @@ export const ActiveCallModal: React.FC<ActiveCallModalProps> = ({
                 ) : (
                   <div className="w-full h-full flex flex-col items-center justify-center bg-slate-900 p-2 text-center text-slate-400">
                     <img
-                      src={currentUser.photos[0]}
+                      src={currentUser?.photos?.[0] || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800'}
                       alt={currentUser.name}
                       className="w-12 h-12 rounded-full object-cover border border-slate-700 mb-2 opacity-80"
                       referrerPolicy="no-referrer"
@@ -508,7 +508,7 @@ export const ActiveCallModal: React.FC<ActiveCallModalProps> = ({
                 )}
                 <div className="w-28 h-28 sm:w-36 sm:h-36 rounded-full overflow-hidden border-4 border-rose-500 shadow-2xl shadow-rose-900/50 relative">
                   <img
-                    src={partner.photos[0]}
+                    src={partner?.photos?.[0] || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800'}
                     alt={partner.name}
                     className="w-full h-full object-cover"
                     referrerPolicy="no-referrer"

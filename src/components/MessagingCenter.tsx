@@ -12,7 +12,7 @@ import {
   ChevronLeft,
   UserX,
   MessageCircle,
-  Sparkles,
+  Zap,
   Search,
   X,
   Phone,
@@ -124,7 +124,7 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
 
   const handleSendDateInvitation = (dateIdea: DateIdea, customNote?: string) => {
     if (!activeConversationId) return;
-    const inviteText = `✨ INVITATION DATE CONCIERGE IA : ${dateIdea.title}
+    const inviteText = `💌 INVITATION DATE CONCIERGE IA : ${dateIdea.title}
 📍 Lieu : ${dateIdea.locationType}
 🕒 Créneau : ${dateIdea.suggestedTimeSlot}
 💡 Activité : ${dateIdea.description}${customNote ? `\n\n"${customNote}"` : ''}`;
@@ -184,7 +184,7 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
           } else {
             setAiSuggestions([
               `Coucou ! J'adore ton profil, tu aimes quel type de sorties ?`,
-              `Hello ! On a l'air d'avoir beaucoup de passions communes ✨`,
+              `Hello ! On a l'air d'avoir beaucoup de passions communes.`,
               `Salut ! Quel est ton endroit préféré dans la ville ?`,
             ]);
           }
@@ -525,7 +525,7 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
                 {onBackToDiscovery && (
                   <button
                     id="conv-list-back-btn"
-                    onClick={onBackToDiscovery}
+                    onClick={() => onBackToDiscovery()}
                     title="Retour aux profils à découvrir"
                     className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 transition-colors cursor-pointer shadow-2xs shrink-0"
                   >
@@ -554,7 +554,7 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
               {/* AI Auto-responder pill */}
               <button
                 id="conv-list-ai-toggle"
-                onClick={onToggleAi}
+                onClick={() => onToggleAi?.()}
                 title="Activer/Désactiver le Répondeur IA"
                 className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full text-xs font-bold border transition-all cursor-pointer ${
                   aiSettings.enabled
@@ -612,8 +612,8 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
                     >
                       <div className="relative shrink-0">
                         <img
-                          src={conv.participant.photos[0]}
-                          alt={conv.participant.name}
+                          src={conv.participant?.photos?.[0] || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800'}
+                          alt={conv.participant?.name || 'Contact'}
                           className="w-12 h-12 rounded-2xl object-cover border-2 border-rose-200 shadow-xs"
                           referrerPolicy="no-referrer"
                         />
@@ -721,7 +721,7 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
                   </div>
                   {onBackToDiscovery && (
                     <button
-                      onClick={onBackToDiscovery}
+                      onClick={() => onBackToDiscovery()}
                       className="px-4 py-2 rounded-xl bg-rose-600 text-white text-xs font-bold shadow-sm hover:bg-rose-500 cursor-pointer"
                     >
                       Découvrir des profils
@@ -774,8 +774,8 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
 
                   <div className="relative shrink-0">
                     <img
-                      src={activeConv.participant.photos[0]}
-                      alt={activeConv.participant.name}
+                      src={activeConv.participant?.photos?.[0] || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800'}
+                      alt={activeConv.participant?.name || 'Contact'}
                       className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl object-cover border-2 border-rose-200 shadow-xs"
                       referrerPolicy="no-referrer"
                     />
@@ -869,7 +869,7 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
                     </span>
                   </div>
                   <button
-                    onClick={onToggleAi}
+                    onClick={() => onToggleAi?.()}
                     className="text-emerald-700 hover:underline font-bold ml-2 shrink-0 text-[10px] cursor-pointer"
                   >
                     Pause
@@ -1036,7 +1036,7 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
               {aiSuggestions.length > 0 && !isRecordingVoice && (
                 <div className="px-3 sm:px-4 py-2 bg-white/90 border-t border-rose-100 shrink-0 z-10">
                   <div className="flex items-center gap-1.5 text-[10px] sm:text-[11px] text-rose-600 font-bold mb-1">
-                    <Sparkles className="w-3 h-3 text-rose-500" />
+                    <Zap className="w-3 h-3 text-rose-500" />
                     <span>Suggestions d'accroches pour briser la glace :</span>
                   </div>
                   <div className="flex gap-1.5 overflow-x-auto pb-1 no-scrollbar">

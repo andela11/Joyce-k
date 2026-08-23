@@ -8,27 +8,31 @@ import {
   Zap,
   CheckCircle2,
   RefreshCw,
-  Sparkles,
-  Mic,
+  Award,
 } from 'lucide-react';
 import { UserProfile, CompatibilityReport } from '../types';
-import { VoiceBioPlayer } from './VoiceBioPlayer';
 
 interface CompatibilityModalProps {
   userProfile: UserProfile;
   targetProfile: UserProfile;
+  matchedProfileIds?: string[];
   onClose: () => void;
   onStartChat: (profile: UserProfile, initialMessage?: string) => void;
+  onLike?: (profile: UserProfile) => void;
 }
 
 export const CompatibilityModal: React.FC<CompatibilityModalProps> = ({
   userProfile,
   targetProfile,
+  matchedProfileIds = [],
   onClose,
   onStartChat,
+  onLike,
 }) => {
   const [loading, setLoading] = useState(false);
   const [report, setReport] = useState<CompatibilityReport | null>(null);
+
+  const isMatched = matchedProfileIds.includes(targetProfile.id);
 
   // Common interests
   const userInterests = userProfile?.interests || [];
@@ -57,21 +61,21 @@ export const CompatibilityModal: React.FC<CompatibilityModalProps> = ({
           'Objectifs de relation mutuellement compatibles',
           'Alchimie conversationnelle prometteuse',
         ],
-        icebreaker: data.icebreaker || `J'ai vu qu'on adorait tous les deux ${commonInterests[0] || 'les voyages'} ! Quel est ton spot préféré ?`,
+        icebreaker: data.icebreaker || `J'ai vu qu'on adorait tous les deux ${commonInterests?.[0] || 'les voyages'} ! Quel est ton spot préféré ?`,
         commonInterests,
       });
     } catch (err) {
       console.error(err);
       // Fallback
       setReport({
-        score: Math.min(96, 68 + commonInterests.length * 8),
-        summary: `Superbe adéquation basée sur vos ${commonInterests.length} centres d'intérêt partagés !`,
+        score: Math.min(96, 68 + (commonInterests || []).length * 8),
+        summary: `Superbe adéquation basée sur vos ${(commonInterests || []).length} centres d'intérêt partagés !`,
         strengths: [
-          `Passions communes : ${commonInterests.slice(0, 3).join(', ') || 'partage et authenticité'}`,
+          `Passions communes : ${(commonInterests || []).slice(0, 3).join(', ') || 'partage et authenticité'}`,
           'Vision du couple équilibrée',
           'Complémentarité de personnalité',
         ],
-        icebreaker: `Hello ${targetProfile.name} ! Notre score d'affinités est au top, surtout pour ${commonInterests[0] || 'nos sorties'} 😉`,
+        icebreaker: `Hello ${targetProfile?.name || ''} ! Notre score d'affinités est au top, surtout pour ${commonInterests?.[0] || 'nos sorties'} 😉`,
         commonInterests,
       });
     } finally {
@@ -82,6 +86,17 @@ export const CompatibilityModal: React.FC<CompatibilityModalProps> = ({
   React.useEffect(() => {
     calculateCompatibilityWithAi();
   }, [targetProfile.id]);
+
+  const handleActionChatOrMatch = (initialMsg?: string) => {
+    if (isMatched) {
+      onStartChat(targetProfile, initialMsg);
+    } else {
+      if (onLike) {
+        onLike(targetProfile);
+      }
+      onClose();
+    }
+  };
 
   return (
     <div
@@ -126,8 +141,8 @@ export const CompatibilityModal: React.FC<CompatibilityModalProps> = ({
           <div className="flex items-center justify-center gap-4 py-2">
             <div className="relative text-center">
               <img
-                src={userProfile.photos[0]}
-                alt={userProfile.name}
+                src={userProfile?.photos?.[0] || 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=800'}
+                alt={userProfile?.name || 'Vous'}
                 className="w-16 h-16 rounded-2xl object-cover border-2 border-rose-500 shadow-md shadow-rose-200"
                 referrerPolicy="no-referrer"
               />
@@ -149,58 +164,31 @@ export const CompatibilityModal: React.FC<CompatibilityModalProps> = ({
 
             <div className="relative text-center">
               <img
-                src={targetProfile.photos[0]}
-                alt={targetProfile.name}
+                src={targetProfile?.photos?.[0] || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800'}
+                alt={targetProfile?.name || 'Profil'}
                 className="w-16 h-16 rounded-2xl object-cover border-2 border-orange-400 shadow-md shadow-orange-200"
                 referrerPolicy="no-referrer"
               />
               <span className="text-xs font-bold text-slate-700 block mt-1">
-                {targetProfile.name}
+                {targetProfile?.name}
               </span>
             </div>
           </div>
 
-          {/* Voice Bio Note Player */}
-          <div className="pt-1">
-            <VoiceBioPlayer profile={targetProfile} />
-          </div>
-
           {loading ? (
             <div className="py-12 flex flex-col items-center justify-center gap-3">
-              <RefreshCw className="w-8 h-8 text-rose-500 animate-spin" />
-              <p className="text-sm font-semibold text-slate-700">
-                Calcul de l'alchimie algorithmique & centres d'intérêt...
+              <div className="w-10 h-10 border-4 border-rose-500 border-t-transparent rounded-full animate-spin" />
+              <p className="text-xs font-semibold text-slate-500">
+                Calcul de l'affinité émotionnelle & des passions par l'IA...
               </p>
             </div>
           ) : report ? (
             <div className="space-y-4">
-              {/* Score Bar */}
-              <div className="bg-rose-50/70 border border-rose-200 rounded-2xl p-4 shadow-xs">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-bold uppercase tracking-wider text-rose-700 flex items-center gap-1.5">
-                    <Zap className="w-4 h-4 text-amber-500" /> Indice de
-                    Compatibilité
-                  </span>
-                  <span className="text-lg font-black bg-gradient-to-r from-rose-600 to-orange-500 bg-clip-text text-transparent">
-                    {report.score} / 100
-                  </span>
-                </div>
-                <div className="w-full h-3 bg-rose-200 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-gradient-to-r from-rose-500 via-pink-500 to-orange-400 rounded-full transition-all duration-1000 ease-out"
-                    style={{ width: `${report.score}%` }}
-                  />
-                </div>
-                <p className="text-xs text-slate-700 font-medium mt-2.5 leading-relaxed">
-                  {report.summary}
-                </p>
-              </div>
-
               {/* Love Language Harmony Matrix */}
               <div className="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-2xl p-4 shadow-xs space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold uppercase tracking-wider text-purple-900 flex items-center gap-1.5">
-                    <Sparkles className="w-4 h-4 text-purple-600" />
+                    <Award className="w-4 h-4 text-purple-600" />
                     Harmonie des Langages de l'Amour
                   </span>
                   <span className="px-2 py-0.5 rounded-full bg-purple-600 text-white font-black text-[10px]">
@@ -277,11 +265,24 @@ export const CompatibilityModal: React.FC<CompatibilityModalProps> = ({
                 </p>
                 <button
                   id="use-ai-icebreaker-btn"
-                  onClick={() => onStartChat(targetProfile, report.icebreaker)}
-                  className="mt-3 w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-rose-500 to-orange-500 hover:from-rose-600 hover:to-orange-600 text-white text-xs font-bold flex items-center justify-center gap-2 shadow-md shadow-rose-200 transition-all active:scale-95"
+                  onClick={() => handleActionChatOrMatch(report.icebreaker)}
+                  className={`mt-3 w-full py-2.5 px-4 rounded-xl text-white text-xs font-bold flex items-center justify-center gap-2 shadow-md transition-all active:scale-95 cursor-pointer ${
+                    isMatched
+                      ? 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 shadow-emerald-200'
+                      : 'bg-gradient-to-r from-rose-500 to-orange-500 hover:from-rose-600 hover:to-orange-600 shadow-rose-200'
+                  }`}
                 >
-                  <MessageCircle className="w-4 h-4" />
-                  Envoyer cette phrase d'accroche
+                  {isMatched ? (
+                    <>
+                      <MessageCircle className="w-4 h-4" />
+                      <span>Envoyer cette phrase d'accroche (Match confirmé)</span>
+                    </>
+                  ) : (
+                    <>
+                      <Heart className="w-4 h-4 fill-white" />
+                      <span>Liker pour matcher avec {targetProfile.name}</span>
+                    </>
+                  )}
                 </button>
               </div>
             </div>
@@ -295,10 +296,24 @@ export const CompatibilityModal: React.FC<CompatibilityModalProps> = ({
           </span>
           <button
             id="modal-direct-chat-btn"
-            onClick={() => onStartChat(targetProfile)}
-            className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition-colors shadow-xs"
+            onClick={() => handleActionChatOrMatch()}
+            className={`px-4 py-2 rounded-xl font-bold text-xs transition-colors shadow-xs cursor-pointer flex items-center gap-1.5 ${
+              isMatched
+                ? 'bg-slate-900 hover:bg-slate-800 text-white'
+                : 'bg-gradient-to-r from-rose-500 to-orange-500 text-white hover:opacity-90'
+            }`}
           >
-            Ouvrir la conversation
+            {isMatched ? (
+              <>
+                <MessageCircle className="w-3.5 h-3.5 text-rose-400" />
+                <span>Ouvrir la conversation</span>
+              </>
+            ) : (
+              <>
+                <Heart className="w-3.5 h-3.5 fill-white" />
+                <span>Liker pour Matcher</span>
+              </>
+            )}
           </button>
         </div>
       </div>

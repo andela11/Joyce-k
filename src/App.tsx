@@ -36,6 +36,15 @@ import {
   INITIAL_AI_SETTINGS,
   MOCK_PROFILES,
 } from './data/mockProfiles';
+import {
+  createDedicatedUserProfile,
+  fetchUserProfile,
+  persistUserProfile,
+  getScopedKey,
+  GENDER_DEFAULT_AVATARS,
+  checkIsAdmin,
+} from './utils/userUtils';
+import { auth, onAuthStateChanged, signOut } from './lib/firebase';
 
 export default function App() {
   // Navigation State
@@ -45,7 +54,17 @@ export default function App() {
   const [authUser, setAuthUser] = useState<AuthUser | null>(() => {
     try {
       const saved = localStorage.getItem('amour_affinites_auth');
-      return saved ? JSON.parse(saved) : null;
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        // Recalculate isAdmin dynamically to ensure only the real admin has privileges
+        const isAdmin = checkIsAdmin(parsed.email);
+        return {
+          ...parsed,
+          isAdmin,
+          name: isAdmin ? `${parsed.name.replace(/\s*\(Admin\)$/i, '')} (Admin)` : parsed.name.replace(/\s*\(Admin\)$/i, ''),
+        };
+      }
+      return null;
     } catch {
       return null;
     }
@@ -56,15 +75,14 @@ export default function App() {
   // User Profile
   const [currentUser, setCurrentUser] = useState<UserProfile>(() => {
     try {
-      const saved = localStorage.getItem('amour_affinites_user');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        return {
-          ...INITIAL_USER_PROFILE,
-          ...parsed,
-          interests: Array.isArray(parsed.interests) ? parsed.interests : INITIAL_USER_PROFILE.interests,
-          photos: Array.isArray(parsed.photos) && parsed.photos.length > 0 ? parsed.photos : INITIAL_USER_PROFILE.photos,
-        };
+      const savedAuth = localStorage.getItem('amour_affinites_auth');
+      if (savedAuth) {
+        const parsedAuth: AuthUser = JSON.parse(savedAuth);
+        const savedScopedProfile = localStorage.getItem(getScopedKey(parsedAuth.id, 'profile'));
+        if (savedScopedProfile) {
+          return JSON.parse(savedScopedProfile);
+        }
+        return createDedicatedUserProfile(parsedAuth);
       }
       return INITIAL_USER_PROFILE;
     } catch (e) {
@@ -72,6 +90,62 @@ export default function App() {
       return INITIAL_USER_PROFILE;
     }
   });
+
+  // Sync user profile from Firestore / LocalStorage on mount or when authUser changes
+  useEffect(() => {
+    if (!authUser?.id) return;
+    fetchUserProfile(authUser.id).then((profile) => {
+      if (profile) {
+        setCurrentUser(profile);
+      }
+    });
+  }, [authUser?.id]);
+
+  // Firebase auth state listener
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
+      if (fbUser) {
+        const uid = fbUser.uid;
+        const email = fbUser.email || '';
+        const isAdmin = checkIsAdmin(email);
+        const name = fbUser.displayName || email.split('@')[0] || 'Membre Joyce-K';
+        const photoUrl = fbUser.photoURL || GENDER_DEFAULT_AVATARS.homme;
+
+        const providerId = fbUser.providerData?.[0]?.providerId || '';
+        const provider: 'email' | 'google' | 'guest' =
+          providerId.includes('google') ? 'google' : 'email';
+
+        const currentAuth: AuthUser = {
+          id: uid,
+          email,
+          name: isAdmin ? `${name} (Admin)` : name,
+          photoUrl,
+          provider,
+          isLoggedIn: true,
+          isAdmin,
+          createdAt: new Date().toISOString(),
+        };
+
+        setAuthUser(currentAuth);
+        try {
+          localStorage.setItem('amour_affinites_auth', JSON.stringify(currentAuth));
+        } catch (e) {
+          console.warn('Error saving auth to storage:', e);
+        }
+
+        const profile = await fetchUserProfile(uid);
+        if (profile) {
+          setCurrentUser(profile);
+        } else {
+          const newProfile = createDedicatedUserProfile(currentAuth);
+          setCurrentUser(newProfile);
+          await persistUserProfile(newProfile);
+        }
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   // Privacy Settings
   const [privacySettings, setPrivacySettings] = useState<PrivacySettings>(() => {
@@ -211,7 +285,7 @@ export default function App() {
     return [
       {
         id: 'notif_welcome',
-        title: 'Bienvenue sur Joyce-K ! ✨',
+        title: 'Bienvenue sur Joyce-K !',
         message: 'Découvrez des profils vérifiés 100% authentiques sans filtres trompeurs.',
         targetUserId: 'all',
         type: 'announcement',
@@ -293,55 +367,6 @@ export default function App() {
   // Modals
   const [compatibilityProfile, setCompatibilityProfile] = useState<UserProfile | null>(null);
   const [celebrationProfile, setCelebrationProfile] = useState<UserProfile | null>(null);
-
-  // Sync to LocalStorage & Firebase Auth state listener
-  useEffect(() => {
-    import('./lib/firebase').then(({ auth, onAuthStateChanged, db, doc, getDoc }) => {
-      const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
-        if (fbUser) {
-          const emailLower = (fbUser.email || '').toLowerCase();
-          const isAdmin =
-            emailLower === 'andelacyrille11@gmail.com' ||
-            emailLower === 'blinkservices513@gmail.com' ||
-            emailLower.includes('admin');
-
-          const userObj: AuthUser = {
-            id: fbUser.uid,
-            email: fbUser.email || '',
-            name: isAdmin ? `${fbUser.displayName || fbUser.email?.split('@')[0] || 'Junior Andela'} (Admin)` : (fbUser.displayName || fbUser.email?.split('@')[0] || 'Alexandre'),
-            photoUrl: fbUser.photoURL || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&auto=format&fit=crop&q=80',
-            provider: (fbUser.providerData?.[0]?.providerId === 'google.com' ? 'google' : 'email') as 'email' | 'google' | 'guest',
-            isLoggedIn: true,
-            isAdmin,
-            createdAt: fbUser.metadata?.creationTime || new Date().toISOString(),
-          };
-          setAuthUser(userObj);
-
-          // Sync user profile from Firestore if available
-          try {
-            const userDoc = await getDoc(doc(db, 'users', fbUser.uid));
-            if (userDoc.exists()) {
-              const data = userDoc.data();
-              setCurrentUser((prev) => ({
-                ...prev,
-                name: data.name || prev.name,
-                age: data.age || prev.age,
-                gender: data.gender || prev.gender,
-                city: data.city || prev.city,
-                lat: data.lat || prev.lat,
-                lng: data.lng || prev.lng,
-                photos: data.photoUrl ? [data.photoUrl, ...prev.photos.slice(1)] : prev.photos,
-                verified: true,
-              }));
-            }
-          } catch (e) {
-            console.warn('Firestore profile sync warning:', e);
-          }
-        }
-      });
-      return () => unsubscribe();
-    });
-  }, []);
 
   useEffect(() => {
     document.title = 'joyce-k';
@@ -433,6 +458,9 @@ export default function App() {
 
   // Total unread messages count
   const unreadCount = conversations.reduce((acc, c) => acc + c.unreadCount, 0);
+
+  // List of profile IDs that are actively matched (have a mutual match / conversation)
+  const matchedProfileIds = (conversations || []).map((c) => c.participant?.id).filter(Boolean);
 
   // Toggle favorite status of a profile
   const handleToggleFavorite = (profileId: string) => {
@@ -550,7 +578,7 @@ export default function App() {
           `Merci pour ton message ! J'adore ton énergie :) Dis-moi, tu es plutôt du matin ou du soir pour nos sorties ?`,
           `Haha tellement vrai ! On a vraiment les mêmes centres d'intérêt, ça fait super plaisir.`,
           `Super phrase d'accroche ! Ça te dirait qu'on s'organise un verre cette semaine ?`,
-          `J'adore ! C'est exactement ce que je cherchais ici ✨`,
+          `J'adore ! C'est exactement ce que je cherchais ici.`,
         ];
         const randomReply = partnerReplies[Math.floor(Math.random() * partnerReplies.length)];
 
@@ -606,10 +634,19 @@ export default function App() {
     }));
   };
 
-  // Start chat with a profile from compatibility or match modal
-  const handleStartChatWithProfile = (profile: UserProfile, initialMessage?: string) => {
+  // Start chat with a profile from compatibility, match modal or blind match
+  const handleStartChatWithProfile = (
+    profile: UserProfile,
+    initialMessage?: string,
+    preloadedMessages?: ChatMessage[]
+  ) => {
     let conv = (conversations || []).find((c) => c.participant?.id === profile.id);
     let convId = conv ? conv.id : `conv_${profile.id}`;
+
+    // Ensure partner is included in matched/favorites list
+    if (!favoriteIds.includes(profile.id)) {
+      setFavoriteIds((prev) => [...prev, profile.id]);
+    }
 
     if (!conv) {
       const userInterests = currentUser?.interests || [];
@@ -625,9 +662,46 @@ export default function App() {
         isAiAutoResponding: true,
         autoRepliesCount: 0,
         commonInterests,
+        lastMessage:
+          preloadedMessages && preloadedMessages.length > 0
+            ? preloadedMessages[preloadedMessages.length - 1]
+            : undefined,
       };
       setConversations((prev) => [newConv, ...(prev || [])]);
-      setMessages((prev) => ({ ...prev, [convId]: [] }));
+      setMessages((prev) => ({
+        ...prev,
+        [convId]: preloadedMessages && preloadedMessages.length > 0 ? preloadedMessages : [],
+      }));
+    } else {
+      // Ensure existing conversation participant matches the exact profile object
+      setConversations((prev) =>
+        prev.map((c) => {
+          if (c.id === convId) {
+            return {
+              ...c,
+              participant: profile,
+              lastMessage:
+                preloadedMessages && preloadedMessages.length > 0
+                  ? preloadedMessages[preloadedMessages.length - 1]
+                  : c.lastMessage,
+            };
+          }
+          return c;
+        })
+      );
+
+      if (preloadedMessages && preloadedMessages.length > 0) {
+        setMessages((prev) => {
+          const currentList = prev[convId] || [];
+          const merged = [...currentList];
+          for (const msg of preloadedMessages) {
+            if (!merged.some((m) => m.id === msg.id)) {
+              merged.push({ ...msg, conversationId: convId });
+            }
+          }
+          return { ...prev, [convId]: merged };
+        });
+      }
     }
 
     if (initialMessage) {
@@ -651,17 +725,17 @@ export default function App() {
   };
 
   // Handle Auth Login/Signup Success
-  const handleLoginSuccess = (user: AuthUser, updatedProfile?: Partial<UserProfile>) => {
+  const handleLoginSuccess = async (user: AuthUser, fullProfile?: UserProfile) => {
     setAuthUser(user);
-    if (updatedProfile) {
-      setCurrentUser((prev) => ({
-        ...prev,
-        name: updatedProfile.name || prev.name,
-        age: updatedProfile.age || prev.age,
-        gender: updatedProfile.gender || prev.gender,
-        verified: updatedProfile.verified !== undefined ? updatedProfile.verified : prev.verified,
-      }));
+    try {
+      localStorage.setItem('amour_affinites_auth', JSON.stringify(user));
+    } catch (e) {
+      console.warn('LocalStorage auth save error:', e);
     }
+
+    const profileToUse = fullProfile || createDedicatedUserProfile(user);
+    setCurrentUser(profileToUse);
+    await persistUserProfile(profileToUse);
 
     // Direct Redirection: Admin -> 'admin', User -> 'discovery' (profile swipes)
     if (user.isAdmin) {
@@ -674,14 +748,30 @@ export default function App() {
   // Handle Logout (returns to landing page)
   const handleLogout = async () => {
     try {
-      const { auth, signOut } = await import('./lib/firebase');
       await signOut(auth);
     } catch (err) {
       console.warn('Firebase signout warning:', err);
     }
     localStorage.removeItem('amour_affinites_auth');
     setAuthUser(null);
+    const guestProfile = createDedicatedUserProfile({
+      id: 'guest_user',
+      name: 'Visiteur',
+      email: 'visiteur@joycek.app',
+      photoUrl: GENDER_DEFAULT_AVATARS.homme,
+      provider: 'guest',
+      isLoggedIn: false,
+      createdAt: new Date().toISOString(),
+    });
+    setCurrentUser(guestProfile);
+    setActiveConversationId(null);
     setActiveTab('landing');
+  };
+
+  // Save profile changes
+  const handleSaveProfile = async (updated: UserProfile) => {
+    setCurrentUser(updated);
+    await persistUserProfile(updated);
   };
 
   // Purge Account (RGPD)
@@ -696,8 +786,9 @@ export default function App() {
     setActiveTab('landing');
   };
 
-  const handleOpenAuthModal = (mode: 'login' | 'signup' = 'signup') => {
-    setAuthInitialMode(mode);
+  const handleOpenAuthModal = (mode?: any) => {
+    const validMode = (typeof mode === 'string' && (mode === 'login' || mode === 'signup')) ? mode : 'signup';
+    setAuthInitialMode(validMode);
     setIsAuthModalOpen(true);
   };
 
@@ -740,6 +831,7 @@ export default function App() {
               profiles={profiles}
               privacySettings={privacySettings}
               favoriteIds={favoriteIds}
+              matchedProfileIds={matchedProfileIds}
               onToggleFavorite={handleToggleFavorite}
               onLike={handleLikeProfile}
               onPass={handlePassProfile}
@@ -758,10 +850,12 @@ export default function App() {
               profiles={profiles}
               allProfiles={profiles}
               favoriteIds={favoriteIds}
+              matchedProfileIds={matchedProfileIds}
               privacySettings={privacySettings}
               onToggleFavorite={handleToggleFavorite}
               onOpenCompatibility={(profile) => setCompatibilityProfile(profile)}
               onStartChat={(profile) => handleStartChatWithProfile(profile)}
+              onLike={handleLikeProfile}
               onStartCall={handleStartCallWithProfile}
               onGoToDiscovery={() => setActiveTab('discovery')}
               onExploreMore={() => setActiveTab('discovery')}
@@ -775,11 +869,22 @@ export default function App() {
               currentUser={currentUser}
               profiles={profiles}
               privacySettings={privacySettings}
-              onUpdateUserLocation={(city, lat, lng) =>
-                setCurrentUser((prev) => ({ ...prev, city, lat, lng }))
-              }
+              matchedProfileIds={matchedProfileIds}
+              onUpdateUserLocation={(city, lat, lng, country, phoneNumber) => {
+                const updated = {
+                  ...currentUser,
+                  city,
+                  lat,
+                  lng,
+                  ...(country ? { country } : {}),
+                  ...(phoneNumber ? { phoneNumber } : {}),
+                };
+                setCurrentUser(updated);
+                persistUserProfile(updated);
+              }}
               onSelectProfile={(profile) => setCompatibilityProfile(profile)}
               onStartChat={(profile) => handleStartChatWithProfile(profile)}
+              onLike={handleLikeProfile}
               onOpenPrivacy={() => setActiveTab('privacy')}
               onBackToDiscovery={() => setActiveTab('discovery')}
             />
@@ -827,15 +932,15 @@ export default function App() {
           <div className="pb-8 bg-rose-50/60 min-h-[calc(100vh-70px)] text-slate-800">
             <BlindMatchView
               currentUser={currentUser}
+              profiles={profiles}
               onMatchRevealed={(partner) => {
-                // Add partner to favorites or matches
+                // Add partner to favorites / matches
                 if (!favoriteIds.includes(partner.id)) {
                   setFavoriteIds((prev) => [...prev, partner.id]);
                 }
               }}
-              onOpenDirectChat={(partnerId) => {
-                const partner = profiles.find((p) => p.id === partnerId) || MOCK_PROFILES[2];
-                handleStartChatWithProfile(partner);
+              onOpenDirectChat={(partner, blindMsgs) => {
+                handleStartChatWithProfile(partner, undefined, blindMsgs);
               }}
             />
           </div>
@@ -860,7 +965,7 @@ export default function App() {
           <div className="pb-8 bg-rose-50/60 min-h-[calc(100vh-70px)] text-slate-800">
             <ProfileEditor
               userProfile={currentUser}
-              onSaveProfile={(updated) => setCurrentUser(updated)}
+              onSaveProfile={handleSaveProfile}
               authUser={authUser}
               onOpenAuth={handleOpenAuthModal}
               onLogout={handleLogout}
@@ -886,10 +991,12 @@ export default function App() {
         <CompatibilityModal
           userProfile={currentUser}
           targetProfile={compatibilityProfile}
+          matchedProfileIds={matchedProfileIds}
           onClose={() => setCompatibilityProfile(null)}
           onStartChat={(profile, initialMsg) =>
             handleStartChatWithProfile(profile, initialMsg)
           }
+          onLike={handleLikeProfile}
         />
       )}
 

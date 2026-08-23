@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import {
   Smile,
   Heart,
-  Sparkles,
   Plus,
   Trash2,
   Send,
@@ -129,7 +128,7 @@ export const EmojiStickerPicker: React.FC<EmojiStickerPickerProps> = ({
                 : 'text-slate-600 hover:text-rose-600 hover:bg-rose-50'
             }`}
           >
-            <Sparkles className="w-3.5 h-3.5" />
+            <Heart className="w-3.5 h-3.5" />
             <span>Stickers Amour</span>
           </button>
 
@@ -242,7 +241,7 @@ export const EmojiStickerPicker: React.FC<EmojiStickerPickerProps> = ({
                     : 'bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100'
                 }`}
               >
-                ✨ Mes Créations ({customStickers.length})
+                Mes Créations ({customStickers.length})
               </button>
             )}
           </div>

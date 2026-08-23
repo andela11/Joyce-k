@@ -27,9 +27,11 @@ interface FavoritesViewProps {
   profiles?: UserProfile[];
   allProfiles?: UserProfile[];
   favoriteIds?: string[];
+  matchedProfileIds?: string[];
   onToggleFavorite: (profileId: string) => void;
   onOpenCompatibility: (profile: UserProfile) => void;
   onStartChat: (profile: UserProfile) => void;
+  onLike?: (profile: UserProfile) => void;
   onStartCall?: (profile: UserProfile, type: 'audio' | 'video') => void;
   onGoToDiscovery?: () => void;
   onExploreMore?: () => void;
@@ -41,9 +43,11 @@ export const FavoritesView: React.FC<FavoritesViewProps> = ({
   profiles,
   allProfiles,
   favoriteIds = [],
+  matchedProfileIds = [],
   onToggleFavorite,
   onOpenCompatibility,
   onStartChat,
+  onLike,
   onStartCall,
   onGoToDiscovery,
   onExploreMore,
@@ -98,7 +102,7 @@ export const FavoritesView: React.FC<FavoritesViewProps> = ({
               {onGoToDiscovery && (
                 <button
                   id="favorites-back-btn"
-                  onClick={onGoToDiscovery}
+                  onClick={() => onGoToDiscovery()}
                   className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-slate-100 hover:bg-rose-50 text-slate-700 hover:text-rose-600 border border-slate-200 transition-colors cursor-pointer"
                   title="Retourner aux Swipes"
                 >
@@ -124,7 +128,7 @@ export const FavoritesView: React.FC<FavoritesViewProps> = ({
 
           <div className="flex items-center gap-3">
             <button
-              onClick={onGoToDiscovery}
+              onClick={() => onGoToDiscovery?.()}
               className="px-5 py-3 rounded-2xl bg-gradient-to-r from-rose-600 to-orange-500 hover:from-rose-500 hover:to-orange-400 text-white font-bold text-xs sm:text-sm shadow-md shadow-rose-200 flex items-center gap-2 transition-all transform hover:scale-[1.02] cursor-pointer"
             >
               <Flame className="w-4 h-4" />
@@ -198,7 +202,10 @@ export const FavoritesView: React.FC<FavoritesViewProps> = ({
               </p>
             </div>
             <button
-              onClick={onGoToDiscovery || onExploreMore}
+              onClick={() => {
+                if (onGoToDiscovery) onGoToDiscovery();
+                else if (onExploreMore) onExploreMore();
+              }}
               className="px-6 py-3.5 rounded-2xl bg-gradient-to-r from-rose-600 to-orange-500 text-white font-bold text-xs sm:text-sm shadow-lg shadow-rose-200 hover:scale-105 active:scale-95 transition-all flex items-center gap-2 mx-auto cursor-pointer"
             >
               <Compass className="w-4 h-4" />
@@ -350,11 +357,11 @@ export const FavoritesView: React.FC<FavoritesViewProps> = ({
 
                       {/* Common Interests tags */}
                       <div className="flex flex-wrap gap-1">
-                        {profile.interests.slice(0, 3).map((interest) => (
+                        {(profile.interests || []).slice(0, 3).map((interest) => (
                           <span
                             key={interest}
                             className={`px-2.5 py-0.5 rounded-full text-[10px] font-semibold ${
-                              currentUser.interests.includes(interest)
+                              (currentUser?.interests || []).includes(interest)
                                 ? 'bg-gradient-to-r from-rose-500 to-orange-500 text-white shadow-xs'
                                 : 'bg-rose-50 text-rose-700 border border-rose-200'
                             }`}
@@ -362,9 +369,9 @@ export const FavoritesView: React.FC<FavoritesViewProps> = ({
                             {interest}
                           </span>
                         ))}
-                        {profile.interests.length > 3 && (
+                        {(profile.interests || []).length > 3 && (
                           <span className="text-[10px] font-bold text-slate-400 px-1 py-0.5">
-                            +{profile.interests.length - 3}
+                            +{(profile.interests || []).length - 3}
                           </span>
                         )}
                       </div>
@@ -372,51 +379,81 @@ export const FavoritesView: React.FC<FavoritesViewProps> = ({
 
                     {/* Action buttons (Direct Audio & Video Calls + Chat + AI Affinity) */}
                     <div className="pt-2.5 border-t border-rose-100 space-y-2">
-                      <div className="grid grid-cols-2 gap-2">
-                        {/* Audio Call */}
-                        <button
-                          id={`fav-audio-call-${profile.id}`}
-                          onClick={() => {
-                            if (onStartCall) onStartCall(profile, 'audio');
-                          }}
-                          className="py-2 px-2.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer border border-emerald-200"
-                          title={`Appel audio avec ${profile.name}`}
-                        >
-                          <Phone className="w-3.5 h-3.5 text-emerald-600" />
-                          <span>Appel Audio</span>
-                        </button>
+                      {matchedProfileIds.includes(profile.id) ? (
+                        <>
+                          <div className="grid grid-cols-2 gap-2">
+                            {/* Audio Call */}
+                            <button
+                              id={`fav-audio-call-${profile.id}`}
+                              onClick={() => {
+                                if (onStartCall) onStartCall(profile, 'audio');
+                              }}
+                              className="py-2 px-2.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer border border-emerald-200"
+                              title={`Appel audio avec ${profile.name}`}
+                            >
+                              <Phone className="w-3.5 h-3.5 text-emerald-600" />
+                              <span>Appel Audio</span>
+                            </button>
 
-                        {/* Video Call */}
-                        <button
-                          id={`fav-video-call-${profile.id}`}
-                          onClick={() => {
-                            if (onStartCall) onStartCall(profile, 'video');
-                          }}
-                          className="py-2 px-2.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer border border-rose-200"
-                          title={`Appel vidéo avec ${profile.name}`}
-                        >
-                          <Video className="w-3.5 h-3.5 text-rose-600" />
-                          <span>Appel Vidéo</span>
-                        </button>
-                      </div>
+                            {/* Video Call */}
+                            <button
+                              id={`fav-video-call-${profile.id}`}
+                              onClick={() => {
+                                if (onStartCall) onStartCall(profile, 'video');
+                              }}
+                              className="py-2 px-2.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer border border-rose-200"
+                              title={`Appel vidéo avec ${profile.name}`}
+                            >
+                              <Video className="w-3.5 h-3.5 text-rose-600" />
+                              <span>Appel Vidéo</span>
+                            </button>
+                          </div>
 
-                      <div className="grid grid-cols-2 gap-2">
-                        <button
-                          onClick={() => onOpenCompatibility(profile)}
-                          className="py-2.5 px-3 rounded-xl bg-violet-50 hover:bg-violet-100 text-violet-700 font-bold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer border border-violet-200"
-                        >
-                          <Bot className="w-3.5 h-3.5 text-violet-600" />
-                          <span>Affinité IA</span>
-                        </button>
+                          <div className="grid grid-cols-2 gap-2">
+                            <button
+                              onClick={() => onOpenCompatibility(profile)}
+                              className="py-2.5 px-3 rounded-xl bg-violet-50 hover:bg-violet-100 text-violet-700 font-bold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer border border-violet-200"
+                            >
+                              <Bot className="w-3.5 h-3.5 text-violet-600" />
+                              <span>Affinité IA</span>
+                            </button>
 
-                        <button
-                          onClick={() => onStartChat(profile)}
-                          className="py-2.5 px-3 rounded-xl bg-gradient-to-r from-rose-600 to-orange-500 hover:from-rose-500 hover:to-orange-400 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-rose-200 transition-all cursor-pointer"
-                        >
-                          <MessageCircle className="w-3.5 h-3.5" />
-                          <span>Discuter</span>
-                        </button>
-                      </div>
+                            <button
+                              onClick={() => onStartChat(profile)}
+                              className="py-2.5 px-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-emerald-200 transition-all cursor-pointer"
+                            >
+                              <MessageCircle className="w-3.5 h-3.5" />
+                              <span>Discuter (Match)</span>
+                            </button>
+                          </div>
+                        </>
+                      ) : (
+                        <div className="space-y-1.5">
+                          <div className="grid grid-cols-2 gap-2">
+                            <button
+                              onClick={() => onOpenCompatibility(profile)}
+                              className="py-2.5 px-3 rounded-xl bg-violet-50 hover:bg-violet-100 text-violet-700 font-bold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer border border-violet-200"
+                            >
+                              <Bot className="w-3.5 h-3.5 text-violet-600" />
+                              <span>Affinité IA</span>
+                            </button>
+
+                            <button
+                              onClick={() => {
+                                if (onLike) onLike(profile);
+                              }}
+                              className="py-2.5 px-3 rounded-xl bg-gradient-to-r from-rose-600 to-orange-500 hover:from-rose-500 hover:to-orange-400 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-rose-200 transition-all cursor-pointer"
+                              title="Liker pour débloquer le match et la discussion"
+                            >
+                              <Heart className="w-3.5 h-3.5 fill-white" />
+                              <span>Liker • Matcher</span>
+                            </button>
+                          </div>
+                          <p className="text-[10px] text-center text-slate-500 font-medium">
+                            Match mutuel requis pour ouvrir la messagerie privée
+                          </p>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>

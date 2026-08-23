@@ -745,87 +745,191 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         </div>
       </section>
 
-      {/* 7. FOOTER */}
-      <footer id="main-app-footer" className="bg-white border-t border-orange-100/80 text-slate-600 py-12 px-4 sm:px-6">
-        <div className="max-w-4xl mx-auto flex flex-col items-center justify-center text-center space-y-8">
-          {/* Logo & Tagline Centered */}
-          <div className="flex flex-col items-center justify-center text-center space-y-2">
-            <JoyceKLogo size="md" variant="light-bg" showTagline={true} />
-            <p className="text-xs sm:text-sm text-slate-500 max-w-md mx-auto font-medium leading-relaxed">
-              La première plateforme de rencontres internationales authentiques. <br className="hidden sm:inline" />
-              100% de profils et photos réelles certifiés.
-            </p>
-          </div>
+      {/* 7. PROFESSIONAL FOOTER */}
+      <footer id="main-app-footer" className="bg-slate-950 text-slate-400 border-t border-slate-800/80 pt-16 pb-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto space-y-12">
+          {/* Main Footer Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10">
+            {/* Col 1 & 2: Brand Identity & Manifesto */}
+            <div className="lg:col-span-2 space-y-5">
+              <JoyceKLogo size="md" variant="dark-bg" showTagline={true} />
+              <p className="text-xs sm:text-sm text-slate-400 leading-relaxed max-w-sm">
+                La référence des rencontres internationales authentiques. Une plateforme sécurisée,
+                conçue pour connecter des célibataires exigeants autour de valeurs sincères,
+                de passions partagées et d'une alchimie émotionnelle réelle.
+              </p>
 
-          {/* Quick links Centered */}
-          <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2.5 text-xs sm:text-sm font-bold text-slate-700">
-            <button
-              onClick={() => {
-                const el = document.getElementById('hero-section');
-                el?.scrollIntoView({ behavior: 'smooth' });
-              }}
-              className="hover:text-rose-600 transition-colors cursor-pointer"
-            >
-              Accueil
-            </button>
-            <span className="text-slate-300">•</span>
-            <button
-              onClick={() => onOpenAuth('signup')}
-              className="hover:text-rose-600 transition-colors cursor-pointer"
-            >
-              Découvrir les Membres
-            </button>
-            <span className="text-slate-300">•</span>
-            <button
-              onClick={() => {
-                const el = document.getElementById('radar-preview-section');
-                el?.scrollIntoView({ behavior: 'smooth' });
-              }}
-              className="hover:text-rose-600 transition-colors cursor-pointer"
-            >
-              Radar Monde
-            </button>
-            <span className="text-slate-300">•</span>
-            <button
-              onClick={() => {
-                const el = document.getElementById('contact-section');
-                el?.scrollIntoView({ behavior: 'smooth' });
-              }}
-              className="hover:text-rose-600 transition-colors cursor-pointer"
-            >
-              Contact & Support
-            </button>
-            <span className="text-slate-300">•</span>
-            <button
-              onClick={() => onOpenAuth('signup')}
-              className="text-rose-600 hover:text-rose-700 transition-colors font-extrabold cursor-pointer"
-            >
-              S'inscrire
-            </button>
-          </div>
-
-          <div className="w-full max-w-2xl h-px bg-gradient-to-r from-transparent via-orange-200/60 to-transparent" />
-
-          {/* Footer Credentials & Details Perfectly Aligned and Centered */}
-          <div className="flex flex-col items-center justify-center text-center space-y-3 text-xs text-slate-600 font-medium">
-            <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1.5">
-              <span>© {new Date().getFullYear()} <strong className="text-slate-900 font-bold">Joyce-K</strong></span>
-              <span className="text-slate-300">•</span>
-              <span>Développé par <strong className="text-slate-900 font-bold">Blink-services</strong></span>
-              <span className="text-slate-300">•</span>
-              <span>Fondateur : <strong className="text-rose-600 font-bold">Junior Andela</strong></span>
-              <span className="text-slate-300">•</span>
-              <span className="inline-flex items-center gap-1 text-slate-700 font-semibold">
-                <MapPin className="w-3.5 h-3.5 text-rose-500 shrink-0" /> Yaoundé, Cameroun
-              </span>
+              {/* Trust Badges */}
+              <div className="pt-2 flex flex-wrap items-center gap-2 text-[11px] font-semibold text-slate-300">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-slate-900 border border-slate-800">
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                  100% Profils Réels
+                </span>
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-slate-900 border border-slate-800">
+                  <Lock className="w-3.5 h-3.5 text-rose-400" />
+                  Chiffrement Sécurisé
+                </span>
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-slate-900 border border-slate-800">
+                  <UserCheck className="w-3.5 h-3.5 text-cyan-400" />
+                  Conforme RGPD
+                </span>
+              </div>
             </div>
 
-            <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[11px] text-slate-500 font-medium">
-              <span>Email de support : <strong className="text-slate-700 font-semibold">blinkservices513@gmail.com</strong></span>
-              <span className="text-slate-300">•</span>
-              <span>Protection des Données & Conforme RGPD</span>
-              <span className="text-slate-300">•</span>
-              <span>Plateforme Sécurisée 100% Humaine</span>
+            {/* Col 3: Navigation & Découverte */}
+            <div className="space-y-4">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-200">
+                Navigation
+              </h4>
+              <ul className="space-y-2.5 text-xs">
+                <li>
+                  <button
+                    onClick={() => {
+                      const el = document.getElementById('hero-section');
+                      el?.scrollIntoView({ behavior: 'smooth' });
+                    }}
+                    className="hover:text-rose-400 transition-colors cursor-pointer"
+                  >
+                    Accueil
+                  </button>
+                </li>
+                <li>
+                  <button
+                    onClick={() => onOpenAuth('signup')}
+                    className="hover:text-rose-400 transition-colors cursor-pointer text-left"
+                  >
+                    Découvrir les Membres
+                  </button>
+                </li>
+                <li>
+                  <button
+                    onClick={() => {
+                      const el = document.getElementById('radar-preview-section');
+                      el?.scrollIntoView({ behavior: 'smooth' });
+                    }}
+                    className="hover:text-rose-400 transition-colors cursor-pointer"
+                  >
+                    Radar de Proximité Monde
+                  </button>
+                </li>
+                <li>
+                  <button
+                    onClick={() => onOpenAuth('signup')}
+                    className="hover:text-rose-400 transition-colors cursor-pointer text-left"
+                  >
+                    Blind-Match Événementiel (21h)
+                  </button>
+                </li>
+                <li>
+                  <button
+                    onClick={() => {
+                      const el = document.getElementById('testimonials-section');
+                      el?.scrollIntoView({ behavior: 'smooth' });
+                    }}
+                    className="hover:text-rose-400 transition-colors cursor-pointer"
+                  >
+                    Témoignages & Avis
+                  </button>
+                </li>
+              </ul>
+            </div>
+
+            {/* Col 4: Sécurité & Confidentialité */}
+            <div className="space-y-4">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-200">
+                Sécurité & Éthique
+              </h4>
+              <ul className="space-y-2.5 text-xs text-slate-400">
+                <li className="flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                  <span>Modération humaine 24/7</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                  <span>Scan anti-deepfake certifié</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                  <span>Blocage & signalement instantané</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                  <span>Confidentialité stricte des échanges</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                  <span>Charte de respect mutuel</span>
+                </li>
+              </ul>
+            </div>
+
+            {/* Col 5: Éditeur & Contact Entreprise */}
+            <div className="space-y-4">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-200">
+                Contact & Éditeur
+              </h4>
+              <div className="space-y-3 text-xs">
+                <div>
+                  <div className="text-[11px] text-slate-500">Édité & développé par</div>
+                  <div className="font-bold text-white flex items-center gap-1.5 mt-0.5">
+                    <Building2 className="w-3.5 h-3.5 text-rose-400" />
+                    Blink-services
+                  </div>
+                </div>
+                <div>
+                  <div className="text-[11px] text-slate-500">Fondateur</div>
+                  <div className="font-semibold text-slate-200">Junior Andela</div>
+                </div>
+                <div>
+                  <div className="text-[11px] text-slate-500">Siège</div>
+                  <div className="font-medium text-slate-300 flex items-center gap-1.5 mt-0.5">
+                    <MapPin className="w-3.5 h-3.5 text-rose-400" />
+                    Yaoundé, Cameroun
+                  </div>
+                </div>
+                <div>
+                  <div className="text-[11px] text-slate-500">Support client</div>
+                  <a
+                    href="mailto:blinkservices513@gmail.com"
+                    className="font-medium text-rose-400 hover:text-rose-300 transition-colors flex items-center gap-1.5 mt-0.5"
+                  >
+                    <Mail className="w-3.5 h-3.5" />
+                    blinkservices513@gmail.com
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Subtle separator */}
+          <div className="w-full h-px bg-slate-800/80" />
+
+          {/* Bottom Bar: Copyright, System Status & Disclaimers */}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
+            <div className="flex items-center gap-2">
+              <p>
+                © {new Date().getFullYear()} <strong className="text-slate-300 font-semibold">Joyce-K</strong> by{' '}
+                <strong className="text-slate-300 font-semibold">Blink-services</strong>. Tous droits réservés.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-slate-900 border border-slate-800 text-[11px]">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="text-slate-300 font-medium">Système opérationnel & sécurisé</span>
+            </div>
+
+            <div className="flex items-center gap-4 text-[11px]">
+              <span className="hover:text-slate-300 transition-colors cursor-pointer">
+                Conditions Générales
+              </span>
+              <span>•</span>
+              <span className="hover:text-slate-300 transition-colors cursor-pointer">
+                Politique de Confidentialité
+              </span>
+              <span>•</span>
+              <span className="hover:text-slate-300 transition-colors cursor-pointer">
+                Mentions Légales
+              </span>
             </div>
           </div>
         </div>

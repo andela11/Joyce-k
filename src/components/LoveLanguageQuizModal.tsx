@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import {
   Heart,
-  Sparkles,
   CheckCircle2,
   X,
   Smile,
@@ -342,7 +341,7 @@ export const LoveLanguageQuizModal: React.FC<LoveLanguageQuizModalProps> = ({
               {/* Advice Box */}
               <div className="bg-gradient-to-r from-rose-50 to-purple-50 p-4 rounded-2xl border border-purple-100 text-left space-y-1.5">
                 <div className="flex items-center gap-2 font-bold text-xs text-purple-950">
-                  <Sparkles className="w-4 h-4 text-purple-600 shrink-0" />
+                  <Heart className="w-4 h-4 text-purple-600 shrink-0" />
                   <span>Conseil d'épanouissement amoureux :</span>
                 </div>
                 <p className="text-xs text-slate-700 leading-relaxed font-medium">

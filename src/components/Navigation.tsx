@@ -22,7 +22,7 @@ import {
   Bell,
   CheckCircle2,
   Shield,
-  Sparkles,
+  Zap,
   Gift,
   Clock,
   ExternalLink,
@@ -123,7 +123,7 @@ export const Navigation: React.FC<NavigationProps> = ({
       case 'security':
         return <Shield className="w-4 h-4 text-emerald-500" />;
       case 'feature':
-        return <Sparkles className="w-4 h-4 text-amber-500" />;
+        return <Zap className="w-4 h-4 text-amber-500" />;
       case 'reward':
         return <Gift className="w-4 h-4 text-purple-500" />;
       case 'match_alert':
@@ -316,8 +316,8 @@ export const Navigation: React.FC<NavigationProps> = ({
               </div>
             </div>
 
-            {/* Little Call Bubble beside Joyce-K */}
-            {authUser && (
+            {/* Little Call Bubble beside Joyce-K (Hidden on Landing Page) */}
+            {authUser && activeTab !== 'landing' && (
               <div className="relative" ref={callBubbleRef}>
                 <button
                   id="navbar-call-bubble-btn"
@@ -369,7 +369,7 @@ export const Navigation: React.FC<NavigationProps> = ({
                     {targetCallProfile ? (
                       <div className="bg-rose-50/70 border border-rose-100 rounded-2xl p-2.5 flex items-center gap-2.5">
                         <img
-                          src={targetCallProfile.photos[0]}
+                          src={targetCallProfile.photos?.[0] || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800'}
                           alt={targetCallProfile.name}
                           className="w-9 h-9 rounded-xl object-cover border border-rose-200 shrink-0"
                           referrerPolicy="no-referrer"
@@ -599,7 +599,7 @@ export const Navigation: React.FC<NavigationProps> = ({
 
                         {onClearAllNotifications && notifications.length > 0 && (
                           <button
-                            onClick={onClearAllNotifications}
+                            onClick={() => onClearAllNotifications()}
                             className="text-[10px] text-rose-600 hover:text-rose-700 font-semibold hover:underline cursor-pointer"
                           >
                             Tout marquer lu
@@ -672,7 +672,7 @@ export const Navigation: React.FC<NavigationProps> = ({
                 {/* AI Auto-Responder quick pill toggle (desktop only) */}
                 <button
                   id="header-toggle-ai-quick-btn"
-                  onClick={onToggleAi}
+                  onClick={() => onToggleAi?.()}
                   title={
                     aiSettings.enabled
                       ? 'Répondeur IA Actif'
@@ -716,7 +716,7 @@ export const Navigation: React.FC<NavigationProps> = ({
                 {onLogout && (
                   <button
                     id="header-logout-btn"
-                    onClick={onLogout}
+                    onClick={() => onLogout()}
                     title="Se déconnecter"
                     className="hidden lg:flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-bold border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100 transition-all shadow-xs cursor-pointer"
                   >
@@ -813,7 +813,7 @@ export const Navigation: React.FC<NavigationProps> = ({
                   {/* Quick Feature Toggles in Mobile Drawer */}
                   <div className="grid grid-cols-2 gap-2 pt-1 border-t border-rose-100/80">
                     <button
-                      onClick={onToggleAi}
+                      onClick={() => onToggleAi?.()}
                       className={`p-2 rounded-xl text-xs font-semibold flex items-center justify-between border cursor-pointer ${
                         aiSettings.enabled
                           ? 'bg-emerald-50 text-emerald-800 border-emerald-300'

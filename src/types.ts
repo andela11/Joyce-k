@@ -46,6 +46,8 @@ export interface UserProfile {
   voiceBioDurationSeconds?: number;
   loveLanguage?: LoveLanguage;
   loveLanguageLabel?: string;
+  phoneNumber?: string;
+  country?: string;
 }
 
 export type PersonalityTone =
@@ -142,6 +144,8 @@ export interface AuthUser {
   email: string;
   name: string;
   photoUrl?: string;
+  phoneNumber?: string;
+  country?: string;
   provider: 'google' | 'email' | 'guest';
   isLoggedIn: boolean;
   isAdmin?: boolean;

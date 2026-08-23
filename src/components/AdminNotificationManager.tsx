@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
   Bell,
   Send,
-  Sparkles,
+  Zap,
   Shield,
   Gift,
   Flame,
@@ -123,7 +123,7 @@ export const AdminNotificationManager: React.FC<AdminNotificationManagerProps> =
       case 'security':
         return <Shield className="w-4 h-4 text-emerald-400" />;
       case 'feature':
-        return <Sparkles className="w-4 h-4 text-amber-400" />;
+        return <Zap className="w-4 h-4 text-amber-400" />;
       case 'reward':
         return <Gift className="w-4 h-4 text-purple-400" />;
       case 'match_alert':
@@ -147,7 +147,7 @@ export const AdminNotificationManager: React.FC<AdminNotificationManagerProps> =
       tab: 'privacy' as ActiveTab,
     },
     {
-      label: '✨ Nouveau : IA Répondeur',
+      label: '⚡ Nouveau : IA Répondeur',
       title: 'Activez votre Répondeur IA',
       message: 'Ne ratez aucun match pendant vos absences : configurez votre Wingman numérique personnalisé dès aujourd\'hui !',
       type: 'feature' as const,
@@ -248,7 +248,7 @@ export const AdminNotificationManager: React.FC<AdminNotificationManagerProps> =
                 >
                   <option value="announcement">📢 Annonce Officielle</option>
                   <option value="security">🛡️ Alerte Sécurité & RGPD</option>
-                  <option value="feature">✨ Nouveauté Plateforme</option>
+                  <option value="feature">⚡ Nouveauté Plateforme</option>
                   <option value="reward">🎁 Cadeau / Avantage</option>
                   <option value="match_alert">🔥 Alerte Matchs & Activité</option>
                 </select>

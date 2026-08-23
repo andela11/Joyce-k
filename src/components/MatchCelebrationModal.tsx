@@ -61,15 +61,15 @@ export const MatchCelebrationModal: React.FC<MatchCelebrationModalProps> = ({
           setIcebreakers(data.icebreakers);
         } else {
           setIcebreakers([
-            `Salut ${matchedProfile.name} ! Ravi(e) de voir qu'on partage la passion pour ${commonInterests[0] || 'les bonnes choses'} !`,
+            `Salut ${matchedProfile?.name || ''} ! Ravi(e) de voir qu'on partage la passion pour ${commonInterests?.[0] || 'les bonnes choses'} !`,
             `C'est un match ! Plutôt brunch du dimanche ou expo insolite pour fêter ça ?`,
           ]);
         }
       } catch (err) {
         console.error(err);
         setIcebreakers([
-          `Salut ${matchedProfile.name} ! Ravi(e) de notre match sur nos passions communes !`,
-          `Deux profils qui adorent ${commonInterests[0] || 'les voyages'}... Coïncidence ? 😉`,
+          `Salut ${matchedProfile?.name || ''} ! Ravi(e) de notre match sur nos passions communes !`,
+          `Deux profils qui adorent ${commonInterests?.[0] || 'les voyages'}... Coïncidence ? 😉`,
         ]);
       } finally {
         setLoadingIcebreakers(false);
@@ -77,7 +77,7 @@ export const MatchCelebrationModal: React.FC<MatchCelebrationModalProps> = ({
     };
 
     loadIcebreakers();
-  }, [matchedProfile.id]);
+  }, [matchedProfile?.id]);
 
   return (
     <div
@@ -109,7 +109,7 @@ export const MatchCelebrationModal: React.FC<MatchCelebrationModalProps> = ({
             C'est un Match !
           </h2>
           <p className="text-xs text-slate-600 font-medium">
-            Vous et <span className="font-bold text-rose-600">{matchedProfile.name}</span> avez eu un coup de cœur mutuel.
+            Vous et <span className="font-bold text-rose-600">{matchedProfile?.name}</span> avez eu un coup de cœur mutuel.
           </p>
         </div>
 
@@ -117,8 +117,8 @@ export const MatchCelebrationModal: React.FC<MatchCelebrationModalProps> = ({
         <div className="relative z-10 flex items-center justify-center gap-3 my-4">
           <div className="relative">
             <img
-              src={userProfile.photos[0]}
-              alt={userProfile.name}
+              src={userProfile?.photos?.[0] || 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=800'}
+              alt={userProfile?.name || 'Vous'}
               className="w-20 h-20 rounded-2xl object-cover border-2 border-rose-500 shadow-md shadow-rose-200"
               referrerPolicy="no-referrer"
             />
@@ -133,13 +133,13 @@ export const MatchCelebrationModal: React.FC<MatchCelebrationModalProps> = ({
 
           <div className="relative">
             <img
-              src={matchedProfile.photos[0]}
-              alt={matchedProfile.name}
+              src={matchedProfile?.photos?.[0] || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800'}
+              alt={matchedProfile?.name || 'Match'}
               className="w-20 h-20 rounded-2xl object-cover border-2 border-orange-400 shadow-md shadow-orange-200"
               referrerPolicy="no-referrer"
             />
             <span className="text-[11px] font-bold text-slate-700 block mt-1">
-              {matchedProfile.name}
+              {matchedProfile?.name}
             </span>
           </div>
         </div>

@@ -82,7 +82,7 @@ export const PrivacySecurityCenter: React.FC<PrivacySecurityCenterProps> = ({
             {onBackToDiscovery && (
               <button
                 id="privacy-back-btn"
-                onClick={onBackToDiscovery}
+                onClick={() => onBackToDiscovery()}
                 className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-white/20 hover:bg-white/30 text-white border border-white/40 transition-colors cursor-pointer mr-1"
                 title="Retourner aux Swipes"
               >
@@ -440,7 +440,7 @@ export const PrivacySecurityCenter: React.FC<PrivacySecurityCenterProps> = ({
                 <div className="flex gap-2">
                   <button
                     id="confirm-purge-account-btn"
-                    onClick={onPurgeAccount}
+                    onClick={() => onPurgeAccount?.()}
                     className="flex-1 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold transition-all shadow-md shadow-rose-200"
                   >
                     Oui, tout supprimer

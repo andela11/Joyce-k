@@ -57,8 +57,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [globalGhostModeAllow, setGlobalGhostModeAllow] = useState(true);
   const [maxDistanceKm, setMaxDistanceKm] = useState(15000);
 
-  // Listen to registered users in Firestore
+  // Listen to registered users in Firestore only for authorized admin
   useEffect(() => {
+    if (!authUser?.isAdmin) return;
     setIsLoadingDb(true);
     try {
       const unsubscribe = onSnapshot(
@@ -81,7 +82,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       console.warn('Admin db init error:', err);
       setIsLoadingDb(false);
     }
-  }, []);
+  }, [authUser?.isAdmin]);
 
   const showNotification = (msg: string) => {
     setActionSuccess(msg);
@@ -162,6 +163,28 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     setDbUsers((prev) => prev.filter((u) => u.id !== userId));
     showNotification("Utilisateur révoqué du système avec succès.");
   };
+
+  if (!authUser?.isAdmin) {
+    return (
+      <div className="w-full min-h-[calc(100vh-70px)] bg-slate-900 flex items-center justify-center p-6 text-slate-100">
+        <div className="max-w-md w-full p-8 rounded-3xl bg-slate-800 border border-slate-700 text-center space-y-4 shadow-2xl">
+          <div className="w-16 h-16 rounded-3xl bg-rose-500/10 border border-rose-500/30 text-rose-500 flex items-center justify-center mx-auto">
+            <Lock className="w-8 h-8" />
+          </div>
+          <h2 className="text-xl font-black text-white">Accès Réservé au Super Administrateur</h2>
+          <p className="text-xs text-slate-400 leading-relaxed">
+            Seul le compte administrateur unique autorisé a accès à ce panneau de contrôle et aux données globales. Votre compte utilisateur standard ne dispose pas de ces privilèges.
+          </p>
+          <button
+            onClick={() => onEnterApp('discovery')}
+            className="w-full py-3 rounded-2xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-sm shadow-md transition-all cursor-pointer"
+          >
+            Retourner à l'application
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div id="admin-dashboard-container" className="w-full min-h-[calc(100vh-70px)] bg-slate-900 text-slate-100 p-4 sm:p-6 md:p-8 selection:bg-rose-500 selection:text-white">

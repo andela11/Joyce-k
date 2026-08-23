@@ -15,10 +15,14 @@ import {
   Camera,
   ShieldAlert,
   Globe2,
+  Briefcase,
+  Heart,
+  Phone,
 } from 'lucide-react';
-import { AuthUser, UserProfile } from '../types';
+import { AuthUser, UserProfile, RelationshipGoal } from '../types';
 import { JoyceKLogo } from './JoyceKLogo';
 import { PRESET_CITIES } from '../utils/geoUtils';
+import { detectCountryFromPhoneNumber, COUNTRY_PHONE_DATABASE } from '../utils/phoneCountryUtils';
 import {
   auth,
   db,
@@ -30,11 +34,18 @@ import {
   setDoc,
   getDoc,
 } from '../lib/firebase';
+import {
+  createDedicatedUserProfile,
+  fetchUserProfile,
+  persistUserProfile,
+  GENDER_DEFAULT_AVATARS,
+  checkIsAdmin,
+} from '../utils/userUtils';
 
 interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onLoginSuccess: (user: AuthUser, updatedProfile?: Partial<UserProfile>) => void;
+  onLoginSuccess: (user: AuthUser, fullProfile?: UserProfile) => void;
   initialMode?: 'login' | 'signup';
 }
 
@@ -44,13 +55,22 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   onLoginSuccess,
   initialMode = 'login',
 }) => {
-  const [mode, setMode] = useState<'login' | 'signup' | 'forgot'>(initialMode);
+  const sanitizeMode = (m?: any): 'login' | 'signup' | 'forgot' => {
+    if (m === 'signup' || m === 'forgot' || m === 'login') return m;
+    return 'login';
+  };
+
+  const [mode, setMode] = useState<'login' | 'signup' | 'forgot'>(() => sanitizeMode(initialMode));
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
-  const [age, setAge] = useState<number>(26);
+  const [age, setAge] = useState<number>(25);
   const [gender, setGender] = useState<'femme' | 'homme' | 'non-binaire'>('homme');
+  const [interestedIn, setInterestedIn] = useState<'femme' | 'homme' | 'tous'>('femme');
+  const [occupation, setOccupation] = useState('');
+  const [relationshipGoal, setRelationshipGoal] = useState<RelationshipGoal>('Relation sérieuse');
   const [selectedCityName, setSelectedCityName] = useState('Paris');
+  const [phoneNumber, setPhoneNumber] = useState('+237 6 99 88 77 66');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -67,7 +87,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
   React.useEffect(() => {
     if (isOpen) {
-      setMode(initialMode);
+      setMode(sanitizeMode(initialMode));
       setError(null);
       setSuccessMsg(null);
     }
@@ -163,23 +183,20 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         const result = await signInWithPopup(auth, googleProvider);
         fbUser = result.user;
       } catch (authErr: any) {
-        console.warn('Firebase popup error, using direct auth:', authErr);
+        console.warn('Firebase popup error:', authErr);
       }
 
       const uid = fbUser?.uid || `google_${Date.now()}`;
-      const userEmail = fbUser?.email || email || 'alexandre.joycek@gmail.com';
-      const userName = fbUser?.displayName || name || 'Alexandre';
-      const userPhoto = fbUser?.photoURL || photoDataUrl || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&auto=format&fit=crop&q=80';
+      const userEmail = fbUser?.email || email.trim().toLowerCase() || `user_${Date.now()}@joycek.app`;
+      const rawName = fbUser?.displayName || name.trim() || userEmail.split('@')[0] || 'Membre Joyce-K';
+      const userPhoto = fbUser?.photoURL || photoDataUrl || GENDER_DEFAULT_AVATARS[gender] || GENDER_DEFAULT_AVATARS.femme;
 
-      const isAdmin =
-        userEmail.toLowerCase() === 'andelacyrille11@gmail.com' ||
-        userEmail.toLowerCase() === 'blinkservices513@gmail.com' ||
-        userEmail.toLowerCase().includes('admin');
+      const isAdmin = checkIsAdmin(userEmail);
 
       const authData: AuthUser = {
         id: uid,
         email: userEmail,
-        name: isAdmin ? `${userName} (Admin)` : userName,
+        name: isAdmin ? `${rawName} (Admin)` : rawName,
         photoUrl: userPhoto,
         provider: 'google',
         isLoggedIn: true,
@@ -187,29 +204,22 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         createdAt: new Date().toISOString(),
       };
 
-      // Save or update profile in Firestore
-      try {
-        const userDocRef = doc(db, 'users', uid);
-        await setDoc(
-          userDocRef,
-          {
-            uid,
-            email: userEmail,
-            name: userName,
-            photoUrl: userPhoto,
-            isAdmin,
-            lastLoginAt: new Date().toISOString(),
-          },
-          { merge: true }
-        );
-      } catch (dbErr) {
-        console.warn('Firestore doc save error:', dbErr);
+      // Load existing profile or create a fresh dedicated one
+      let fullProfile = await fetchUserProfile(uid);
+      if (!fullProfile) {
+        const selectedCityObj = PRESET_CITIES.find((c) => c.name === selectedCityName) || PRESET_CITIES[0];
+        fullProfile = createDedicatedUserProfile(authData, {
+          gender,
+          age,
+          city: `${selectedCityObj.name}, ${selectedCityObj.country}`,
+          lat: selectedCityObj.lat,
+          lng: selectedCityObj.lng,
+          photos: [userPhoto],
+        });
+        await persistUserProfile(fullProfile);
       }
 
-      onLoginSuccess(authData, {
-        name: authData.name,
-        verified: true,
-      });
+      onLoginSuccess(authData, fullProfile);
       onClose();
     } catch (err: any) {
       console.error('Google login error:', err);
@@ -261,10 +271,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     setIsLoading(true);
     try {
       const selectedCityObj = PRESET_CITIES.find((c) => c.name === selectedCityName) || PRESET_CITIES[0];
+      const parsedInterestedIn: ('femme' | 'homme' | 'non-binaire')[] =
+        interestedIn === 'tous' ? ['femme', 'homme', 'non-binaire'] : [interestedIn];
 
       let uid = '';
       let userName = name.trim() || cleanEmail.split('@')[0];
-      let userPhoto = photoDataUrl || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&auto=format&fit=crop&q=80';
+      let userPhoto = photoDataUrl || GENDER_DEFAULT_AVATARS[gender] || GENDER_DEFAULT_AVATARS.homme;
+
+      let fullProfile: UserProfile | null = null;
 
       if (mode === 'signup') {
         // Real Firebase User Registration
@@ -281,46 +295,51 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             setIsLoading(false);
             return;
           }
-          console.warn('Firebase signup warning, using fallback token:', fbAuthErr);
+          console.warn('Firebase signup warning, using secure session UID:', fbAuthErr);
           uid = `user_${Date.now()}`;
         }
 
-        // Store user profile document in Firestore
-        try {
-          const userDocRef = doc(db, 'users', uid);
-          await setDoc(userDocRef, {
-            uid,
-            email: cleanEmail,
-            name: userName,
-            age,
-            gender,
-            city: `${selectedCityObj.name}, ${selectedCityObj.country}`,
-            lat: selectedCityObj.lat,
-            lng: selectedCityObj.lng,
-            photoUrl: userPhoto,
-            verified: true,
-            createdAt: new Date().toISOString(),
-          });
-        } catch (dbErr) {
-          console.warn('Firestore store profile error:', dbErr);
-        }
+        const isAdmin = checkIsAdmin(cleanEmail);
+
+        const authUser: AuthUser = {
+          id: uid,
+          email: cleanEmail,
+          name: isAdmin ? `${userName} (Admin)` : userName,
+          photoUrl: userPhoto,
+          provider: 'email',
+          isLoggedIn: true,
+          isAdmin,
+          createdAt: new Date().toISOString(),
+        };
+
+        const detectedSignupCountry = detectCountryFromPhoneNumber(phoneNumber);
+
+        // Create dedicated user profile with their exact personal data
+        fullProfile = createDedicatedUserProfile(authUser, {
+          name: userName,
+          age,
+          gender,
+          interestedIn: parsedInterestedIn,
+          occupation: occupation.trim() || 'Membre Joyce-K',
+          relationshipGoal,
+          city: `${selectedCityObj.name}, ${selectedCityObj.country}`,
+          lat: selectedCityObj.lat,
+          lng: selectedCityObj.lng,
+          phoneNumber: phoneNumber.trim() || '+237 6 99 88 77 66',
+          country: detectedSignupCountry.name,
+          photos: [userPhoto],
+          bio: `Bonjour, je m'appelle ${userName} et je réside à ${selectedCityObj.name}. Heureux(se) d'être sur Joyce-K pour faire de belles rencontres authentiques.`,
+        });
+
+        await persistUserProfile(fullProfile);
+
+        onLoginSuccess(authUser, fullProfile);
+        onClose();
       } else {
         // Real Firebase Sign In
         try {
           const userCredential = await signInWithEmailAndPassword(auth, cleanEmail, password);
           uid = userCredential.user.uid;
-
-          // Fetch user profile from Firestore if exists
-          try {
-            const userDoc = await getDoc(doc(db, 'users', uid));
-            if (userDoc.exists()) {
-              const data = userDoc.data();
-              userName = data.name || userName;
-              userPhoto = data.photoUrl || userPhoto;
-            }
-          } catch (dbReadErr) {
-            console.warn('Firestore read profile warning:', dbReadErr);
-          }
         } catch (fbSignInErr: any) {
           if (
             fbSignInErr.code === 'auth/user-not-found' ||
@@ -334,36 +353,42 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           console.warn('Firebase signin warning, using local session:', fbSignInErr);
           uid = `user_${Date.now()}`;
         }
+
+        // Fetch their unique profile from Firestore / LocalStorage
+        fullProfile = await fetchUserProfile(uid);
+
+        const isAdmin = checkIsAdmin(cleanEmail);
+
+        const resolvedName = fullProfile?.name || userName;
+        const resolvedPhoto = fullProfile?.photos?.[0] || userPhoto;
+
+        const authUser: AuthUser = {
+          id: uid,
+          email: cleanEmail,
+          name: isAdmin ? `${resolvedName} (Admin)` : resolvedName,
+          photoUrl: resolvedPhoto,
+          provider: 'email',
+          isLoggedIn: true,
+          isAdmin,
+          createdAt: new Date().toISOString(),
+        };
+
+        if (!fullProfile) {
+          fullProfile = createDedicatedUserProfile(authUser, {
+            name: resolvedName,
+            age: 26,
+            gender: 'homme',
+            photos: [resolvedPhoto],
+            city: `${selectedCityObj.name}, ${selectedCityObj.country}`,
+            lat: selectedCityObj.lat,
+            lng: selectedCityObj.lng,
+          });
+          await persistUserProfile(fullProfile);
+        }
+
+        onLoginSuccess(authUser, fullProfile);
+        onClose();
       }
-
-      const isAdmin =
-        cleanEmail === 'andelacyrille11@gmail.com' ||
-        cleanEmail === 'blinkservices513@gmail.com' ||
-        cleanEmail.includes('admin');
-
-      const authUser: AuthUser = {
-        id: uid,
-        email: cleanEmail,
-        name: isAdmin ? `${userName} (Admin)` : userName,
-        photoUrl: userPhoto,
-        provider: 'email',
-        isLoggedIn: true,
-        isAdmin,
-        createdAt: new Date().toISOString(),
-      };
-
-      onLoginSuccess(authUser, {
-        name: authUser.name,
-        age: age || 26,
-        gender: gender || 'homme',
-        city: `${selectedCityObj.name}, ${selectedCityObj.country}`,
-        lat: selectedCityObj.lat,
-        lng: selectedCityObj.lng,
-        photos: photoDataUrl
-          ? [photoDataUrl, 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&auto=format&fit=crop&q=80']
-          : undefined,
-      });
-      onClose();
     } catch (err: any) {
       console.error('Auth error:', err);
       setError(err.message || "Une erreur est survenue lors de l'authentification.");
@@ -675,6 +700,48 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 </div>
               </div>
 
+              {/* Phone Number & Automatic Country Detection */}
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                    <Phone className="w-3.5 h-3.5 text-rose-600" />
+                    <span>Numéro de Téléphone (Localisation pays)</span>
+                  </label>
+                  {(() => {
+                    const c = detectCountryFromPhoneNumber(phoneNumber);
+                    return (
+                      <span className="text-[10px] font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200 flex items-center gap-1">
+                        <span>{c.flag}</span>
+                        <span>{c.name}</span>
+                      </span>
+                    );
+                  })()}
+                </div>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-rose-600 font-bold text-xs">
+                    <span>{detectCountryFromPhoneNumber(phoneNumber).flag}</span>
+                  </div>
+                  <input
+                    id="signup-phone-input"
+                    type="text"
+                    placeholder="Ex: +237 6 99 88 77 66 ou +33 6..."
+                    value={phoneNumber}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setPhoneNumber(val);
+                      const c = detectCountryFromPhoneNumber(val);
+                      const matchedCity = PRESET_CITIES.find(
+                        (city) => city.country.toLowerCase() === c.name.toLowerCase()
+                      );
+                      if (matchedCity) {
+                        setSelectedCityName(matchedCity.name);
+                      }
+                    }}
+                    className="w-full pl-9 pr-3.5 py-2.5 rounded-2xl bg-orange-50/30 border border-orange-200 focus:border-rose-500 focus:bg-white focus:outline-none text-xs font-medium text-slate-900 transition-colors"
+                  />
+                </div>
+              </div>
+
               {/* Worldwide City & Country Selector */}
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center gap-1.5">
@@ -692,6 +759,58 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                       {city.flag} {city.name}, {city.country} ({city.region})
                     </option>
                   ))}
+                </select>
+              </div>
+
+              {/* Preferences: Interested in & Relationship Goal */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center gap-1">
+                    <Heart className="w-3.5 h-3.5 text-rose-600" />
+                    <span>Je recherche</span>
+                  </label>
+                  <select
+                    id="signup-interested-select"
+                    value={interestedIn}
+                    onChange={(e) => setInterestedIn(e.target.value as any)}
+                    className="w-full px-3.5 py-2.5 rounded-2xl bg-orange-50/30 border border-orange-200 focus:border-rose-500 focus:bg-white focus:outline-none text-xs font-medium text-slate-900 transition-colors"
+                  >
+                    <option value="femme">Des femmes</option>
+                    <option value="homme">Des hommes</option>
+                    <option value="tous">Tous les profils</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center gap-1">
+                    <Briefcase className="w-3.5 h-3.5 text-rose-600" />
+                    <span>Profession</span>
+                  </label>
+                  <input
+                    id="signup-occupation-input"
+                    type="text"
+                    placeholder="Ex: Designer, Médecin..."
+                    value={occupation}
+                    onChange={(e) => setOccupation(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-2xl bg-orange-50/30 border border-orange-200 focus:border-rose-500 focus:bg-white focus:outline-none text-xs font-medium text-slate-900 transition-colors"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Objectif relationnel
+                </label>
+                <select
+                  id="signup-goal-select"
+                  value={relationshipGoal}
+                  onChange={(e) => setRelationshipGoal(e.target.value as any)}
+                  className="w-full px-3.5 py-2.5 rounded-2xl bg-orange-50/30 border border-orange-200 focus:border-rose-500 focus:bg-white focus:outline-none text-xs font-medium text-slate-900 transition-colors"
+                >
+                  <option value="Relation sérieuse">Relation sérieuse</option>
+                  <option value="Rencontres & Découverte">Rencontres & Découverte</option>
+                  <option value="Coup de foudre">Coup de foudre</option>
+                  <option value="Amitié & Plus si affinités">Amitié & Plus si affinités</option>
                 </select>
               </div>
             </div>

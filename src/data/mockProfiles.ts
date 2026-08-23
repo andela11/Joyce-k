@@ -37,6 +37,8 @@ export const INITIAL_USER_PROFILE: UserProfile = {
   voiceBioDurationSeconds: 14,
   loveLanguage: 'quality_time',
   loveLanguageLabel: 'Moments de qualité',
+  phoneNumber: '+237 6 99 88 77 66',
+  country: 'Cameroun',
 };
 
 export const INITIAL_PRIVACY_SETTINGS: PrivacySettings = {
@@ -104,6 +106,8 @@ export const MOCK_PROFILES: UserProfile[] = [
     voiceBioDurationSeconds: 15,
     loveLanguage: 'quality_time',
     loveLanguageLabel: 'Moments de qualité',
+    phoneNumber: '+33 6 12 34 56 78',
+    country: 'France',
   },
   {
     id: 'user_2',
@@ -141,6 +145,8 @@ export const MOCK_PROFILES: UserProfile[] = [
     voiceBioDurationSeconds: 18,
     loveLanguage: 'words',
     loveLanguageLabel: 'Paroles valorisantes',
+    phoneNumber: '+225 07 12 34 56 78',
+    country: 'Côte d\'Ivoire',
   },
   {
     id: 'user_3',
@@ -178,6 +184,8 @@ export const MOCK_PROFILES: UserProfile[] = [
     voiceBioDurationSeconds: 12,
     loveLanguage: 'acts_of_service',
     loveLanguageLabel: 'Petites attentions',
+    phoneNumber: '+1 514 123 4567',
+    country: 'Canada',
   },
   {
     id: 'user_4',
@@ -215,6 +223,8 @@ export const MOCK_PROFILES: UserProfile[] = [
     voiceBioDurationSeconds: 16,
     loveLanguage: 'quality_time',
     loveLanguageLabel: 'Moments de qualité',
+    phoneNumber: '+221 77 123 45 67',
+    country: 'Sénégal',
   },
   {
     id: 'user_5',
@@ -252,6 +262,8 @@ export const MOCK_PROFILES: UserProfile[] = [
     voiceBioDurationSeconds: 14,
     loveLanguage: 'physical_touch',
     loveLanguageLabel: 'Tendresse & Contact',
+    phoneNumber: '+237 6 77 88 99 00',
+    country: 'Cameroun',
   },
   {
     id: 'user_6',
@@ -289,6 +301,8 @@ export const MOCK_PROFILES: UserProfile[] = [
     voiceBioDurationSeconds: 13,
     loveLanguage: 'words',
     loveLanguageLabel: 'Paroles valorisantes',
+    phoneNumber: '+32 470 12 34 56',
+    country: 'Belgique',
   },
   {
     id: 'user_7',
@@ -325,6 +339,8 @@ export const MOCK_PROFILES: UserProfile[] = [
     voiceBioDurationSeconds: 17,
     loveLanguage: 'gifts',
     loveLanguageLabel: 'Attentions & Cadeaux sincères',
+    phoneNumber: '+212 6 12 34 56 78',
+    country: 'Maroc',
   },
   {
     id: 'user_8',
@@ -360,5 +376,7 @@ export const MOCK_PROFILES: UserProfile[] = [
     voiceBioDurationSeconds: 14,
     loveLanguage: 'quality_time',
     loveLanguageLabel: 'Moments de qualité',
+    phoneNumber: '+41 79 123 45 67',
+    country: 'Suisse',
   }
 ];
