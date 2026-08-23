@@ -400,11 +400,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   return (
     <div
       id="auth-modal-overlay"
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in overflow-y-auto"
+      className="fixed inset-0 z-50 overflow-y-auto p-3 sm:p-4 md:p-6 bg-slate-900/65 backdrop-blur-sm animate-fade-in flex flex-col justify-start sm:justify-center items-center"
     >
       <div
         id="auth-modal-container"
-        className="relative w-full max-w-lg bg-white border border-orange-200/90 rounded-[32px] p-6 sm:p-8 shadow-2xl shadow-orange-950/20 text-slate-800 overflow-hidden my-8"
+        className="relative w-full max-w-lg bg-white border border-orange-200/90 rounded-3xl sm:rounded-[32px] p-4 sm:p-6 md:p-8 shadow-2xl shadow-orange-950/20 text-slate-800 my-auto"
       >
         {/* Soft elegant warm ambient glow */}
         <div className="absolute -top-24 -right-24 w-52 h-52 bg-orange-100/60 rounded-full blur-3xl pointer-events-none" />
@@ -414,22 +414,22 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         <button
           id="close-auth-modal-btn"
           onClick={onClose}
-          className="absolute top-5 right-5 p-2 rounded-full text-slate-400 hover:text-slate-700 hover:bg-orange-50 transition-colors z-20 cursor-pointer"
+          className="absolute top-3.5 right-3.5 sm:top-5 sm:right-5 p-2 rounded-full text-slate-400 hover:text-slate-700 hover:bg-orange-50 transition-colors z-20 cursor-pointer"
         >
           <X className="w-5 h-5" />
         </button>
 
         {/* Header Logo & Title */}
-        <div className="text-center relative z-10 space-y-2 mb-5">
+        <div className="text-center relative z-10 space-y-1.5 sm:space-y-2 mb-4 sm:mb-5 pt-1">
           <div className="flex justify-center">
             <JoyceKLogo size="lg" variant="light-bg" showTagline={true} />
           </div>
-          <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+          <h2 className="text-lg sm:text-2xl font-black text-slate-900 tracking-tight">
             {mode === 'login' && 'Connexion à votre compte'}
             {mode === 'signup' && 'Rejoindre la communauté Joyce-K'}
             {mode === 'forgot' && 'Réinitialiser votre mot de passe'}
           </h2>
-          <p className="text-xs text-slate-600 font-medium">
+          <p className="text-xs text-slate-600 font-medium max-w-md mx-auto px-1">
             {mode === 'login' && 'Retrouvez vos affinités réelles, vos messages et votre radar mondial'}
             {mode === 'signup' && 'Rencontres internationales authentiques sans faux profils ni avatars IA'}
             {mode === 'forgot' && 'Entrez votre e-mail pour recevoir les instructions'}
@@ -438,7 +438,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
         {/* Auth Mode Toggle Tabs */}
         {mode !== 'forgot' && (
-          <div className="flex bg-orange-50/70 p-1 rounded-2xl border border-orange-200/80 mb-5 relative z-10">
+          <div className="flex bg-orange-50/70 p-1 rounded-2xl border border-orange-200/80 mb-4 sm:mb-5 relative z-10">
             <button
               id="auth-tab-login"
               type="button"
@@ -447,7 +447,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 setError(null);
                 setSuccessMsg(null);
               }}
-              className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              className={`flex-1 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
                 mode === 'login'
                   ? 'bg-rose-600 text-white shadow-md shadow-rose-200'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
@@ -463,7 +463,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 setError(null);
                 setSuccessMsg(null);
               }}
-              className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              className={`flex-1 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
                 mode === 'signup'
                   ? 'bg-rose-600 text-white shadow-md shadow-rose-200'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
@@ -482,9 +482,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               type="button"
               onClick={handleGoogleLogin}
               disabled={isLoading}
-              className="w-full py-3 px-4 rounded-2xl bg-white border border-orange-200 hover:border-rose-300 hover:bg-orange-50/40 text-slate-800 font-bold text-xs sm:text-sm flex items-center justify-center gap-3 shadow-xs transition-all active:scale-[0.98] disabled:opacity-50 cursor-pointer"
+              className="w-full min-h-[44px] py-2.5 sm:py-3 px-4 rounded-xl sm:rounded-2xl bg-white border border-orange-200 hover:border-rose-300 hover:bg-orange-50/40 text-slate-800 font-bold text-xs sm:text-sm flex items-center justify-center gap-3 shadow-xs transition-all active:scale-[0.98] disabled:opacity-50 cursor-pointer"
             >
-              <svg className="w-4 h-4" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
                 <path
                   fill="#4285F4"
                   d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -519,7 +519,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         {photoStatus === 'ai_rejected' && (
           <div
             id="ai-photo-rejection-banner"
-            className="mb-4 p-3.5 rounded-2xl bg-rose-50 border-2 border-rose-500 text-rose-800 text-xs font-semibold flex items-start gap-2.5"
+            className="mb-4 p-3 sm:p-3.5 rounded-2xl bg-rose-50 border-2 border-rose-500 text-rose-800 text-xs font-semibold flex items-start gap-2.5"
           >
             <ShieldAlert className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
             <div>
@@ -547,13 +547,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         )}
 
         {/* Form */}
-        <form onSubmit={handleEmailAuth} className="relative z-10 space-y-3.5">
+        <form onSubmit={handleEmailAuth} className="relative z-10 space-y-3 sm:space-y-3.5">
           {/* SIGNUP MODE: Photo Upload + Verification */}
           {mode === 'signup' && (
-            <div className="p-3.5 rounded-2xl bg-orange-50/40 border border-orange-200/80 space-y-2.5">
-              <div className="flex items-center justify-between">
+            <div className="p-3 sm:p-3.5 rounded-2xl bg-orange-50/40 border border-orange-200/80 space-y-2.5">
+              <div className="flex flex-wrap items-center justify-between gap-1">
                 <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                  <Camera className="w-3.5 h-3.5 text-rose-600" />
+                  <Camera className="w-3.5 h-3.5 text-rose-600 shrink-0" />
                   <span>Photo de profil réelle (Obligatoire)</span>
                 </label>
                 <span className="text-[10px] uppercase font-extrabold text-rose-700 bg-rose-100 border border-rose-200 px-2 py-0.5 rounded-full">
@@ -567,7 +567,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={handleDrop}
                 onClick={() => fileInputRef.current?.click()}
-                className={`relative border-2 border-dashed rounded-2xl p-4 text-center cursor-pointer transition-all ${
+                className={`relative border-2 border-dashed rounded-xl sm:rounded-2xl p-3.5 sm:p-4 text-center cursor-pointer transition-all ${
                   photoStatus === 'ai_rejected'
                     ? 'border-rose-500 bg-rose-50'
                     : photoStatus === 'valid'
@@ -598,7 +598,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     <img
                       src={photoDataUrl}
                       alt="Aperçu"
-                      className="w-14 h-14 rounded-2xl object-cover border-2 border-emerald-500 shadow-md"
+                      className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl object-cover border-2 border-emerald-500 shadow-md shrink-0"
                     />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5 text-emerald-700 font-bold text-xs">
@@ -622,7 +622,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   </div>
                 ) : photoStatus === 'ai_rejected' ? (
                   <div className="py-2 flex flex-col items-center gap-1 text-rose-700">
-                    <ShieldAlert className="w-8 h-8 text-rose-600" />
+                    <ShieldAlert className="w-7 h-7 sm:w-8 sm:h-8 text-rose-600" />
                     <p className="text-xs font-bold text-rose-700">
                       Image non autorisée (IA Détectée)
                     </p>
@@ -632,8 +632,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   </div>
                 ) : (
                   <div className="py-2 flex flex-col items-center gap-1.5 text-slate-500">
-                    <div className="w-10 h-10 rounded-full bg-orange-50 border border-orange-200 flex items-center justify-center text-rose-600">
-                      <Upload className="w-5 h-5" />
+                    <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-orange-50 border border-orange-200 flex items-center justify-center text-rose-600">
+                      <Upload className="w-4 h-4 sm:w-5 sm:h-5" />
                     </div>
                     <p className="text-xs font-bold text-slate-800">
                       Téléverser une photo depuis votre appareil
@@ -663,12 +663,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     placeholder="Ex: Alexandre, Sarah, Aïcha..."
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-orange-50/30 border border-orange-200 focus:border-rose-500 focus:bg-white focus:outline-none text-xs font-medium text-slate-900 transition-colors"
+                    className="w-full pl-10 pr-4 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl bg-orange-50/30 border border-orange-200 focus:border-rose-500 focus:bg-white focus:outline-none text-sm font-medium text-slate-900 transition-colors"
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1">
                     Âge
@@ -680,7 +680,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     max={99}
                     value={age}
                     onChange={(e) => setAge(parseInt(e.target.value) || 20)}
-                    className="w-full px-3.5 py-2.5 rounded-2xl bg-orange-50/30 border border-orange-200 focus:border-rose-500 focus:bg-white focus:outline-none text-xs font-medium text-slate-900 transition-colors"
+                    className="w-full px-3.5 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl bg-orange-50/30 border border-orange-200 focus:border-rose-500 focus:bg-white focus:outline-none text-sm font-medium text-slate-900 transition-colors"
                   />
                 </div>
                 <div>
@@ -691,7 +691,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     id="signup-gender-select"
                     value={gender}
                     onChange={(e) => setGender(e.target.value as any)}
-                    className="w-full px-3.5 py-2.5 rounded-2xl bg-orange-50/30 border border-orange-200 focus:border-rose-500 focus:bg-white focus:outline-none text-xs font-medium text-slate-900 transition-colors"
+                    className="w-full px-3.5 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl bg-orange-50/30 border border-orange-200 focus:border-rose-500 focus:bg-white focus:outline-none text-sm font-medium text-slate-900 transition-colors"
                   >
                     <option value="homme">Homme</option>
                     <option value="femme">Femme</option>
@@ -702,9 +702,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
               {/* Phone Number & Automatic Country Detection */}
               <div>
-                <div className="flex items-center justify-between mb-1">
+                <div className="flex flex-wrap items-center justify-between gap-1 mb-1">
                   <label className="block text-xs font-bold text-slate-700 flex items-center gap-1.5">
-                    <Phone className="w-3.5 h-3.5 text-rose-600" />
+                    <Phone className="w-3.5 h-3.5 text-rose-600 shrink-0" />
                     <span>Numéro de Téléphone (Localisation pays)</span>
                   </label>
                   {(() => {
@@ -737,7 +737,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                         setSelectedCityName(matchedCity.name);
                       }
                     }}
-                    className="w-full pl-9 pr-3.5 py-2.5 rounded-2xl bg-orange-50/30 border border-orange-200 focus:border-rose-500 focus:bg-white focus:outline-none text-xs font-medium text-slate-900 transition-colors"
+                    className="w-full pl-9 pr-3.5 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl bg-orange-50/30 border border-orange-200 focus:border-rose-500 focus:bg-white focus:outline-none text-sm font-medium text-slate-900 transition-colors"
                   />
                 </div>
               </div>
@@ -745,14 +745,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               {/* Worldwide City & Country Selector */}
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center gap-1.5">
-                  <Globe2 className="w-3.5 h-3.5 text-rose-600" />
+                  <Globe2 className="w-3.5 h-3.5 text-rose-600 shrink-0" />
                   <span>Votre Ville & Région (Monde entier)</span>
                 </label>
                 <select
                   id="signup-city-select"
                   value={selectedCityName}
                   onChange={(e) => setSelectedCityName(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-2xl bg-orange-50/30 border border-orange-200 focus:border-rose-500 focus:bg-white focus:outline-none text-xs font-medium text-slate-900 transition-colors"
+                  className="w-full px-3.5 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl bg-orange-50/30 border border-orange-200 focus:border-rose-500 focus:bg-white focus:outline-none text-sm font-medium text-slate-900 transition-colors"
                 >
                   {PRESET_CITIES.map((city) => (
                     <option key={city.name} value={city.name}>
@@ -763,17 +763,17 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               </div>
 
               {/* Preferences: Interested in & Relationship Goal */}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center gap-1">
-                    <Heart className="w-3.5 h-3.5 text-rose-600" />
+                    <Heart className="w-3.5 h-3.5 text-rose-600 shrink-0" />
                     <span>Je recherche</span>
                   </label>
                   <select
                     id="signup-interested-select"
                     value={interestedIn}
                     onChange={(e) => setInterestedIn(e.target.value as any)}
-                    className="w-full px-3.5 py-2.5 rounded-2xl bg-orange-50/30 border border-orange-200 focus:border-rose-500 focus:bg-white focus:outline-none text-xs font-medium text-slate-900 transition-colors"
+                    className="w-full px-3.5 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl bg-orange-50/30 border border-orange-200 focus:border-rose-500 focus:bg-white focus:outline-none text-sm font-medium text-slate-900 transition-colors"
                   >
                     <option value="femme">Des femmes</option>
                     <option value="homme">Des hommes</option>
@@ -783,7 +783,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center gap-1">
-                    <Briefcase className="w-3.5 h-3.5 text-rose-600" />
+                    <Briefcase className="w-3.5 h-3.5 text-rose-600 shrink-0" />
                     <span>Profession</span>
                   </label>
                   <input
@@ -792,7 +792,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     placeholder="Ex: Designer, Médecin..."
                     value={occupation}
                     onChange={(e) => setOccupation(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-2xl bg-orange-50/30 border border-orange-200 focus:border-rose-500 focus:bg-white focus:outline-none text-xs font-medium text-slate-900 transition-colors"
+                    className="w-full px-3.5 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl bg-orange-50/30 border border-orange-200 focus:border-rose-500 focus:bg-white focus:outline-none text-sm font-medium text-slate-900 transition-colors"
                   />
                 </div>
               </div>
@@ -805,7 +805,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   id="signup-goal-select"
                   value={relationshipGoal}
                   onChange={(e) => setRelationshipGoal(e.target.value as any)}
-                  className="w-full px-3.5 py-2.5 rounded-2xl bg-orange-50/30 border border-orange-200 focus:border-rose-500 focus:bg-white focus:outline-none text-xs font-medium text-slate-900 transition-colors"
+                  className="w-full px-3.5 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl bg-orange-50/30 border border-orange-200 focus:border-rose-500 focus:bg-white focus:outline-none text-sm font-medium text-slate-900 transition-colors"
                 >
                   <option value="Relation sérieuse">Relation sérieuse</option>
                   <option value="Rencontres & Découverte">Rencontres & Découverte</option>
@@ -830,7 +830,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 placeholder="nom@exemple.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-orange-50/30 border border-orange-200 focus:border-rose-500 focus:bg-white focus:outline-none text-xs font-medium text-slate-900 transition-colors"
+                className="w-full pl-10 pr-4 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl bg-orange-50/30 border border-orange-200 focus:border-rose-500 focus:bg-white focus:outline-none text-sm font-medium text-slate-900 transition-colors"
               />
             </div>
           </div>
@@ -865,7 +865,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   placeholder="Au moins 6 caractères"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pl-10 pr-10 py-2.5 rounded-2xl bg-orange-50/30 border border-orange-200 focus:border-rose-500 focus:bg-white focus:outline-none text-xs font-medium text-slate-900 transition-colors"
+                  className="w-full pl-10 pr-10 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl bg-orange-50/30 border border-orange-200 focus:border-rose-500 focus:bg-white focus:outline-none text-sm font-medium text-slate-900 transition-colors"
                 />
                 <button
                   type="button"
@@ -898,7 +898,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             id="auth-submit-btn"
             type="submit"
             disabled={isLoading || isVerifyingPhoto || photoStatus === 'ai_rejected'}
-            className="w-full mt-2 py-3 px-4 rounded-2xl bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-600 text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md shadow-rose-200 transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+            className="w-full min-h-[48px] mt-2 py-3 px-4 rounded-xl sm:rounded-2xl bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-600 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-md shadow-rose-200 transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
           >
             {isLoading ? (
               <>
@@ -941,9 +941,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         )}
 
         {/* Footer Security Badge */}
-        <div className="mt-6 pt-4 border-t border-orange-100 flex items-center justify-between text-[11px] text-slate-500 font-medium">
+        <div className="mt-5 sm:mt-6 pt-4 border-t border-orange-100 flex flex-col sm:flex-row items-center justify-between gap-1.5 sm:gap-2 text-[11px] text-slate-500 font-medium text-center sm:text-left">
           <span className="flex items-center gap-1 text-emerald-700 font-bold">
-            <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" /> Authentification Firebase & Anti-IA
+            <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" /> Authentification Firebase & Anti-IA
           </span>
           <span className="text-slate-400">Joyce-K Global</span>
         </div>

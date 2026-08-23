@@ -17,6 +17,7 @@ import {
   PhoneOff,
   VideoOff,
   Shield,
+  Unlock,
 } from 'lucide-react';
 import {
   PrivacySettings,
@@ -25,6 +26,7 @@ import {
   CallReceptionPreference,
   UserProfile,
 } from '../types';
+import { MOCK_PROFILES } from '../data/mockProfiles';
 
 interface PrivacySecurityCenterProps {
   currentUser: UserProfile;
@@ -392,6 +394,80 @@ export const PrivacySecurityCenter: React.FC<PrivacySecurityCenterProps> = ({
             </span>
           </div>
         </div>
+      </div>
+
+      {/* Blocked Profiles & Unblocking Management */}
+      <div
+        id="blocked-users-management-card"
+        className="bg-white border border-rose-100 rounded-[32px] p-5 sm:p-6 shadow-xl shadow-rose-100/60 space-y-4"
+      >
+        <div className="flex items-center justify-between border-b border-rose-100 pb-3">
+          <div>
+            <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+              <UserX className="w-4 h-4 text-rose-600" /> Profils Bloqués & Signalements
+            </h3>
+            <p className="text-[11px] text-slate-500 font-medium mt-0.5">
+              Les personnes bloquées ne peuvent plus vous envoyer de messages, vous appeler ou voir votre profil
+            </p>
+          </div>
+          <span className="text-xs px-2.5 py-1 rounded-full bg-rose-50 border border-rose-200 font-bold text-rose-700">
+            {(privacySettings.blockedUsers || []).length} bloqué(s)
+          </span>
+        </div>
+
+        {(!privacySettings.blockedUsers || privacySettings.blockedUsers.length === 0) ? (
+          <div className="py-6 px-4 text-center rounded-2xl bg-rose-50/50 border border-dashed border-rose-200 space-y-1">
+            <div className="w-10 h-10 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto mb-2">
+              <CheckCircle2 className="w-5 h-5" />
+            </div>
+            <p className="text-xs font-bold text-slate-800">Aucun contact bloqué</p>
+            <p className="text-[11px] text-slate-500 max-w-sm mx-auto">
+              Votre liste de blocage est vide. Vous pouvez bloquer un profil suspect ou indésirable à tout moment depuis la messagerie.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-2.5">
+            {privacySettings.blockedUsers.map((blockedId) => {
+              const profile = MOCK_PROFILES.find((p) => p.id === blockedId);
+              const displayName = profile ? `${profile.name}, ${profile.age}` : `Profil (${blockedId})`;
+              const displayPhoto = profile?.photos?.[0] || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800';
+
+              return (
+                <div
+                  key={blockedId}
+                  className="flex items-center justify-between p-3 rounded-2xl bg-rose-50/60 border border-rose-200 transition-all hover:bg-rose-50"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <img
+                      src={displayPhoto}
+                      alt={displayName}
+                      className="w-10 h-10 rounded-xl object-cover border border-rose-200 grayscale shrink-0"
+                      referrerPolicy="no-referrer"
+                    />
+                    <div className="min-w-0">
+                      <div className="text-xs font-bold text-slate-900 truncate">
+                        {displayName}
+                      </div>
+                      <div className="text-[10px] text-rose-600 font-medium">
+                        🚫 Messages & appels désactivés
+                      </div>
+                    </div>
+                  </div>
+
+                  <button
+                    id={`unblock-user-btn-${blockedId}`}
+                    onClick={() => onUnblockUser(blockedId)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white hover:bg-emerald-50 text-emerald-700 hover:text-emerald-800 border border-emerald-300 font-bold text-xs shadow-2xs transition-all cursor-pointer shrink-0"
+                    title={`Débloquer ${displayName}`}
+                  >
+                    <Unlock className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>Débloquer</span>
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* RGPD Data Rights & Account Purge */}

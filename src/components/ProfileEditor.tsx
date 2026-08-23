@@ -58,7 +58,9 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({
   const [isQuizOpen, setIsQuizOpen] = useState(false);
 
   useEffect(() => {
-    setProfile(userProfile);
+    if (userProfile) {
+      setProfile((prev) => (prev.id === userProfile.id && prev.name === userProfile.name && prev.bio === userProfile.bio ? prev : userProfile));
+    }
   }, [userProfile]);
 
   // Gallery file upload & AI check
@@ -339,18 +341,18 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({
   };
 
   return (
-    <div id="profile-editor-view" className="max-w-4xl mx-auto px-3 sm:px-6 py-4 sm:py-6 space-y-6">
+    <div id="profile-editor-view" className="max-w-4xl mx-auto px-3 sm:px-6 py-4 sm:py-6 space-y-6 bg-white">
       {/* Header Banner */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between bg-slate-900 border border-slate-800 rounded-[32px] p-5 shadow-xl shadow-slate-950/40 text-white gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between bg-white border border-rose-200/90 rounded-[32px] p-5 shadow-xl shadow-rose-100/50 text-slate-800 gap-4">
         <div className="flex items-center gap-3.5">
           {onBackToDiscovery && (
             <button
               id="profile-back-to-discovery-btn"
               onClick={() => onBackToDiscovery()}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white border border-slate-700 transition-colors cursor-pointer text-xs font-bold shrink-0"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-200 transition-colors cursor-pointer text-xs font-bold shrink-0"
               title="Retourner aux Swipes et Profils"
             >
-              <ChevronLeft className="w-4 h-4 text-rose-400 stroke-[2.5]" />
+              <ChevronLeft className="w-4 h-4 text-rose-600 stroke-[2.5]" />
               <span>Retour</span>
             </button>
           )}
@@ -358,21 +360,21 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({
             <img
               src={profile?.photos?.[0] || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800'}
               alt={profile?.name || 'Profil'}
-              className="w-16 h-16 rounded-2xl object-cover border-2 border-rose-500 shadow-md shadow-rose-950"
+              className="w-16 h-16 rounded-2xl object-cover border-2 border-rose-500 shadow-md shadow-rose-200"
               referrerPolicy="no-referrer"
             />
             {profile.verified && (
-              <span className="absolute -bottom-1 -right-1 p-0.5 rounded-full bg-emerald-500 text-white border-2 border-slate-900 shadow-sm">
+              <span className="absolute -bottom-1 -right-1 p-0.5 rounded-full bg-emerald-500 text-white border-2 border-white shadow-xs">
                 <CheckCircle2 className="w-3.5 h-3.5" />
               </span>
             )}
           </div>
           <div>
-            <h1 className="text-xl font-black text-white flex items-center gap-2">
+            <h1 className="text-xl font-black text-slate-900 flex items-center gap-2">
               <span>{profile.name}, {profile.age} ans</span>
             </h1>
-            <p className="text-xs text-slate-400 font-medium">
-              Profil joyce-k certifié sans intelligence artificielle
+            <p className="text-xs text-slate-500 font-medium">
+              Profil Joyce-K certifié sans intelligence artificielle
             </p>
           </div>
         </div>
@@ -380,7 +382,7 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({
         <button
           id="save-profile-top-btn"
           onClick={handleSave}
-          className="py-2.5 px-4 rounded-2xl bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-600 text-white font-bold text-xs flex items-center gap-2 shadow-lg shadow-rose-950 transition-all active:scale-95 cursor-pointer self-end sm:self-auto"
+          className="py-2.5 px-4 rounded-2xl bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-600 text-white font-bold text-xs flex items-center gap-2 shadow-md shadow-rose-200 transition-all active:scale-95 cursor-pointer self-end sm:self-auto"
         >
           <Save className="w-4 h-4" />
           <span>{saveSuccess ? 'Enregistré !' : 'Sauvegarder'}</span>
@@ -388,22 +390,22 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({
       </div>
 
       {/* Account & Authentication Status */}
-      <div className="bg-slate-900 border border-slate-800 rounded-[32px] p-5 shadow-xl shadow-slate-950/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-white">
+      <div className="bg-white border border-rose-100 rounded-[32px] p-5 shadow-xl shadow-rose-100/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-slate-800">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-rose-950/60 border border-rose-800/60 flex items-center justify-center text-rose-400">
+          <div className="w-10 h-10 rounded-2xl bg-rose-50 border border-rose-200 flex items-center justify-center text-rose-600 shadow-2xs">
             <ShieldCheck className="w-5 h-5" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-xs font-bold text-white">
-                Compte & Vérification joyce-k
+              <span className="text-xs font-bold text-slate-900">
+                Compte & Vérification Joyce-K
               </span>
-              <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-emerald-950/80 text-emerald-300 border border-emerald-500/40">
+              <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-300">
                 {authUser ? (authUser.provider === 'google' ? 'Google Auth' : 'Email certifié') : 'Invité certifié'}
               </span>
             </div>
-            <p className="text-xs text-slate-400">
-              {authUser ? authUser.email : 'Photos contrôlées par notre protocole anti-IA'}
+            <p className="text-xs text-slate-500">
+              {authUser ? authUser.email : 'Photos et vidéos contrôlées par notre protocole anti-IA'}
             </p>
           </div>
         </div>
@@ -412,22 +414,22 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({
           <button
             id="profile-auth-manage-btn"
             onClick={() => onOpenAuth('signup')}
-            className="px-4 py-2 rounded-2xl border border-slate-700 bg-slate-800 hover:bg-slate-750 text-white text-xs font-bold transition-all flex items-center gap-1.5 self-stretch sm:self-auto justify-center shadow-xs"
+            className="px-4 py-2 rounded-2xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-900 text-xs font-bold transition-all flex items-center gap-1.5 self-stretch sm:self-auto justify-center shadow-2xs cursor-pointer"
           >
-            <LogIn className="w-3.5 h-3.5" />
+            <LogIn className="w-3.5 h-3.5 text-rose-600" />
             <span>{authUser ? 'Changer de compte' : 'Se connecter'}</span>
           </button>
         )}
       </div>
 
       {/* Photo Gallery Manager with Device Upload & Anti-AI Verification */}
-      <div className="bg-slate-900 border border-slate-800 rounded-[32px] p-5 shadow-xl shadow-slate-950/40 space-y-4 text-white">
-        <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+      <div className="bg-white border border-rose-100 rounded-[32px] p-5 shadow-xl shadow-rose-100/40 space-y-4 text-slate-800">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-rose-100 pb-3 gap-3">
           <div>
-            <h3 className="text-sm font-bold text-white flex items-center gap-2">
-              <Camera className="w-4 h-4 text-rose-400" /> Galerie Photos ({profile.photos.length})
+            <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+              <Camera className="w-4 h-4 text-rose-600" /> Galerie Photos ({profile.photos.length})
             </h3>
-            <p className="text-[11px] text-slate-400">
+            <p className="text-[11px] text-slate-500">
               Toutes les photos sont vérifiées pour garantir qu'elles sont 100% réelles (aucune IA tolérée).
             </p>
           </div>
@@ -445,7 +447,7 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({
               id="upload-device-photo-btn"
               onClick={() => galleryFileInputRef.current?.click()}
               disabled={isUploadingPhoto}
-              className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-600 text-white text-xs font-bold flex items-center gap-1.5 shadow-md shadow-rose-950 transition-all active:scale-95 disabled:opacity-50"
+              className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-600 text-white text-xs font-bold flex items-center gap-1.5 shadow-md shadow-rose-200 transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
             >
               {isUploadingPhoto ? (
                 <RefreshCw className="w-3.5 h-3.5 animate-spin" />
@@ -458,7 +460,7 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({
             <button
               id="open-add-photo-btn"
               onClick={() => setShowAddPhoto(!showAddPhoto)}
-              className="text-xs text-slate-400 hover:text-white font-medium flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-slate-800 bg-slate-950"
+              className="text-xs text-rose-700 hover:text-rose-900 font-bold flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5" /> URL
             </button>
@@ -469,32 +471,32 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({
         {galleryAiError && (
           <div
             id="gallery-ai-error-banner"
-            className="p-3.5 rounded-2xl bg-rose-950/80 border border-rose-500 text-rose-200 text-xs font-semibold flex items-start gap-2.5 animate-bounce-short"
+            className="p-3.5 rounded-2xl bg-rose-50 border border-rose-300 text-rose-900 text-xs font-semibold flex items-start gap-2.5 animate-bounce-short"
           >
-            <ShieldAlert className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
+            <ShieldAlert className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
             <div>
-              <p className="font-bold text-rose-300">Photo Refusée : Image IA Détectée</p>
-              <p className="mt-0.5 text-slate-200">{galleryAiError}</p>
+              <p className="font-bold text-rose-800">Photo Refusée : Image IA Détectée</p>
+              <p className="mt-0.5 text-slate-700">{galleryAiError}</p>
             </div>
           </div>
         )}
 
         {/* URL Add input */}
         {showAddPhoto && (
-          <div className="p-3 bg-slate-950 rounded-2xl border border-slate-800 flex items-center gap-2 animate-fade-in">
+          <div className="p-3 bg-rose-50/50 rounded-2xl border border-rose-200 flex items-center gap-2 animate-fade-in">
             <input
               id="new-photo-url-input"
               type="url"
               placeholder="Collez l'URL de votre photo réelle..."
               value={newPhotoUrl}
               onChange={(e) => setNewPhotoUrl(e.target.value)}
-              className="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-rose-500 font-medium"
+              className="flex-1 bg-white border border-rose-200 rounded-xl px-3 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-rose-500 font-medium"
             />
             <button
               id="confirm-add-photo-btn"
               onClick={handleAddPhotoByUrl}
               disabled={isUploadingPhoto}
-              className="px-4 py-2 rounded-xl bg-rose-600 text-white text-xs font-bold shadow-sm shadow-rose-950 disabled:opacity-50"
+              className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold shadow-xs cursor-pointer disabled:opacity-50"
             >
               Vérifier & Ajouter
             </button>
@@ -505,7 +507,7 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({
           {profile.photos.map((photo, idx) => (
             <div
               key={idx}
-              className="relative aspect-square rounded-2xl overflow-hidden group border border-slate-800 shadow-sm bg-slate-950"
+              className="relative aspect-square rounded-2xl overflow-hidden group border border-rose-100 shadow-xs bg-rose-50/30"
             >
               <img
                 src={photo}
@@ -514,7 +516,7 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({
                 referrerPolicy="no-referrer"
               />
               {idx === 0 && (
-                <span className="absolute bottom-2 left-2 px-2.5 py-0.5 rounded-full bg-rose-600 text-[10px] font-bold text-white shadow-sm">
+                <span className="absolute bottom-2 left-2 px-2.5 py-0.5 rounded-full bg-rose-600 text-[10px] font-bold text-white shadow-xs">
                   Principale
                 </span>
               )}
@@ -522,7 +524,7 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({
                 <button
                   id={`remove-photo-btn-${idx}`}
                   onClick={() => handleRemovePhoto(idx)}
-                  className="absolute top-2 right-2 p-1.5 rounded-full bg-slate-950/80 text-rose-400 hover:text-white hover:bg-rose-600 transition-colors opacity-0 group-hover:opacity-100 shadow-sm"
+                  className="absolute top-2 right-2 p-1.5 rounded-full bg-black/60 text-white hover:bg-rose-600 transition-colors opacity-0 group-hover:opacity-100 shadow-xs cursor-pointer"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>
@@ -533,13 +535,13 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({
       </div>
 
       {/* Video Gallery & Real Stories with AI Video Detection & Rejection */}
-      <div className="bg-slate-900 border border-slate-800 rounded-[32px] p-5 shadow-xl shadow-slate-950/40 space-y-4 text-white">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-800 pb-3 gap-3">
+      <div className="bg-white border border-rose-100 rounded-[32px] p-5 shadow-xl shadow-rose-100/40 space-y-4 text-slate-800">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-rose-100 pb-3 gap-3">
           <div>
-            <h3 className="text-sm font-bold text-white flex items-center gap-2">
-              <Film className="w-4 h-4 text-rose-400" /> Vidéos du Profil & Présentation Réelle ({ (profile.videos || []).length })
+            <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+              <Film className="w-4 h-4 text-rose-600" /> Vidéos du Profil & Présentation Réelle ({ (profile.videos || []).length })
             </h3>
-            <p className="text-[11px] text-slate-400">
+            <p className="text-[11px] text-slate-500">
               Contrôle strict anti-IA : Les vidéos générées par IA (Sora, Runway, Deepfakes, avatars synthétiques) sont automatiquement rejetées.
             </p>
           </div>
@@ -557,7 +559,7 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({
               id="upload-device-video-btn"
               onClick={() => videoFileInputRef.current?.click()}
               disabled={isUploadingVideo}
-              className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-600 text-white text-xs font-bold flex items-center gap-1.5 shadow-md shadow-rose-950 transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
+              className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-600 text-white text-xs font-bold flex items-center gap-1.5 shadow-md shadow-rose-200 transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
             >
               {isUploadingVideo ? (
                 <RefreshCw className="w-3.5 h-3.5 animate-spin" />
@@ -570,7 +572,7 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({
             <button
               id="open-add-video-btn"
               onClick={() => setShowAddVideo(!showAddVideo)}
-              className="text-xs text-slate-400 hover:text-white font-medium flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-slate-800 bg-slate-950 cursor-pointer"
+              className="text-xs text-rose-700 hover:text-rose-900 font-bold flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5" /> URL
             </button>
@@ -581,16 +583,16 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({
         {videoAiError && (
           <div
             id="video-ai-error-banner"
-            className="p-4 rounded-2xl bg-rose-950/90 border-2 border-rose-500 text-rose-100 text-xs font-semibold flex items-start gap-3 animate-fade-in shadow-xl shadow-rose-950"
+            className="p-4 rounded-2xl bg-rose-50 border-2 border-rose-300 text-rose-900 text-xs font-semibold flex items-start gap-3 animate-fade-in shadow-lg shadow-rose-100"
           >
-            <ShieldAlert className="w-6 h-6 text-rose-400 shrink-0 mt-0.5" />
+            <ShieldAlert className="w-6 h-6 text-rose-600 shrink-0 mt-0.5" />
             <div className="space-y-1">
-              <p className="font-black text-rose-300 text-sm flex items-center gap-1.5">
+              <p className="font-black text-rose-900 text-sm flex items-center gap-1.5">
                 <span>🚫 Vidéo Rejetée : Détection d'IA / Deepfake</span>
               </p>
-              <p className="text-slate-200 leading-relaxed">{videoAiError}</p>
-              <p className="text-[10px] text-rose-300/80 pt-1">
-                Protocole de sécurité joyce-k • Seules les vidéos 100% réelles filmées par un être humain sont acceptées.
+              <p className="text-slate-700 leading-relaxed">{videoAiError}</p>
+              <p className="text-[10px] text-rose-700 pt-1">
+                Protocole de sécurité Joyce-K • Seules les vidéos 100% réelles filmées par un être humain sont acceptées.
               </p>
             </div>
           </div>
@@ -600,29 +602,29 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({
         {videoSuccessMsg && (
           <div
             id="video-success-banner"
-            className="p-3.5 rounded-2xl bg-emerald-950/80 border border-emerald-500 text-emerald-200 text-xs font-semibold flex items-center gap-2.5 animate-fade-in"
+            className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-300 text-emerald-900 text-xs font-semibold flex items-center gap-2.5 animate-fade-in"
           >
-            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
             <span>{videoSuccessMsg}</span>
           </div>
         )}
 
         {/* Video URL Add input */}
         {showAddVideo && (
-          <div className="p-3 bg-slate-950 rounded-2xl border border-slate-800 flex items-center gap-2 animate-fade-in">
+          <div className="p-3 bg-rose-50/50 rounded-2xl border border-rose-200 flex items-center gap-2 animate-fade-in">
             <input
               id="new-video-url-input"
               type="url"
               placeholder="Collez l'URL de votre vidéo réelle (MP4, WebM)..."
               value={newVideoUrl}
               onChange={(e) => setNewVideoUrl(e.target.value)}
-              className="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-rose-500 font-medium"
+              className="flex-1 bg-white border border-rose-200 rounded-xl px-3 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-rose-500 font-medium"
             />
             <button
               id="confirm-add-video-btn"
               onClick={handleAddVideoByUrl}
               disabled={isUploadingVideo}
-              className="px-4 py-2 rounded-xl bg-rose-600 text-white text-xs font-bold shadow-sm shadow-rose-950 disabled:opacity-50 cursor-pointer shrink-0"
+              className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold shadow-xs disabled:opacity-50 cursor-pointer shrink-0"
             >
               {isUploadingVideo ? 'Analyse...' : 'Vérifier & Ajouter'}
             </button>
@@ -635,7 +637,7 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({
             {(profile.videos || []).map((videoSrc, idx) => (
               <div
                 key={idx}
-                className="relative rounded-2xl overflow-hidden group border border-slate-800 shadow-md bg-slate-950 flex flex-col"
+                className="relative rounded-2xl overflow-hidden group border border-rose-200 shadow-md bg-slate-900 flex flex-col"
               >
                 <div className="relative aspect-video bg-black flex items-center justify-center overflow-hidden">
                   <video
@@ -644,19 +646,19 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({
                     playsInline
                     className="w-full h-full object-cover"
                   />
-                  <span className="absolute top-2 left-2 px-2.5 py-0.5 rounded-full bg-emerald-600/90 backdrop-blur-md text-[10px] font-bold text-white shadow-sm flex items-center gap-1">
+                  <span className="absolute top-2 left-2 px-2.5 py-0.5 rounded-full bg-emerald-600/90 backdrop-blur-md text-[10px] font-bold text-white shadow-xs flex items-center gap-1">
                     <ShieldCheck className="w-3 h-3" /> Certifiée Réelle
                   </span>
                 </div>
 
-                <div className="p-2.5 flex items-center justify-between bg-slate-900/90 border-t border-slate-800">
-                  <span className="text-[11px] font-bold text-slate-300">
+                <div className="p-2.5 flex items-center justify-between bg-white border-t border-rose-100 text-slate-800">
+                  <span className="text-[11px] font-bold text-slate-700">
                     Vidéo #{idx + 1}
                   </span>
                   <button
                     id={`remove-video-btn-${idx}`}
                     onClick={() => handleRemoveVideo(idx)}
-                    className="p-1.5 rounded-xl bg-slate-800 hover:bg-rose-600 text-slate-400 hover:text-white transition-colors cursor-pointer text-xs flex items-center gap-1"
+                    className="p-1.5 rounded-xl bg-rose-50 hover:bg-rose-600 text-rose-700 hover:text-white transition-colors cursor-pointer text-xs flex items-center gap-1 font-semibold"
                     title="Supprimer cette vidéo"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
@@ -667,11 +669,11 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({
             ))}
           </div>
         ) : (
-          <div className="p-6 rounded-2xl bg-slate-950/60 border border-slate-800/80 text-center space-y-2">
-            <div className="w-10 h-10 rounded-2xl bg-rose-950/60 text-rose-400 flex items-center justify-center mx-auto">
+          <div className="p-6 rounded-2xl bg-rose-50/40 border border-dashed border-rose-200 text-center space-y-2">
+            <div className="w-10 h-10 rounded-2xl bg-rose-100 text-rose-600 flex items-center justify-center mx-auto shadow-2xs">
               <Video className="w-5 h-5" />
             </div>
-            <h4 className="text-xs font-bold text-slate-300">Aucune vidéo importée</h4>
+            <h4 className="text-xs font-bold text-slate-800">Aucune vidéo importée</h4>
             <p className="text-[11px] text-slate-500 max-w-sm mx-auto">
               Importez une courte vidéo de présentation authentique pour augmenter vos chances de match. Notre scanner contrôle et certifie que votre vidéo est 100% réelle.
             </p>
@@ -680,16 +682,16 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({
       </div>
 
       {/* Bio with Gemini AI Enhancer */}
-      <div className="bg-slate-900 border border-slate-800 rounded-[32px] p-5 shadow-xl shadow-slate-950/40 space-y-3 text-white">
-        <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-          <h3 className="text-sm font-bold text-white flex items-center gap-2">
-            <User className="w-4 h-4 text-rose-400" /> Bio & Présentation
+      <div className="bg-white border border-rose-100 rounded-[32px] p-5 shadow-xl shadow-rose-100/40 space-y-3 text-slate-800">
+        <div className="flex items-center justify-between border-b border-rose-100 pb-3">
+          <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+            <User className="w-4 h-4 text-rose-600" /> Bio & Présentation
           </h3>
           <button
             id="profile-bio-ai-enhance-btn"
             onClick={handleAiEnhanceBio}
             disabled={isEnhancing}
-            className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-600 text-white font-bold text-xs flex items-center gap-1.5 shadow-md shadow-rose-950 transition-all active:scale-95 disabled:opacity-50"
+            className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-600 text-white font-bold text-xs flex items-center gap-1.5 shadow-md shadow-rose-200 transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
           >
             <Zap className={`w-3.5 h-3.5 text-amber-300 ${isEnhancing ? 'animate-spin' : ''}`} />
             <span>{isEnhancing ? 'Sublimation en cours...' : 'Sublimer avec l\'IA'}</span>
@@ -702,16 +704,16 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({
           value={profile.bio}
           onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
           placeholder="Décrivez votre univers, vos passions, vos projets..."
-          className="w-full bg-slate-950 border border-slate-800 focus:border-rose-500 rounded-2xl p-3 text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none leading-relaxed font-medium"
+          className="w-full bg-rose-50/40 border border-rose-200 focus:border-rose-500 focus:bg-white rounded-2xl p-3 text-xs sm:text-sm text-slate-900 placeholder-slate-400 focus:outline-none leading-relaxed font-medium transition-all"
         />
       </div>
 
       {/* Relationship Goal & Worldwide City */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {/* Relationship Goal */}
-        <div className="bg-slate-900 border border-slate-800 rounded-[32px] p-5 shadow-xl shadow-slate-950/40 space-y-2.5 text-white">
-          <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
-            <Heart className="w-4 h-4 text-rose-400" />
+        <div className="bg-white border border-rose-100 rounded-[32px] p-5 shadow-xl shadow-rose-100/40 space-y-2.5 text-slate-800">
+          <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+            <Heart className="w-4 h-4 text-rose-600" />
             Ce que vous recherchez :
           </label>
           <select
@@ -723,7 +725,7 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({
                 relationshipGoal: e.target.value as RelationshipGoal,
               })
             }
-            className="w-full bg-slate-950 border border-slate-800 text-white font-semibold text-xs rounded-xl p-2.5 focus:border-rose-500 shadow-sm"
+            className="w-full bg-rose-50/40 border border-rose-200 text-slate-900 font-semibold text-xs rounded-xl p-2.5 focus:border-rose-500 focus:bg-white shadow-2xs"
           >
             <option value="Relation sérieuse">💍 Relation sérieuse</option>
             <option value="Rencontres & Découverte">🌟 Rencontres & Découverte</option>
@@ -733,9 +735,9 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({
         </div>
 
         {/* Worldwide City Location */}
-        <div className="bg-slate-900 border border-slate-800 rounded-[32px] p-5 shadow-xl shadow-slate-950/40 space-y-2.5 text-white">
-          <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
-            <Globe2 className="w-4 h-4 text-rose-400" />
+        <div className="bg-white border border-rose-100 rounded-[32px] p-5 shadow-xl shadow-rose-100/40 space-y-2.5 text-slate-800">
+          <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+            <Globe2 className="w-4 h-4 text-rose-600" />
             Votre ville & région (Monde entier) :
           </label>
           <select
@@ -754,7 +756,7 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({
                 });
               }
             }}
-            className="w-full bg-slate-950 border border-slate-800 text-white font-semibold text-xs rounded-xl p-2.5 focus:border-rose-500 shadow-sm"
+            className="w-full bg-rose-50/40 border border-rose-200 text-slate-900 font-semibold text-xs rounded-xl p-2.5 focus:border-rose-500 focus:bg-white shadow-2xs"
           >
             {PRESET_CITIES.map((c) => (
               <option key={c.name} value={`${c.name}, ${c.country}`}>
@@ -771,38 +773,38 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({
         const exactPhoto = profile.photos?.[0] || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800';
 
         return (
-          <div className="bg-gradient-to-r from-slate-900 via-slate-900 to-slate-950 border border-rose-950/60 rounded-[32px] p-5 sm:p-6 shadow-xl shadow-slate-950/50 space-y-4 text-white">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-3">
+          <div className="bg-gradient-to-r from-rose-50/80 via-white to-pink-50/80 border border-rose-200/90 rounded-[32px] p-5 sm:p-6 shadow-xl shadow-rose-100/50 space-y-4 text-slate-800">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-rose-100 pb-3">
               <div className="flex items-center gap-2.5">
-                <div className="p-2 rounded-2xl bg-rose-500/10 text-rose-400 border border-rose-500/20">
+                <div className="p-2 rounded-2xl bg-rose-100 text-rose-600 border border-rose-200">
                   <Phone className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-white flex items-center gap-1.5">
+                  <h3 className="text-sm font-bold text-slate-900 flex items-center gap-1.5">
                     Numéro de Téléphone & Pays de Rattachement
                   </h3>
-                  <p className="text-[11px] text-slate-400 font-medium">
+                  <p className="text-[11px] text-slate-500 font-medium">
                     Votre pays et votre géolocalisation sont détectés à partir de votre indicatif téléphonique.
                   </p>
                 </div>
               </div>
 
               {/* Exact Photo & Detected Country Live Preview Badge */}
-              <div className="flex items-center gap-2.5 bg-slate-950/80 border border-slate-800 rounded-2xl px-3 py-1.5 shrink-0">
+              <div className="flex items-center gap-2.5 bg-white border border-rose-200 rounded-2xl px-3 py-1.5 shrink-0 shadow-2xs">
                 <div className="relative">
                   <img
                     src={exactPhoto}
                     alt={profile.name}
-                    className="w-8 h-8 rounded-full object-cover border border-rose-500 ring-2 ring-rose-500/30"
+                    className="w-8 h-8 rounded-full object-cover border border-rose-500 ring-2 ring-rose-300"
                     referrerPolicy="no-referrer"
                   />
-                  <span className="absolute -bottom-1 -right-1 text-xs bg-slate-900 rounded-full px-0.5 border border-slate-700">
+                  <span className="absolute -bottom-1 -right-1 text-xs bg-white rounded-full px-0.5 border border-rose-200">
                     {phoneCountry.flag}
                   </span>
                 </div>
                 <div className="text-left">
-                  <div className="text-[9px] uppercase font-bold text-rose-400">Pays détecté</div>
-                  <div className="text-xs font-black text-white flex items-center gap-1">
+                  <div className="text-[9px] uppercase font-bold text-rose-600">Pays détecté</div>
+                  <div className="text-xs font-black text-slate-900 flex items-center gap-1">
                     <span>{phoneCountry.flag}</span>
                     <span>{phoneCountry.name}</span>
                   </div>
@@ -813,11 +815,11 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({
             {/* Inputs & Instant Location Launcher */}
             <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
               <div className="sm:col-span-6 relative">
-                <label className="text-[11px] font-bold text-slate-300 block mb-1">
+                <label className="text-[11px] font-bold text-slate-700 block mb-1">
                   Numéro de téléphone :
                 </label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-rose-400 font-bold text-xs">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-rose-600 font-bold text-xs">
                     <span className="text-base mr-1">{phoneCountry.flag}</span>
                   </div>
                   <input
@@ -834,13 +836,13 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({
                       });
                     }}
                     placeholder="+237 6XX XX XX XX ou +33 6..."
-                    className="w-full bg-slate-950 border border-slate-800 text-white font-bold text-xs rounded-xl pl-10 pr-3 py-2.5 focus:border-rose-500 shadow-sm"
+                    className="w-full bg-white border border-rose-200 text-slate-900 font-bold text-xs rounded-xl pl-10 pr-3 py-2.5 focus:border-rose-500 shadow-2xs"
                   />
                 </div>
               </div>
 
               <div className="sm:col-span-3">
-                <label className="text-[11px] font-bold text-slate-300 block mb-1">
+                <label className="text-[11px] font-bold text-slate-700 block mb-1">
                   Indicatif / Pays :
                 </label>
                 <select
@@ -859,7 +861,7 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({
                       });
                     }
                   }}
-                  className="w-full bg-slate-950 border border-slate-800 text-white font-semibold text-xs rounded-xl p-2.5 focus:border-rose-500 shadow-sm"
+                  className="w-full bg-white border border-rose-200 text-slate-900 font-semibold text-xs rounded-xl p-2.5 focus:border-rose-500 shadow-2xs"
                 >
                   {COUNTRY_PHONE_DATABASE.map((c) => (
                     <option key={`${c.code}-${c.name}`} value={c.code}>
@@ -885,7 +887,7 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({
                     setSaveSuccess(true);
                     setTimeout(() => setSaveSuccess(false), 2500);
                   }}
-                  className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-rose-500 to-orange-500 hover:from-rose-600 hover:to-orange-600 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-rose-950 transition-all cursor-pointer"
+                  className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-rose-500 to-orange-500 hover:from-rose-600 hover:to-orange-600 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-rose-200 transition-all cursor-pointer"
                 >
                   <Locate className="w-3.5 h-3.5" />
                   <span>📍 Localiser par pays</span>
@@ -897,32 +899,32 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({
       })()}
 
       {/* Langages de l'Amour & Alchimie Relationnelle */}
-      <div className="bg-slate-900 border border-slate-800 rounded-[32px] p-6 shadow-xl shadow-slate-950/40 space-y-4 text-white">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-3">
+      <div className="bg-white border border-rose-100 rounded-[32px] p-6 shadow-xl shadow-rose-100/40 space-y-4 text-slate-800">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-rose-100 pb-3">
           <div>
-            <h3 className="text-sm font-bold text-white flex items-center gap-2">
+            <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
               <Heart className="w-4 h-4 text-rose-500 fill-rose-500" />
               <span>Langage de l'Amour & Alchimie Émotionnelle</span>
             </h3>
-            <p className="text-[11px] text-slate-400 font-medium mt-0.5">
+            <p className="text-[11px] text-slate-500 font-medium mt-0.5">
               Votre langage dominant affine l'analyse de compatibilité avec vos futurs matchs.
             </p>
           </div>
-          <span className="self-start sm:self-auto text-[10px] font-extrabold px-3 py-1 rounded-full bg-rose-950/80 text-rose-300 border border-rose-800 uppercase tracking-wider">
+          <span className="self-start sm:self-auto text-[10px] font-extrabold px-3 py-1 rounded-full bg-rose-50 text-rose-700 border border-rose-200 uppercase tracking-wider">
             Test Psychologique
           </span>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
-          <div className="p-4 bg-slate-950 rounded-2xl border border-slate-800 space-y-1.5">
-            <span className="text-[10px] uppercase font-black tracking-wider text-rose-400">
+          <div className="p-4 bg-rose-50/60 rounded-2xl border border-rose-200 space-y-1.5">
+            <span className="text-[10px] uppercase font-black tracking-wider text-rose-600">
               Votre dominante actuelle
             </span>
-            <p className="text-base font-black text-white flex items-center gap-2">
-              <Award className="w-4 h-4 text-amber-400" />
+            <p className="text-base font-black text-slate-900 flex items-center gap-2">
+              <Award className="w-4 h-4 text-amber-500" />
               <span>{profile.loveLanguageLabel || 'Moments de qualité'}</span>
             </p>
-            <p className="text-xs text-slate-400 leading-relaxed font-medium">
+            <p className="text-xs text-slate-600 leading-relaxed font-medium">
               Ce critère est pris en compte dans le calcul d'affinité mutuelle pour assurer des connexions sincères.
             </p>
           </div>
@@ -930,7 +932,7 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({
           <button
             type="button"
             onClick={() => setIsQuizOpen(true)}
-            className="w-full py-3.5 px-4 rounded-2xl bg-gradient-to-r from-rose-600 to-orange-500 hover:from-rose-500 hover:to-orange-400 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md shadow-rose-950 transition-all cursor-pointer"
+            className="w-full py-3.5 px-4 rounded-2xl bg-gradient-to-r from-rose-600 to-orange-500 hover:from-rose-500 hover:to-orange-400 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md shadow-rose-200 transition-all cursor-pointer"
           >
             <ShieldCheck className="w-4 h-4 text-white" />
             <span>Passer / Recalculer le Test des 5 Langages</span>
@@ -939,14 +941,14 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({
       </div>
 
       {/* 50+ Structured Interest Categories Selection */}
-      <div className="bg-slate-900 border border-slate-800 rounded-[32px] p-5 shadow-xl shadow-slate-950/40 space-y-5 text-white">
-        <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+      <div className="bg-white border border-rose-100 rounded-[32px] p-5 shadow-xl shadow-rose-100/40 space-y-5 text-slate-800">
+        <div className="flex items-center justify-between border-b border-rose-100 pb-3">
           <div>
-            <h3 className="text-sm font-bold text-white flex items-center gap-2">
-              <Heart className="w-4 h-4 text-amber-400" /> Vos Centres d'Intérêt ({(profile.interests || []).length} sélectionnés)
+            <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+              <Heart className="w-4 h-4 text-rose-500" /> Vos Centres d'Intérêt ({(profile.interests || []).length} sélectionnés)
             </h3>
-            <p className="text-[11px] text-slate-400 font-medium">
-              Ces badges guident notre algorithme d'affinités et l'IA wingman sur joyce-k.
+            <p className="text-[11px] text-slate-500 font-medium">
+              Ces badges guident notre algorithme d'affinités et l'IA wingman sur Joyce-K.
             </p>
           </div>
         </div>
@@ -954,7 +956,7 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({
         <div className="space-y-4">
           {ALL_INTEREST_CATEGORIES.map((category) => (
             <div key={category.id} className="space-y-2">
-              <span className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
+              <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
                 <span>{category.icon}</span>
                 <span>{category.name}</span>
               </span>
@@ -966,10 +968,10 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({
                       key={tag}
                       id={`tag-btn-${tag.replace(/\s+/g, '-')}`}
                       onClick={() => toggleInterest(tag)}
-                      className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                      className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all cursor-pointer ${
                         isSelected
-                          ? 'bg-gradient-to-r from-rose-600 to-rose-500 text-white font-bold shadow-md shadow-rose-950 scale-105'
-                          : 'bg-slate-950 border border-slate-800 text-slate-300 hover:border-rose-500/50 hover:bg-slate-800'
+                          ? 'bg-gradient-to-r from-rose-600 to-rose-500 text-white font-bold shadow-md shadow-rose-200 scale-105'
+                          : 'bg-rose-50/50 border border-rose-200 text-slate-700 hover:border-rose-400 hover:bg-rose-100/60'
                       }`}
                     >
                       {isSelected ? '✓ ' : '+ '}
@@ -984,20 +986,20 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({
       </div>
 
       {/* Save Profile Bottom Action Bar */}
-      <div className="bg-slate-900 border border-slate-800 rounded-[32px] p-5 shadow-xl shadow-slate-950/40 flex flex-col sm:flex-row items-center justify-between gap-4 text-white">
+      <div className="bg-white border border-rose-200/90 rounded-[32px] p-5 shadow-xl shadow-rose-100/50 flex flex-col sm:flex-row items-center justify-between gap-4 text-slate-800">
         <div>
-          <h4 className="text-sm font-bold text-white flex items-center gap-2">
-            <Save className="w-4 h-4 text-rose-400" />
+          <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+            <Save className="w-4 h-4 text-rose-600" />
             <span>Enregistrer vos modifications</span>
           </h4>
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-slate-500">
             Mettez à jour vos photos, vidéos, bio et préférences d'affinités sur votre profil Joyce-K.
           </p>
         </div>
         <button
           id="profile-save-bottom-btn"
           onClick={handleSave}
-          className="w-full sm:w-auto px-6 py-3.5 rounded-2xl bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-600 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-rose-950/50 hover:scale-[1.02] active:scale-95 transition-all cursor-pointer"
+          className="w-full sm:w-auto px-6 py-3.5 rounded-2xl bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-600 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-rose-200 hover:scale-[1.02] active:scale-95 transition-all cursor-pointer"
         >
           {saveSuccess ? (
             <>

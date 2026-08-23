@@ -101,27 +101,27 @@ export const CompatibilityModal: React.FC<CompatibilityModalProps> = ({
   return (
     <div
       id="compatibility-modal-overlay"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-fade-in"
+      className="fixed inset-0 z-50 overflow-y-auto p-3 sm:p-4 md:p-6 bg-slate-900/65 backdrop-blur-md flex flex-col justify-start sm:justify-center items-center animate-fade-in"
     >
       <div
         id="compatibility-modal-container"
-        className="relative w-full max-w-lg bg-white border border-rose-100 rounded-[32px] p-6 shadow-2xl shadow-rose-200/80 text-slate-800 overflow-hidden"
+        className="relative w-full max-w-lg bg-white border border-rose-100 rounded-3xl sm:rounded-[32px] p-4 sm:p-6 shadow-2xl shadow-rose-200/80 text-slate-800 my-auto max-h-[92dvh] flex flex-col overflow-hidden shrink-0"
       >
         {/* Ambient background glow */}
         <div className="absolute -top-24 -right-24 w-60 h-60 bg-rose-200/50 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute -bottom-24 -left-24 w-60 h-60 bg-orange-200/50 rounded-full blur-3xl pointer-events-none" />
 
         {/* Header */}
-        <div className="flex items-center justify-between pb-4 border-b border-rose-100 relative z-10">
+        <div className="flex items-center justify-between pb-3 sm:pb-4 border-b border-rose-100 relative z-10 shrink-0">
           <div className="flex items-center gap-2.5">
-            <div className="p-2.5 rounded-2xl bg-gradient-to-r from-rose-500 to-orange-500 text-white shadow-md shadow-rose-200">
-              <Bot className="w-5 h-5" />
+            <div className="p-2 sm:p-2.5 rounded-2xl bg-gradient-to-r from-rose-500 to-orange-500 text-white shadow-md shadow-rose-200">
+              <Bot className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
             <div>
-              <h3 className="font-black text-lg text-slate-900">
+              <h3 className="font-black text-base sm:text-lg text-slate-900">
                 Analyse d'Affinité IA
               </h3>
-              <p className="text-xs text-slate-500 font-medium">
+              <p className="text-[11px] sm:text-xs text-slate-500 font-medium">
                 Comparaison approfondie de vos profils
               </p>
             </div>
@@ -136,7 +136,7 @@ export const CompatibilityModal: React.FC<CompatibilityModalProps> = ({
         </div>
 
         {/* Content */}
-        <div className="py-4 space-y-5 relative z-10 max-h-[70vh] overflow-y-auto pr-1">
+        <div className="py-3 sm:py-4 space-y-4 relative z-10 overflow-y-auto pr-1 no-scrollbar">
           {/* Dual avatar match banner */}
           <div className="flex items-center justify-center gap-4 py-2">
             <div className="relative text-center">

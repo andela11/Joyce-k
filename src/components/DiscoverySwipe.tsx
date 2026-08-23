@@ -68,14 +68,16 @@ export const DiscoverySwipe: React.FC<DiscoverySwipeProps> = ({
   const [swipeDirection, setSwipeDirection] = useState<'left' | 'right' | 'up' | null>(null);
   const [showSuperLikeBurst, setShowSuperLikeBurst] = useState(false);
   const [isQuizModalOpen, setIsQuizModalOpen] = useState(false);
+  const [feedbackToast, setFeedbackToast] = useState<{ type: 'like' | 'pass' | 'superlike'; name: string } | null>(null);
 
   const lastTapRef = useRef<number>(0);
+  const isDraggingRef = useRef<boolean>(false);
 
   // Motion values for fluid horizontal drag gestures only
   const dragX = useMotionValue(0);
   const rotate = useTransform(dragX, [-240, 240], [-16, 16]);
-  const likeOpacity = useTransform(dragX, [20, 85], [0, 1]);
-  const nopeOpacity = useTransform(dragX, [-20, -85], [0, 1]);
+  const likeOpacity = useTransform(dragX, [15, 70], [0, 1]);
+  const nopeOpacity = useTransform(dragX, [-15, -70], [0, 1]);
 
   // Background card deck reaction while dragging
   const nextCardScale = useTransform(dragX, [-200, 0, 200], [1, 0.94, 1]);
@@ -142,17 +144,21 @@ export const DiscoverySwipe: React.FC<DiscoverySwipeProps> = ({
     if (!activeProfile) return;
     
     // Set exit animation direction
-    if (superLike) {
-      setSwipeDirection('up');
-    } else if (liked) {
-      setSwipeDirection('right');
-    } else {
-      setSwipeDirection('left');
-    }
+    const dir = superLike ? 'up' : liked ? 'right' : 'left';
+    setSwipeDirection(dir);
+
+    // Show instant feedback toast
+    setFeedbackToast({
+      type: superLike ? 'superlike' : liked ? 'like' : 'pass',
+      name: activeProfile.name,
+    });
+    setTimeout(() => {
+      setFeedbackToast(null);
+    }, 1600);
 
     setHistory((prev) => [...prev, currentIndex]);
     
-    // Reset motion value immediately for next card
+    // Reset motion value
     dragX.set(0);
 
     if (liked) {
@@ -173,11 +179,22 @@ export const DiscoverySwipe: React.FC<DiscoverySwipeProps> = ({
     }, 320);
   };
 
-  const handleDoubleTap = () => {
+  const handleDoubleTap = (e?: React.MouseEvent | React.TouchEvent) => {
+    // If the user was just dragging the card, do not treat it as a tap/superlike
+    if (isDraggingRef.current) return;
+
+    if (e && 'preventDefault' in e) {
+      // Prevent browser default double-tap zoom
+      try {
+        e.preventDefault();
+      } catch {
+        // ignore
+      }
+    }
     const now = Date.now();
     const timeSinceLastTap = now - lastTapRef.current;
-    if (timeSinceLastTap > 0 && timeSinceLastTap < 380) {
-      // Confirmed double tap
+    if (timeSinceLastTap > 0 && timeSinceLastTap < 340) {
+      // Confirmed double tap on photo
       triggerSuperLikeBurst();
       lastTapRef.current = 0;
     } else {
@@ -197,13 +214,13 @@ export const DiscoverySwipe: React.FC<DiscoverySwipeProps> = ({
 
   const nextPhoto = (e?: React.MouseEvent) => {
     e?.stopPropagation();
-    if (!activeProfile) return;
+    if (isDraggingRef.current || !activeProfile) return;
     setCurrentPhotoIndex((prev) => (prev + 1) % activeProfile.photos.length);
   };
 
   const prevPhoto = (e?: React.MouseEvent) => {
     e?.stopPropagation();
-    if (!activeProfile) return;
+    if (isDraggingRef.current || !activeProfile) return;
     setCurrentPhotoIndex(
       (prev) => (prev - 1 + activeProfile.photos.length) % activeProfile.photos.length
     );
@@ -241,22 +258,35 @@ export const DiscoverySwipe: React.FC<DiscoverySwipeProps> = ({
     const oy = info.offset.y;
     const vy = info.velocity.y;
 
-    // Fast flick or confident drag distance
-    const isSwipeRight = ox > 70 || (ox > 20 && vx > 260);
-    const isSwipeLeft = ox < -70 || (ox < -20 && vx < -260);
-    const isSwipeUp = oy < -90 || (oy < -25 && vy < -300);
+    // Prevent immediate click handlers on release
+    setTimeout(() => {
+      isDraggingRef.current = false;
+    }, 160);
 
-    if (isSwipeUp) {
+    // Vertical drag up -> Super-Like
+    if (oy < -70 || (oy < -25 && vy < -250)) {
       triggerSuperLikeBurst();
-    } else if (isSwipeRight) {
-      handleNext(true, false);
-    } else if (isSwipeLeft) {
-      handleNext(false, false);
+      return;
     }
+
+    // Horizontal drag right -> Like
+    if (ox > 45 || (ox > 15 && vx > 180)) {
+      handleNext(true, false);
+      return;
+    }
+
+    // Horizontal drag left -> Pass / Unlike
+    if (ox < -45 || (ox < -15 && vx < -180)) {
+      handleNext(false, false);
+      return;
+    }
+
+    // Card snapped back to center
+    dragX.set(0);
   };
 
   return (
-    <div id="discovery-view" className="max-w-4xl mx-auto px-3 sm:px-4 py-4 sm:py-6">
+    <div id="discovery-view" className="w-full max-w-4xl mx-auto px-3 sm:px-4 py-4 sm:py-6 overflow-x-clip">
       {/* Top Filter Bar */}
       <div className="flex items-center justify-between gap-3 mb-3">
         <div>
@@ -452,7 +482,44 @@ export const DiscoverySwipe: React.FC<DiscoverySwipeProps> = ({
 
       {/* Main Card Swiper Area */}
       {activeProfile ? (
-        <div className="relative max-w-md mx-auto">
+        <div className="relative w-full max-w-md mx-auto overflow-x-clip px-1 py-1">
+          {/* Action Feedback Banner Toast */}
+          <AnimatePresence>
+            {feedbackToast && (
+              <motion.div
+                initial={{ opacity: 0, y: -12, scale: 0.9 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -12, scale: 0.9 }}
+                className={`absolute top-3 inset-x-4 z-40 py-2 px-4 rounded-2xl text-xs font-black shadow-lg text-center backdrop-blur-md flex items-center justify-center gap-2 pointer-events-none ${
+                  feedbackToast.type === 'like'
+                    ? 'bg-emerald-500/95 text-white shadow-emerald-200'
+                    : feedbackToast.type === 'superlike'
+                    ? 'bg-amber-500/95 text-white shadow-amber-200'
+                    : 'bg-rose-600/95 text-white shadow-rose-200'
+                }`}
+              >
+                {feedbackToast.type === 'like' && (
+                  <>
+                    <Heart className="w-4 h-4 fill-white" />
+                    <span>Vous avez aimé {feedbackToast.name} ❤️</span>
+                  </>
+                )}
+                {feedbackToast.type === 'superlike' && (
+                  <>
+                    <Star className="w-4 h-4 fill-white" />
+                    <span>Super-Like envoyé à {feedbackToast.name} ⭐</span>
+                  </>
+                )}
+                {feedbackToast.type === 'pass' && (
+                  <>
+                    <X className="w-4 h-4 stroke-[3]" />
+                    <span>Profil refusé / passé : {feedbackToast.name} ✖️</span>
+                  </>
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
+
           {/* Background Card Preview (Deck Depth Effect with dynamic scale/opacity reacting to drag) */}
           {nextProfile && (
             <motion.div
@@ -462,7 +529,7 @@ export const DiscoverySwipe: React.FC<DiscoverySwipeProps> = ({
                 opacity: nextCardOpacity,
                 y: nextCardY,
               }}
-              className="absolute inset-0 bg-white/90 border border-rose-100/80 rounded-[36px] overflow-hidden shadow-lg shadow-rose-100/40 pointer-events-none z-0 will-change-transform"
+              className="absolute inset-x-1 inset-y-1 bg-white/90 border border-rose-100/80 rounded-[36px] overflow-hidden shadow-lg shadow-rose-100/40 pointer-events-none z-0 will-change-transform"
             >
               <div className="aspect-[3/4] sm:aspect-[4/5] w-full bg-slate-100 overflow-hidden">
                 <img
@@ -485,6 +552,9 @@ export const DiscoverySwipe: React.FC<DiscoverySwipeProps> = ({
               dragConstraints={{ left: 0, right: 0 }}
               dragElastic={0.6}
               dragMomentum={false}
+              onDragStart={() => {
+                isDraggingRef.current = true;
+              }}
               onDragEnd={handleDragEnd}
               style={{ x: dragX, rotate }}
               initial={{ scale: 0.95, opacity: 0.8, y: 12 }}
@@ -495,14 +565,14 @@ export const DiscoverySwipe: React.FC<DiscoverySwipeProps> = ({
                 transition: { type: 'spring', stiffness: 420, damping: 28 },
               }}
               exit={{
-                x: swipeDirection === 'right' ? 450 : swipeDirection === 'left' ? -450 : 0,
-                y: swipeDirection === 'up' ? -450 : 0,
-                scale: swipeDirection === 'up' ? 1.08 : 0.92,
+                x: swipeDirection === 'right' ? 360 : swipeDirection === 'left' ? -360 : 0,
+                y: swipeDirection === 'up' ? -360 : 0,
+                scale: swipeDirection === 'up' ? 1.05 : 0.92,
                 opacity: 0,
-                rotate: swipeDirection === 'right' ? 18 : swipeDirection === 'left' ? -18 : 0,
-                transition: { duration: 0.22, ease: [0.32, 0.72, 0, 1] },
+                rotate: swipeDirection === 'right' ? 14 : swipeDirection === 'left' ? -14 : 0,
+                transition: { duration: 0.2, ease: [0.32, 0.72, 0, 1] },
               }}
-              className="relative bg-white border border-rose-100 rounded-[36px] overflow-hidden shadow-2xl shadow-rose-200/60 cursor-grab active:cursor-grabbing z-10 select-none will-change-transform touch-pan-y"
+              className="relative w-full bg-white border border-rose-100 rounded-[36px] overflow-hidden shadow-2xl shadow-rose-200/60 cursor-grab active:cursor-grabbing z-10 select-none will-change-transform touch-pan-y"
             >
               {/* Floating Swiping Stamps (Like, Nope) */}
               <motion.div
@@ -859,7 +929,7 @@ export const DiscoverySwipe: React.FC<DiscoverySwipeProps> = ({
                         id={`swipe-like-match-btn-${activeProfile.id}`}
                         onClick={(e) => {
                           e.stopPropagation();
-                          onLike(activeProfile);
+                          handleNext(true, false);
                         }}
                         onPointerDown={(e) => e.stopPropagation()}
                         title={`Liker ${activeProfile.name} pour tenter un match`}

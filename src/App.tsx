@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Navigation } from './components/Navigation';
 import { LandingPage } from './components/LandingPage';
 import { DiscoverySwipe } from './components/DiscoverySwipe';
@@ -190,6 +190,28 @@ export default function App() {
     }
     // Pre-loaded favorite with Camille and Aminata
     return ['user_1', 'user_2'];
+  });
+
+  // Liked Profile IDs
+  const [likedProfileIds, setLikedProfileIds] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem('amour_affinites_liked');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {
+      console.warn('Failed to parse liked profiles from localStorage:', e);
+    }
+    return ['user_1', 'user_2'];
+  });
+
+  // Passed / Unliked Profile IDs
+  const [passedProfileIds, setPassedProfileIds] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem('amour_affinites_passed');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {
+      console.warn('Failed to parse passed profiles from localStorage:', e);
+    }
+    return [];
   });
 
   // Conversations and Messages
@@ -456,8 +478,44 @@ export default function App() {
     localStorage.setItem('amour_affinites_favorites', JSON.stringify(favoriteIds));
   }, [favoriteIds]);
 
+  useEffect(() => {
+    localStorage.setItem('amour_affinites_liked', JSON.stringify(likedProfileIds));
+  }, [likedProfileIds]);
+
+  useEffect(() => {
+    localStorage.setItem('amour_affinites_passed', JSON.stringify(passedProfileIds));
+  }, [passedProfileIds]);
+
   // Total unread messages count
-  const unreadCount = conversations.reduce((acc, c) => acc + c.unreadCount, 0);
+  const unreadCount = conversations.reduce((acc, c) => acc + (c.unreadCount || 0), 0);
+
+  // Mark a conversation as read (clears unread count and marks messages as read)
+  const handleMarkConversationAsRead = useCallback((conversationId: string) => {
+    setConversations((prev) => {
+      const target = prev.find((c) => c.id === conversationId);
+      if (!target || (target.unreadCount || 0) === 0) {
+        return prev;
+      }
+      return prev.map((c) => (c.id === conversationId ? { ...c, unreadCount: 0 } : c));
+    });
+    setMessages((prev) => {
+      const convMsgs = prev[conversationId];
+      if (!convMsgs) return prev;
+      const hasUnread = convMsgs.some((m) => !m.isRead);
+      if (!hasUnread) return prev;
+      return {
+        ...prev,
+        [conversationId]: convMsgs.map((m) => (m.isRead ? m : { ...m, isRead: true })),
+      };
+    });
+  }, []);
+
+  // Automatically mark conversation as read when activeTab is messages or activeConversationId changes
+  useEffect(() => {
+    if (activeTab === 'messages' && activeConversationId) {
+      handleMarkConversationAsRead(activeConversationId);
+    }
+  }, [activeTab, activeConversationId, handleMarkConversationAsRead]);
 
   // List of profile IDs that are actively matched (have a mutual match / conversation)
   const matchedProfileIds = (conversations || []).map((c) => c.participant?.id).filter(Boolean);
@@ -474,8 +532,11 @@ export default function App() {
     setAiSettings((prev) => ({ ...prev, enabled: !prev.enabled }));
   };
 
-  // Handle Like on a profile
+  // Handle Like on a profile (Swipe Right or Heart click)
   const handleLikeProfile = (profile: UserProfile, isSuperLike = false) => {
+    setLikedProfileIds((prev) => (prev.includes(profile.id) ? prev : [...prev, profile.id]));
+    setPassedProfileIds((prev) => prev.filter((id) => id !== profile.id));
+
     // Check if match already exists
     const existingConv = conversations.find((c) => c.participant.id === profile.id);
     if (!existingConv) {
@@ -507,8 +568,11 @@ export default function App() {
     }
   };
 
+  // Handle Pass / Refuse on a profile (Swipe Left or Cross click)
   const handlePassProfile = (profile: UserProfile) => {
-    // Profile passed
+    setPassedProfileIds((prev) => (prev.includes(profile.id) ? prev : [...prev, profile.id]));
+    setLikedProfileIds((prev) => prev.filter((id) => id !== profile.id));
+    // Pass strictly records rejection - no match created
   };
 
   // Send message in active chat
@@ -582,6 +646,7 @@ export default function App() {
         ];
         const randomReply = partnerReplies[Math.floor(Math.random() * partnerReplies.length)];
 
+        const isUserCurrentlyInChat = activeTab === 'messages' && activeConversationId === conversationId;
         const incomingMsg: ChatMessage = {
           id: `msg_inc_${Date.now()}`,
           conversationId,
@@ -590,7 +655,7 @@ export default function App() {
           text: randomReply,
           timestamp: Date.now(),
           isSelf: false,
-          isRead: false,
+          isRead: isUserCurrentlyInChat,
           mediaType: 'text',
         };
 
@@ -608,7 +673,11 @@ export default function App() {
         setConversations((prev) =>
           prev.map((c) =>
             c.id === conversationId
-              ? { ...c, lastMessage: incomingMsg, unreadCount: c.unreadCount + 1 }
+              ? {
+                  ...c,
+                  lastMessage: incomingMsg,
+                  unreadCount: isUserCurrentlyInChat ? 0 : (c.unreadCount || 0) + 1,
+                }
               : c
           )
         );
@@ -616,14 +685,16 @@ export default function App() {
     }
   };
 
-  // Block User
+  // Block User (preserves conversation state in blocked mode so user can unblock anytime)
   const handleBlockUser = (userId: string) => {
-    setPrivacySettings((prev) => ({
-      ...prev,
-      blockedUsers: [...(prev.blockedUsers || []), userId],
-    }));
-    setConversations((prev) => (prev || []).filter((c) => c.participant?.id !== userId));
-    setActiveConversationId(null);
+    setPrivacySettings((prev) => {
+      const currentBlocked = prev.blockedUsers || [];
+      if (currentBlocked.includes(userId)) return prev;
+      return {
+        ...prev,
+        blockedUsers: [...currentBlocked, userId],
+      };
+    });
   };
 
   // Unblock user
@@ -825,7 +896,7 @@ export default function App() {
         )}
 
         {activeTab === 'discovery' && (
-          <div className="pb-8 bg-rose-50/60 min-h-[calc(100vh-70px)] text-slate-800">
+          <div className="pb-8 bg-rose-50/60 min-h-[calc(100vh-70px)] text-slate-800 w-full overflow-x-clip">
             <DiscoverySwipe
               currentUser={currentUser}
               profiles={profiles}
@@ -844,7 +915,7 @@ export default function App() {
         )}
 
         {activeTab === 'favorites' && (
-          <div className="pb-8 bg-rose-50/60 min-h-[calc(100vh-70px)] text-slate-800">
+          <div className="pb-8 bg-rose-50/60 min-h-[calc(100vh-70px)] text-slate-800 w-full overflow-x-clip">
             <FavoritesView
               currentUser={currentUser}
               profiles={profiles}
@@ -864,7 +935,7 @@ export default function App() {
         )}
 
         {activeTab === 'radar' && (
-          <div className="pb-8 bg-rose-50/60 min-h-[calc(100vh-70px)] text-slate-800">
+          <div className="pb-8 bg-rose-50/60 min-h-[calc(100vh-70px)] text-slate-800 w-full overflow-x-clip">
             <ProximityRadar
               currentUser={currentUser}
               profiles={profiles}
@@ -907,6 +978,8 @@ export default function App() {
               aiSettings={aiSettings}
               onToggleAi={handleToggleAi}
               onBlockUser={handleBlockUser}
+              onUnblockUser={handleUnblockUser}
+              onMarkAsRead={handleMarkConversationAsRead}
               onBackToDiscovery={() => setActiveTab('discovery')}
             />
           </div>
@@ -962,7 +1035,7 @@ export default function App() {
         )}
 
         {activeTab === 'profile' && (
-          <div className="pb-8 bg-rose-50/60 min-h-[calc(100vh-70px)] text-slate-800">
+          <div className="pb-8 bg-white min-h-[calc(100vh-70px)] text-slate-800">
             <ProfileEditor
               userProfile={currentUser}
               onSaveProfile={handleSaveProfile}

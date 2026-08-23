@@ -377,56 +377,26 @@ export const FavoritesView: React.FC<FavoritesViewProps> = ({
                       </div>
                     </div>
 
-                    {/* Action buttons (Direct Audio & Video Calls + Chat + AI Affinity) */}
+                    {/* Action buttons (Chat + AI Affinity) */}
                     <div className="pt-2.5 border-t border-rose-100 space-y-2">
                       {matchedProfileIds.includes(profile.id) ? (
-                        <>
-                          <div className="grid grid-cols-2 gap-2">
-                            {/* Audio Call */}
-                            <button
-                              id={`fav-audio-call-${profile.id}`}
-                              onClick={() => {
-                                if (onStartCall) onStartCall(profile, 'audio');
-                              }}
-                              className="py-2 px-2.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer border border-emerald-200"
-                              title={`Appel audio avec ${profile.name}`}
-                            >
-                              <Phone className="w-3.5 h-3.5 text-emerald-600" />
-                              <span>Appel Audio</span>
-                            </button>
+                        <div className="grid grid-cols-2 gap-2">
+                          <button
+                            onClick={() => onOpenCompatibility(profile)}
+                            className="py-2.5 px-3 rounded-xl bg-violet-50 hover:bg-violet-100 text-violet-700 font-bold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer border border-violet-200"
+                          >
+                            <Bot className="w-3.5 h-3.5 text-violet-600" />
+                            <span>Affinité IA</span>
+                          </button>
 
-                            {/* Video Call */}
-                            <button
-                              id={`fav-video-call-${profile.id}`}
-                              onClick={() => {
-                                if (onStartCall) onStartCall(profile, 'video');
-                              }}
-                              className="py-2 px-2.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer border border-rose-200"
-                              title={`Appel vidéo avec ${profile.name}`}
-                            >
-                              <Video className="w-3.5 h-3.5 text-rose-600" />
-                              <span>Appel Vidéo</span>
-                            </button>
-                          </div>
-
-                          <div className="grid grid-cols-2 gap-2">
-                            <button
-                              onClick={() => onOpenCompatibility(profile)}
-                              className="py-2.5 px-3 rounded-xl bg-violet-50 hover:bg-violet-100 text-violet-700 font-bold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer border border-violet-200"
-                            >
-                              <Bot className="w-3.5 h-3.5 text-violet-600" />
-                              <span>Affinité IA</span>
-                            </button>
-
-                            <button
-                              onClick={() => onStartChat(profile)}
-                              className="py-2.5 px-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-emerald-200 transition-all cursor-pointer"
-                            >
-                              <MessageCircle className="w-3.5 h-3.5" />
-                              <span>Discuter (Match)</span>
-                            </button>
-                          </div>
-                        </>
+                          <button
+                            onClick={() => onStartChat(profile)}
+                            className="py-2.5 px-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-emerald-200 transition-all cursor-pointer"
+                          >
+                            <MessageCircle className="w-3.5 h-3.5" />
+                            <span>Discuter (Match)</span>
+                          </button>
+                        </div>
                       ) : (
                         <div className="space-y-1.5">
                           <div className="grid grid-cols-2 gap-2">

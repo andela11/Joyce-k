@@ -27,6 +27,9 @@ import {
   Heart,
   Palette,
   CalendarHeart,
+  Flag,
+  Unlock,
+  Sparkles,
 } from 'lucide-react';
 import {
   UserProfile,
@@ -63,6 +66,8 @@ interface MessagingCenterProps {
   aiSettings: AiAutoResponderSettings;
   onToggleAi: () => void;
   onBlockUser: (userId: string) => void;
+  onUnblockUser?: (userId: string) => void;
+  onMarkAsRead?: (conversationId: string) => void;
   onBackToDiscovery?: () => void;
 }
 
@@ -78,6 +83,8 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
   aiSettings,
   onToggleAi,
   onBlockUser,
+  onUnblockUser,
+  onMarkAsRead,
   onBackToDiscovery,
 }) => {
   const [inputText, setInputText] = useState('');
@@ -88,6 +95,17 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
   const [showCallSettingsModal, setShowCallSettingsModal] = useState(false);
   const [showCallHubPopup, setShowCallHubPopup] = useState(false);
   const [showFloatingCallBubble, setShowFloatingCallBubble] = useState(false);
+
+  // Floating Romantic Hearts Animation State
+  const [floatingHearts, setFloatingHearts] = useState<
+    Array<{ id: number; left: string; delay: string; duration: string; size: number; opacity: number }>
+  >([]);
+
+  // Report & Block State
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [reportReason, setReportReason] = useState('Comportement inapproprié ou déplacé');
+  const [reportDetails, setReportDetails] = useState('');
+  const [statusToast, setStatusToast] = useState<string | null>(null);
 
   // Real Voice Note Recording State
   const [isRecordingVoice, setIsRecordingVoice] = useState(false);
@@ -160,7 +178,7 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
 
   useEffect(() => {
     scrollToBottom();
-  }, [activeChatMessages, activeConversationId]);
+  }, [activeChatMessages.length, activeConversationId]);
 
   // Load AI smart suggestions when active conversation changes
   useEffect(() => {
@@ -207,10 +225,51 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
     };
   }, [activeConv?.id]);
 
+  // Generate floating romantic hearts when entering or opening a conversation
+  useEffect(() => {
+    if (activeConversationId) {
+      const generated = Array.from({ length: 16 }).map((_, i) => ({
+        id: i,
+        left: `${(i * 6.3 + ((i * 4) % 7) * 2) % 94 + 3}%`,
+        delay: `${(i * 0.6) % 5.5}s`,
+        duration: `${5 + ((i * 1.1) % 4)}s`,
+        size: 14 + ((i * 4) % 18),
+        opacity: 0.16 + ((i * 0.03) % 0.18),
+      }));
+      setFloatingHearts(generated);
+    }
+  }, [activeConversationId]);
+
+  const isParticipantBlocked = Boolean(
+    activeConv && (privacySettings.blockedUsers || []).includes(activeConv.participant.id)
+  );
+
+  const handleConfirmReport = () => {
+    if (!activeConv) return;
+    setShowReportModal(false);
+    setStatusToast(
+      `Signalement enregistré pour ${activeConv.participant.name} (${reportReason}). Notre équipe examine le profil sous 24h.`
+    );
+    setTimeout(() => setStatusToast(null), 5000);
+  };
+
+  const handleToggleBlock = () => {
+    if (!activeConv) return;
+    setShowOptionsModal(false);
+    if (isParticipantBlocked) {
+      onUnblockUser?.(activeConv.participant.id);
+      setStatusToast(`${activeConv.participant.name} a été débloqué(e) avec succès.`);
+    } else {
+      onBlockUser(activeConv.participant.id);
+      setStatusToast(`${activeConv.participant.name} a été bloqué(e).`);
+    }
+    setTimeout(() => setStatusToast(null), 4000);
+  };
+
   // Handle Send text
   const handleSend = () => {
     const trimmed = inputText.trim();
-    if (!trimmed || !activeConversationId) {
+    if (!trimmed || !activeConversationId || isParticipantBlocked) {
       inputRef.current?.focus();
       return;
     }
@@ -603,7 +662,10 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
                     <button
                       key={conv.id}
                       id={`conversation-item-${conv.id}`}
-                      onClick={() => setActiveConversationId(conv.id)}
+                      onClick={() => {
+                        setActiveConversationId(conv.id);
+                        onMarkAsRead?.(conv.id);
+                      }}
                       className={`w-full text-left p-3 sm:p-3.5 flex items-center gap-3 transition-all select-none cursor-pointer ${
                         isSelected
                           ? 'bg-rose-100/90 border-l-4 border-rose-500'
@@ -815,14 +877,44 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
                   </div>
                 </div>
 
-                {/* Header Action Buttons (Date Concierge, AI Reply & Options) */}
-                <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+                {/* Header Action Buttons (Direct Audio & Video Calls, Date Concierge, AI Reply & Options) */}
+                <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
+                  {/* Direct Audio Call Button (Only in Messaging) */}
+                  <button
+                    id="chat-direct-audio-call-btn"
+                    onClick={() => handleStartCall('audio')}
+                    disabled={isParticipantBlocked}
+                    title={isParticipantBlocked ? 'Contact bloqué' : `Appeler ${activeConv.participant.name} en audio`}
+                    className={`p-2 rounded-xl border transition-all cursor-pointer ${
+                      isParticipantBlocked
+                        ? 'opacity-40 bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed'
+                        : 'bg-emerald-50 hover:bg-emerald-100/90 text-emerald-700 border-emerald-200 shadow-2xs hover:scale-105 active:scale-95'
+                    }`}
+                  >
+                    <Phone className="w-4 h-4 text-emerald-600" />
+                  </button>
+
+                  {/* Direct Video Call Button (Only in Messaging) */}
+                  <button
+                    id="chat-direct-video-call-btn"
+                    onClick={() => handleStartCall('video')}
+                    disabled={isParticipantBlocked}
+                    title={isParticipantBlocked ? 'Contact bloqué' : `Appel vidéo HD avec ${activeConv.participant.name}`}
+                    className={`p-2 rounded-xl border transition-all cursor-pointer ${
+                      isParticipantBlocked
+                        ? 'opacity-40 bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed'
+                        : 'bg-gradient-to-r from-rose-50 to-pink-50 hover:from-rose-100 hover:to-pink-100 text-rose-700 border-rose-200 shadow-2xs hover:scale-105 active:scale-95'
+                    }`}
+                  >
+                    <Video className="w-4 h-4 text-rose-600" />
+                  </button>
+
                   {/* Date Concierge IA & Safe-Date Angel Button */}
                   <button
                     id="chat-date-concierge-btn"
                     onClick={() => setShowDateConciergeModal(true)}
                     title="Planificateur de Date IA & Sécurité Safe-Date"
-                    className="flex items-center gap-1 px-2.5 sm:px-3 py-1.5 rounded-xl bg-gradient-to-r from-rose-50 to-orange-50 hover:from-rose-100 hover:to-orange-100 border border-rose-200 text-rose-700 text-xs font-bold transition-all active:scale-95 cursor-pointer shadow-xs"
+                    className="hidden xs:flex items-center gap-1 px-2 sm:px-2.5 py-1.5 rounded-xl bg-gradient-to-r from-rose-50 to-orange-50 hover:from-rose-100 hover:to-orange-100 border border-rose-200 text-rose-700 text-xs font-bold transition-all active:scale-95 cursor-pointer shadow-xs"
                   >
                     <CalendarHeart className="w-3.5 h-3.5 text-rose-600" />
                     <span className="hidden sm:inline">Date IA</span>
@@ -832,16 +924,16 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
                   <button
                     id="simulate-ai-auto-reply-btn"
                     onClick={handleTriggerAiAutoReply}
-                    disabled={isGeneratingAiReply}
+                    disabled={isGeneratingAiReply || isParticipantBlocked}
                     title="Tester une réponse rédigée automatiquement par votre IA"
-                    className="flex items-center gap-1 px-2.5 sm:px-3 py-1.5 rounded-xl bg-gradient-to-r from-rose-500 to-orange-500 hover:from-rose-600 hover:to-orange-600 text-white text-[11px] font-bold shadow-xs transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
+                    className="hidden sm:flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-gradient-to-r from-rose-500 to-orange-500 hover:from-rose-600 hover:to-orange-600 text-white text-[11px] font-bold shadow-xs transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
                   >
                     <Bot
                       className={`w-3.5 h-3.5 ${
                         isGeneratingAiReply ? 'animate-spin' : ''
                       }`}
                     />
-                    <span className="hidden md:inline">
+                    <span>
                       {isGeneratingAiReply ? 'IA...' : 'Répondre par IA'}
                     </span>
                   </button>
@@ -850,7 +942,7 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
                   <button
                     id="chat-options-menu-btn"
                     onClick={() => setShowOptionsModal(!showOptionsModal)}
-                    title="Options du chat et des appels"
+                    title="Options du chat, signalement et blocage"
                     className="p-2 rounded-xl text-slate-500 hover:text-slate-900 hover:bg-rose-100 transition-colors cursor-pointer"
                   >
                     <MoreVertical className="w-4 h-4" />
@@ -858,8 +950,43 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
                 </div>
               </div>
 
+              {/* Status & Action Toast Notice */}
+              {statusToast && (
+                <div className="bg-slate-900 text-white text-xs px-4 py-2.5 flex items-center justify-between gap-2 shadow-lg animate-fade-in z-20">
+                  <div className="flex items-center gap-2">
+                    <Shield className="w-4 h-4 text-emerald-400 shrink-0" />
+                    <span>{statusToast}</span>
+                  </div>
+                  <button
+                    onClick={() => setStatusToast(null)}
+                    className="p-1 text-slate-400 hover:text-white"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
+
+              {/* Blocked Contact Warning Bar */}
+              {isParticipantBlocked && (
+                <div className="bg-rose-100/90 border-b border-rose-300 px-4 py-2 flex items-center justify-between text-xs text-rose-950 shrink-0 z-10 animate-fade-in">
+                  <div className="flex items-center gap-2">
+                    <UserX className="w-4 h-4 text-rose-600 shrink-0" />
+                    <span className="font-semibold">
+                      Vous avez bloqué {activeConv.participant.name}. Les messages et appels sont suspendus.
+                    </span>
+                  </div>
+                  <button
+                    onClick={handleToggleBlock}
+                    className="flex items-center gap-1 px-3 py-1 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-2xs transition-colors cursor-pointer shrink-0 ml-2"
+                  >
+                    <Unlock className="w-3.5 h-3.5" />
+                    <span>Débloquer</span>
+                  </button>
+                </div>
+              )}
+
               {/* AI Auto-responder status banner */}
-              {aiSettings.enabled && (
+              {aiSettings.enabled && !isParticipantBlocked && (
                 <div className="bg-emerald-50 border-b border-emerald-100 px-3 sm:px-4 py-1.5 flex items-center justify-between text-[11px] text-emerald-900 shrink-0 z-10">
                   <div className="flex items-center gap-1.5 truncate">
                     <Bot className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
@@ -893,8 +1020,27 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
                 </div>
               )}
 
-              {/* Chat Messages Stream Area */}
-              <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3 min-h-0 overscroll-contain">
+              {/* Chat Messages Stream Area with Romantic Floating Hearts Layer */}
+              <div className="relative flex-1 overflow-y-auto p-3 sm:p-4 space-y-3 min-h-0 overscroll-contain">
+                {/* Floating Romantic Hearts Background Layer */}
+                <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
+                  {floatingHearts.map((heart) => (
+                    <div
+                      key={heart.id}
+                      className="absolute animate-gentle-float text-rose-400/60 select-none transition-transform"
+                      style={{
+                        left: heart.left,
+                        bottom: '4px',
+                        animationDelay: heart.delay,
+                        animationDuration: heart.duration,
+                        opacity: heart.opacity,
+                        fontSize: `${heart.size}px`,
+                      }}
+                    >
+                      ♥
+                    </div>
+                  ))}
+                </div>
                 {/* Security Handshake badge */}
                 <div className="text-center my-1">
                   <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white border border-rose-200 text-[10px] text-slate-500 font-medium shadow-xs">
