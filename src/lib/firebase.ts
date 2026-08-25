@@ -7,6 +7,7 @@ import {
   onAuthStateChanged,
   signInWithPopup,
   GoogleAuthProvider,
+  updateProfile,
   User as FirebaseUser,
 } from 'firebase/auth';
 import {
@@ -49,6 +50,7 @@ export {
   signOut,
   onAuthStateChanged,
   signInWithPopup,
+  updateProfile,
   doc,
   setDoc,
   getDoc,

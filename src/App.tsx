@@ -208,8 +208,33 @@ export default function App() {
         const uid = fbUser.uid;
         const email = fbUser.email || '';
         const isAdmin = checkIsAdmin(email);
-        const name = fbUser.displayName || email.split('@')[0] || 'Membre Joyce-K';
-        const photoUrl = fbUser.photoURL || GENDER_DEFAULT_AVATARS.homme;
+
+        // Check local scoped profile first
+        const localScoped = localStorage.getItem(getScopedKey(uid, 'profile'));
+        let localProfile: UserProfile | null = null;
+        if (localScoped) {
+          try {
+            localProfile = JSON.parse(localScoped);
+          } catch {
+            // ignore
+          }
+        }
+
+        // Fetch from Firestore
+        const remoteProfile = await fetchUserProfile(uid);
+        const resolvedProfile = remoteProfile || localProfile;
+
+        const resolvedName =
+          resolvedProfile?.name ||
+          fbUser.displayName ||
+          email.split('@')[0] ||
+          'Membre Joyce-K';
+        const resolvedPhoto =
+          resolvedProfile?.photos?.[0] ||
+          fbUser.photoURL ||
+          (resolvedProfile?.gender
+            ? GENDER_DEFAULT_AVATARS[resolvedProfile.gender]
+            : GENDER_DEFAULT_AVATARS.homme);
 
         const providerId = fbUser.providerData?.[0]?.providerId || '';
         const provider: 'email' | 'google' | 'guest' =
@@ -218,12 +243,12 @@ export default function App() {
         const currentAuth: AuthUser = {
           id: uid,
           email,
-          name: isAdmin ? `${name} (Admin)` : name,
-          photoUrl,
+          name: isAdmin ? `${resolvedName.replace(/\s*\(Admin\)$/i, '')} (Admin)` : resolvedName.replace(/\s*\(Admin\)$/i, ''),
+          photoUrl: resolvedPhoto,
           provider,
           isLoggedIn: true,
           isAdmin,
-          createdAt: new Date().toISOString(),
+          createdAt: fbUser.metadata?.creationTime || new Date().toISOString(),
         };
 
         setAuthUser(currentAuth);
@@ -233,11 +258,13 @@ export default function App() {
           console.warn('Error saving auth to storage:', e);
         }
 
-        const profile = await fetchUserProfile(uid);
-        if (profile) {
-          switchUserData(currentAuth, profile);
+        if (resolvedProfile) {
+          switchUserData(currentAuth, resolvedProfile);
         } else {
-          const newProfile = createDedicatedUserProfile(currentAuth);
+          const newProfile = createDedicatedUserProfile(currentAuth, {
+            name: resolvedName,
+            photos: [resolvedPhoto],
+          });
           switchUserData(currentAuth, newProfile);
           await persistUserProfile(newProfile);
         }
@@ -246,6 +273,77 @@ export default function App() {
 
     return () => unsubscribe();
   }, [switchUserData]);
+
+  // Firestore Registered Users Real-time Sync for Discovery & Radar
+  useEffect(() => {
+    import('./lib/firebase').then(({ db, collection, onSnapshot }) => {
+      try {
+        const unsub = onSnapshot(collection(db, 'users'), (snapshot) => {
+          if (!snapshot.empty) {
+            const dbList: UserProfile[] = [];
+            snapshot.forEach((docSnap) => {
+              const data = docSnap.data() as Partial<UserProfile>;
+              const uid = docSnap.id;
+              // Do not include current active user in swipe discovery deck
+              if (uid && uid !== authUser?.id && uid !== currentUser?.id) {
+                const gender = data.gender || 'homme';
+                const defaultPhoto = GENDER_DEFAULT_AVATARS[gender] || GENDER_DEFAULT_AVATARS.homme;
+                dbList.push({
+                  ...data,
+                  id: uid,
+                  name: data.name || 'Membre Joyce-K',
+                  age: data.age || 25,
+                  gender,
+                  interestedIn: data.interestedIn || (gender === 'homme' ? ['femme'] : ['homme']),
+                  photos:
+                    Array.isArray(data.photos) && data.photos.length > 0
+                      ? data.photos
+                      : [defaultPhoto],
+                  videos: Array.isArray(data.videos) ? data.videos : [],
+                  bio: data.bio || 'Membre vérifié sur Joyce-K',
+                  occupation: data.occupation || 'Membre',
+                  city: data.city || 'Yaoundé, Cameroun',
+                  lat: data.lat || 3.848,
+                  lng: data.lng || 11.5021,
+                  interests:
+                    Array.isArray(data.interests) && data.interests.length > 0
+                      ? data.interests
+                      : ['Voyages', 'Musique', 'Café & Brunch'],
+                  relationshipGoal: data.relationshipGoal || 'Relation sérieuse',
+                  astrologySign: data.astrologySign || 'Balance ♎',
+                  languages:
+                    Array.isArray(data.languages) && data.languages.length > 0
+                      ? data.languages
+                      : ['Français'],
+                  heightCm: data.heightCm || 175,
+                  verified: data.verified ?? true,
+                  isOnline: data.isOnline ?? true,
+                  lastActiveText: data.lastActiveText || 'En ligne maintenant',
+                  promptQuestion: data.promptQuestion || 'Le rendez-vous idéal pour moi c’est...',
+                  promptAnswer: data.promptAnswer || 'Un lieu chaleureux et une belle discussion.',
+                  phoneNumber: data.phoneNumber || '+237 6 99 88 77 66',
+                  country: data.country || 'Cameroun',
+                } as UserProfile);
+              }
+            });
+
+            setProfiles(() => {
+              const baseMocks = MOCK_PROFILES.filter(
+                (m) =>
+                  m.id !== authUser?.id &&
+                  m.id !== currentUser?.id &&
+                  !dbList.some((dbU) => dbU.id === m.id)
+              );
+              return [...dbList, ...baseMocks];
+            });
+          }
+        });
+        return () => unsub();
+      } catch (err) {
+        console.warn('Firestore users sync warning:', err);
+      }
+    });
+  }, [authUser?.id, currentUser?.id]);
 
   // Notifications State
   const [notifications, setNotifications] = useState<AppNotification[]>(() => {

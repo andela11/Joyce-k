@@ -274,6 +274,57 @@ export function saveUserAiSettings(uid: string | undefined | null, ai: AiAutoRes
 }
 
 /**
+ * Helper to normalize a profile object safely while preserving all customized user fields.
+ */
+function normalizeProfileObject(uid: string, data: Partial<UserProfile>): UserProfile {
+  const gender = data.gender || 'homme';
+  const defaultPhoto = GENDER_DEFAULT_AVATARS[gender] || GENDER_DEFAULT_AVATARS.homme;
+
+  return {
+    ...data,
+    id: uid,
+    name: data.name || 'Membre Joyce-K',
+    age: data.age || 25,
+    gender,
+    interestedIn: data.interestedIn || (gender === 'homme' ? ['femme'] : ['homme']),
+    photos:
+      Array.isArray(data.photos) && data.photos.length > 0
+        ? data.photos
+        : [defaultPhoto],
+    videos: Array.isArray(data.videos) ? data.videos : [],
+    bio: data.bio || '',
+    occupation: data.occupation || 'Membre Joyce-K',
+    city: data.city || 'Paris, France',
+    lat: data.lat || 48.8566,
+    lng: data.lng || 2.3522,
+    interests:
+      Array.isArray(data.interests) && data.interests.length > 0
+        ? data.interests
+        : ['Voyages', 'Musique', 'Café & Brunch'],
+    relationshipGoal: data.relationshipGoal || 'Relation sérieuse',
+    astrologySign: data.astrologySign || 'Balance ♎',
+    languages:
+      Array.isArray(data.languages) && data.languages.length > 0
+        ? data.languages
+        : ['Français'],
+    heightCm: data.heightCm || 175,
+    verified: data.verified ?? true,
+    isOnline: data.isOnline ?? true,
+    lastActiveText: data.lastActiveText || 'En ligne maintenant',
+    promptQuestion: data.promptQuestion || 'Le rendez-vous idéal pour moi c’est...',
+    promptAnswer:
+      data.promptAnswer ||
+      'Un lieu chaleureux, une bonne discussion sans filtre et beaucoup de rires.',
+    voiceBioPrompt: data.voiceBioPrompt || 'Ce qui me fait craquer...',
+    voiceBioDurationSeconds: data.voiceBioDurationSeconds || 10,
+    loveLanguage: data.loveLanguage || 'quality_time',
+    loveLanguageLabel: data.loveLanguageLabel || 'Moments de qualité',
+    phoneNumber: data.phoneNumber || '+237 6 99 88 77 66',
+    country: data.country || 'Cameroun',
+  };
+}
+
+/**
  * Saves a user profile to both Firestore and LocalStorage (isolated per UID).
  */
 export async function persistUserProfile(profile: UserProfile): Promise<void> {
@@ -313,31 +364,7 @@ export async function fetchUserProfile(uid: string): Promise<UserProfile | null>
     const userDocSnap = await getDoc(doc(db, 'users', uid));
     if (userDocSnap.exists()) {
       const data = userDocSnap.data() as Partial<UserProfile>;
-      const normalizedProfile: UserProfile = {
-        ...data,
-        id: uid,
-        name: data.name || 'Membre Joyce-K',
-        age: data.age || 25,
-        gender: data.gender || 'homme',
-        interestedIn: data.interestedIn || ['femme'],
-        photos: Array.isArray(data.photos) && data.photos.length > 0
-          ? data.photos
-          : [GENDER_DEFAULT_AVATARS[data.gender || 'homme'] || GENDER_DEFAULT_AVATARS.homme],
-        videos: Array.isArray(data.videos) ? data.videos : [],
-        bio: data.bio || '',
-        occupation: data.occupation || 'Membre',
-        city: data.city || 'Paris, France',
-        lat: data.lat || 48.8566,
-        lng: data.lng || 2.3522,
-        interests: Array.isArray(data.interests) ? data.interests : ['Voyages', 'Musique'],
-        relationshipGoal: data.relationshipGoal || 'Relation sérieuse',
-        astrologySign: data.astrologySign || 'Balance ♎',
-        languages: Array.isArray(data.languages) ? data.languages : ['Français'],
-        heightCm: data.heightCm || 175,
-        verified: data.verified ?? true,
-        isOnline: data.isOnline ?? true,
-        lastActiveText: data.lastActiveText || 'En ligne maintenant',
-      };
+      const normalizedProfile = normalizeProfileObject(uid, data);
       // Also cache in scoped local storage
       localStorage.setItem(getScopedKey(uid, 'profile'), JSON.stringify(normalizedProfile));
       return normalizedProfile;
@@ -351,31 +378,7 @@ export async function fetchUserProfile(uid: string): Promise<UserProfile | null>
     const saved = localStorage.getItem(getScopedKey(uid, 'profile'));
     if (saved) {
       const data = JSON.parse(saved) as Partial<UserProfile>;
-      const normalizedProfile: UserProfile = {
-        ...data,
-        id: uid,
-        name: data.name || 'Membre Joyce-K',
-        age: data.age || 25,
-        gender: data.gender || 'homme',
-        interestedIn: data.interestedIn || ['femme'],
-        photos: Array.isArray(data.photos) && data.photos.length > 0
-          ? data.photos
-          : [GENDER_DEFAULT_AVATARS[data.gender || 'homme'] || GENDER_DEFAULT_AVATARS.homme],
-        videos: Array.isArray(data.videos) ? data.videos : [],
-        bio: data.bio || '',
-        occupation: data.occupation || 'Membre',
-        city: data.city || 'Paris, France',
-        lat: data.lat || 48.8566,
-        lng: data.lng || 2.3522,
-        interests: Array.isArray(data.interests) ? data.interests : ['Voyages', 'Musique'],
-        relationshipGoal: data.relationshipGoal || 'Relation sérieuse',
-        astrologySign: data.astrologySign || 'Balance ♎',
-        languages: Array.isArray(data.languages) ? data.languages : ['Français'],
-        heightCm: data.heightCm || 175,
-        verified: data.verified ?? true,
-        isOnline: data.isOnline ?? true,
-        lastActiveText: data.lastActiveText || 'En ligne maintenant',
-      };
+      const normalizedProfile = normalizeProfileObject(uid, data);
       return normalizedProfile;
     }
   } catch (e) {

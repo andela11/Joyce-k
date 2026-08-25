@@ -30,6 +30,7 @@ import {
   createUserWithEmailAndPassword,
   signInWithPopup,
   googleProvider,
+  updateProfile,
   doc,
   setDoc,
   getDoc,
@@ -311,6 +312,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         try {
           const userCredential = await createUserWithEmailAndPassword(auth, cleanEmail, password);
           uid = userCredential.user.uid;
+
+          // Update Firebase Auth internal profile display name and photo
+          try {
+            await updateProfile(userCredential.user, {
+              displayName: userName,
+              photoURL: userPhoto,
+            });
+          } catch (pErr) {
+            console.warn('Firebase profile update warning:', pErr);
+          }
         } catch (fbAuthErr: any) {
           if (fbAuthErr.code === 'auth/email-already-in-use') {
             setError('Cette adresse e-mail est déjà utilisée. Veuillez vous connecter.');
