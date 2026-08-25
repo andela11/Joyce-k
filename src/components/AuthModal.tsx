@@ -40,6 +40,7 @@ import {
   createDedicatedUserProfile,
   fetchUserProfile,
   persistUserProfile,
+  clearGuestCachedData,
   getScopedKey,
   GENDER_DEFAULT_AVATARS,
   checkIsAdmin,
@@ -179,6 +180,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const handleGoogleLogin = async () => {
     setIsLoading(true);
     setError(null);
+    clearGuestCachedData();
     try {
       // 1. Authenticate with real Firebase Auth Popup
       let fbUser;
@@ -287,6 +289,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     }
 
     setIsLoading(true);
+    clearGuestCachedData();
     try {
       const selectedCityObj = PRESET_CITIES.find((c) => c.name === selectedCityName) || PRESET_CITIES[0];
       const parsedInterestedIn: ('femme' | 'homme' | 'non-binaire')[] =

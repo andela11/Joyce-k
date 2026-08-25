@@ -325,10 +325,39 @@ function normalizeProfileObject(uid: string, data: Partial<UserProfile>): UserPr
 }
 
 /**
+ * Clears all cached guest session data and temporary keys before initializing an authenticated session.
+ */
+export function clearGuestCachedData(): void {
+  try {
+    const guestKeys = [
+      getScopedKey('guest_user', 'profile'),
+      getScopedKey('guest_user', 'convs'),
+      getScopedKey('guest_user', 'messages'),
+      getScopedKey('guest_user', 'favorites'),
+      getScopedKey('guest_user', 'liked'),
+      getScopedKey('guest_user', 'passed'),
+      getScopedKey('guest_user', 'privacy'),
+      getScopedKey('guest_user', 'ai'),
+      'joycek_guest_session',
+      'joycek_temp_profile',
+    ];
+    guestKeys.forEach((k) => {
+      try {
+        localStorage.removeItem(k);
+      } catch {
+        // ignore
+      }
+    });
+  } catch (e) {
+    console.warn('Error clearing guest cache:', e);
+  }
+}
+
+/**
  * Saves a user profile to both Firestore and LocalStorage (isolated per UID).
  */
 export async function persistUserProfile(profile: UserProfile): Promise<void> {
-  if (!profile || !profile.id) return;
+  if (!profile || !profile.id || profile.id === 'guest_user') return;
 
   // 1. LocalStorage scoped by UID
   try {
@@ -348,8 +377,8 @@ export async function persistUserProfile(profile: UserProfile): Promise<void> {
       },
       { merge: true }
     );
-  } catch (dbErr) {
-    console.warn('Firestore user profile sync error:', dbErr);
+  } catch (err) {
+    console.warn('Firestore user profile sync warning:', err);
   }
 }
 

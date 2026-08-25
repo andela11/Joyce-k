@@ -40,6 +40,7 @@ import {
   createDedicatedUserProfile,
   fetchUserProfile,
   persistUserProfile,
+  clearGuestCachedData,
   getScopedKey,
   GENDER_DEFAULT_AVATARS,
   checkIsAdmin,
@@ -157,8 +158,12 @@ export default function App() {
   // Switch all active application state to match a target user profile
   const switchUserData = useCallback((targetAuthUser: AuthUser | null, profile?: UserProfile | null) => {
     if (targetAuthUser) {
+      // Clear any guest/anonymous cache before initializing authenticated session
+      clearGuestCachedData();
       const uid = targetAuthUser.id;
-      const loadedProfile = profile || createDedicatedUserProfile(targetAuthUser);
+      const loadedProfile = profile
+        ? { ...profile, id: uid }
+        : createDedicatedUserProfile(targetAuthUser);
       setCurrentUser(loadedProfile);
       const userConvs = loadUserConversations(uid);
       setConversations(userConvs);
@@ -170,6 +175,7 @@ export default function App() {
       setAiSettings(loadUserAiSettings(uid));
       setActiveConversationId(userConvs.length > 0 ? userConvs[0].id : null);
     } else {
+      clearGuestCachedData();
       const guestProfile = createDedicatedUserProfile({
         id: 'guest_user',
         name: 'Visiteur',
@@ -195,7 +201,7 @@ export default function App() {
   useEffect(() => {
     if (!authUser?.id) return;
     fetchUserProfile(authUser.id).then((profile) => {
-      if (profile) {
+      if (profile && profile.id === authUser.id) {
         setCurrentUser(profile);
       }
     });
@@ -205,23 +211,30 @@ export default function App() {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
       if (fbUser) {
+        // Step 1: Explicitly clear cached guest profile and artifacts
+        clearGuestCachedData();
+
         const uid = fbUser.uid;
         const email = fbUser.email || '';
         const isAdmin = checkIsAdmin(email);
 
-        // Check local scoped profile first
-        const localScoped = localStorage.getItem(getScopedKey(uid, 'profile'));
+        // Fetch from Firestore first (source of truth)
+        const remoteProfile = await fetchUserProfile(uid);
+
+        // Check local scoped profile second
         let localProfile: UserProfile | null = null;
+        const localScoped = localStorage.getItem(getScopedKey(uid, 'profile'));
         if (localScoped) {
           try {
-            localProfile = JSON.parse(localScoped);
+            const parsed = JSON.parse(localScoped);
+            if (parsed && parsed.id === uid) {
+              localProfile = parsed;
+            }
           } catch {
             // ignore
           }
         }
 
-        // Fetch from Firestore
-        const remoteProfile = await fetchUserProfile(uid);
         const resolvedProfile = remoteProfile || localProfile;
 
         const resolvedName =
@@ -259,8 +272,11 @@ export default function App() {
         }
 
         if (resolvedProfile) {
-          switchUserData(currentAuth, resolvedProfile);
+          const syncedProfile = { ...resolvedProfile, id: uid };
+          switchUserData(currentAuth, syncedProfile);
+          await persistUserProfile(syncedProfile);
         } else {
+          // Generate a completely unique profile document for this new UID
           const newProfile = createDedicatedUserProfile(currentAuth, {
             name: resolvedName,
             photos: [resolvedPhoto],
@@ -862,6 +878,9 @@ export default function App() {
 
   // Handle Auth Login/Signup Success
   const handleLoginSuccess = async (user: AuthUser, fullProfile?: UserProfile) => {
+    // Clear any guest/anonymous session artifacts
+    clearGuestCachedData();
+
     setAuthUser(user);
     try {
       localStorage.setItem('amour_affinites_auth', JSON.stringify(user));
@@ -869,7 +888,13 @@ export default function App() {
       console.warn('LocalStorage auth save error:', e);
     }
 
-    const profileToUse = fullProfile || (await fetchUserProfile(user.id)) || createDedicatedUserProfile(user);
+    const fetched = !fullProfile ? await fetchUserProfile(user.id) : null;
+    const baseProfile = fullProfile || fetched || createDedicatedUserProfile(user);
+    const profileToUse: UserProfile = {
+      ...baseProfile,
+      id: user.id,
+    };
+
     switchUserData(user, profileToUse);
     await persistUserProfile(profileToUse);
 
