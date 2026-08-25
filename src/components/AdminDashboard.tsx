@@ -24,9 +24,10 @@ import {
   ChevronLeft,
 } from 'lucide-react';
 import { UserProfile, AuthUser, AppNotification } from '../types';
-import { db, collection, onSnapshot, doc, updateDoc, setDoc } from '../lib/firebase';
+import { db, collection, onSnapshot, doc, updateDoc, setDoc, deleteDoc } from '../lib/firebase';
 import { AdminNotificationManager } from './AdminNotificationManager';
 import { MOCK_PROFILES } from '../data/mockProfiles';
+import { getScopedKey } from '../utils/userUtils';
 
 interface AdminDashboardProps {
   currentUser: UserProfile;
@@ -159,10 +160,32 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     showNotification(`Statut de certification de l'utilisateur mis à jour (${newStatus ? 'Certifié' : 'Non certifié'}).`);
   };
 
-  const handleDeleteUser = (userId: string) => {
+  const handleDeleteUser = async (userId: string) => {
     onUpdateProfiles((prev) => prev.filter((p) => p.id !== userId));
-    setDbUsers((prev) => prev.filter((u) => u.id !== userId));
-    showNotification("Utilisateur révoqué du système avec succès.");
+    setDbUsers((prev) => prev.filter((u) => (u.id || u.uid) !== userId));
+    
+    // Suppression physique du document Firestore
+    try {
+      await deleteDoc(doc(db, 'users', userId));
+    } catch (e) {
+      console.warn('Erreur lors de la suppression Firestore du user:', e);
+    }
+
+    // Nettoyage complet du cache local associé
+    try {
+      localStorage.removeItem(getScopedKey(userId, 'profile'));
+      localStorage.removeItem(getScopedKey(userId, 'convs'));
+      localStorage.removeItem(getScopedKey(userId, 'messages'));
+      localStorage.removeItem(getScopedKey(userId, 'favorites'));
+      localStorage.removeItem(getScopedKey(userId, 'liked'));
+      localStorage.removeItem(getScopedKey(userId, 'passed'));
+      localStorage.removeItem(getScopedKey(userId, 'privacy'));
+      localStorage.removeItem(getScopedKey(userId, 'ai'));
+    } catch (e) {
+      console.warn('Erreur lors du nettoyage localStorage:', e);
+    }
+
+    showNotification("Utilisateur définitivement supprimé et purgé du système.");
   };
 
   if (!authUser?.isAdmin) {

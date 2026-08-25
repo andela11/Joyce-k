@@ -21,6 +21,7 @@ import {
   orderBy,
   addDoc,
   serverTimestamp,
+  deleteDoc,
 } from 'firebase/firestore';
 import config from '../../firebase-applet-config.json';
 
@@ -58,5 +59,6 @@ export {
   orderBy,
   addDoc,
   serverTimestamp,
+  deleteDoc,
 };
 export type { FirebaseUser };

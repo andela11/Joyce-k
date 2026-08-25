@@ -179,19 +179,33 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     setIsLoading(true);
     setError(null);
     try {
-      // 1. Authenticate with real Firebase Auth
+      // 1. Authenticate with real Firebase Auth Popup
       let fbUser;
       try {
         const result = await signInWithPopup(auth, googleProvider);
         fbUser = result.user;
       } catch (authErr: any) {
         console.warn('Firebase popup error:', authErr);
+        if (authErr.code === 'auth/popup-closed-by-user') {
+          setError('Connexion Google annulée.');
+          setIsLoading(false);
+          return;
+        }
+        setError('Impossible de se connecter avec Google. Veuillez réessayer ou utiliser votre e-mail.');
+        setIsLoading(false);
+        return;
       }
 
-      const uid = fbUser?.uid || `google_${Date.now()}`;
-      const userEmail = fbUser?.email || email.trim().toLowerCase() || `user_${Date.now()}@joycek.app`;
-      const rawName = fbUser?.displayName || name.trim() || userEmail.split('@')[0] || 'Membre Joyce-K';
-      const userPhoto = fbUser?.photoURL || photoDataUrl || GENDER_DEFAULT_AVATARS[gender] || GENDER_DEFAULT_AVATARS.femme;
+      if (!fbUser) {
+        setError('Aucun compte Google détecté.');
+        setIsLoading(false);
+        return;
+      }
+
+      const uid = fbUser.uid;
+      const userEmail = fbUser.email || '';
+      const rawName = fbUser.displayName || userEmail.split('@')[0] || 'Membre Joyce-K';
+      const userPhoto = fbUser.photoURL || photoDataUrl || GENDER_DEFAULT_AVATARS[gender] || GENDER_DEFAULT_AVATARS.homme;
 
       const isAdmin = checkIsAdmin(userEmail);
 
@@ -211,6 +225,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       if (!fullProfile) {
         const selectedCityObj = PRESET_CITIES.find((c) => c.name === selectedCityName) || PRESET_CITIES[0];
         fullProfile = createDedicatedUserProfile(authData, {
+          name: rawName,
           gender,
           age,
           city: `${selectedCityObj.name}, ${selectedCityObj.country}`,
@@ -305,9 +320,15 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             setError('Mot de passe trop faible. Utilisez au moins 6 caractères.');
             setIsLoading(false);
             return;
+          } else if (fbAuthErr.code === 'auth/invalid-email') {
+            setError('Adresse e-mail invalide.');
+            setIsLoading(false);
+            return;
           }
-          console.warn('Firebase signup warning, using secure session UID:', fbAuthErr);
-          uid = `user_${Date.now()}`;
+          console.warn('Firebase signup error:', fbAuthErr);
+          setError(fbAuthErr.message || "Erreur lors de la création du compte.");
+          setIsLoading(false);
+          return;
         }
 
         const isAdmin = checkIsAdmin(cleanEmail);
@@ -361,25 +382,27 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           const userCredential = await signInWithEmailAndPassword(auth, cleanEmail, password);
           uid = userCredential.user.uid;
         } catch (fbSignInErr: any) {
+          console.warn('Firebase signin error:', fbSignInErr);
           if (
             fbSignInErr.code === 'auth/user-not-found' ||
             fbSignInErr.code === 'auth/wrong-password' ||
-            fbSignInErr.code === 'auth/invalid-credential'
+            fbSignInErr.code === 'auth/invalid-credential' ||
+            fbSignInErr.code === 'auth/invalid-login-credentials'
           ) {
-            setError('Identifiants incorrects. Veuillez vérifier votre e-mail et mot de passe.');
+            setError('Identifiants incorrects ou compte inexistant. Veuillez vérifier votre mot de passe.');
             setIsLoading(false);
             return;
           }
-          console.warn('Firebase signin warning, using local session:', fbSignInErr);
-          uid = `user_${Date.now()}`;
+          setError('Erreur de connexion : ' + (fbSignInErr.message || 'Vérifiez vos identifiants.'));
+          setIsLoading(false);
+          return;
         }
 
         // Fetch their unique profile from Firestore / LocalStorage
         fullProfile = await fetchUserProfile(uid);
 
         const isAdmin = checkIsAdmin(cleanEmail);
-
-        const resolvedName = fullProfile?.name || userName;
+        const resolvedName = fullProfile?.name || cleanEmail.split('@')[0];
         const resolvedPhoto = fullProfile?.photos?.[0] || userPhoto;
 
         const authUser: AuthUser = {
