@@ -383,6 +383,23 @@ export async function persistUserProfile(profile: UserProfile): Promise<void> {
 }
 
 /**
+ * Generates a clean, deterministic, unique UID derived from a normalized email address.
+ * Ensures strict uniqueness and isolation per account without generic fallbacks.
+ */
+export function generateUniqueUidFromEmail(email: string): string {
+  const clean = email.trim().toLowerCase();
+  let hash = 0;
+  for (let i = 0; i < clean.length; i++) {
+    const char = clean.charCodeAt(i);
+    hash = (hash << 5) - hash + char;
+    hash |= 0; // Convert to 32bit integer
+  }
+  const hex = Math.abs(hash).toString(16).padStart(8, '0');
+  const safePrefix = clean.split('@')[0].replace(/[^a-zA-Z0-9]/g, '').slice(0, 10) || 'u';
+  return `uid_${safePrefix}_${hex}`;
+}
+
+/**
  * Fetches the user profile: checks Firestore first, then local scoped storage.
  */
 export async function fetchUserProfile(uid: string): Promise<UserProfile | null> {

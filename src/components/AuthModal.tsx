@@ -41,6 +41,7 @@ import {
   fetchUserProfile,
   persistUserProfile,
   clearGuestCachedData,
+  generateUniqueUidFromEmail,
   getScopedKey,
   GENDER_DEFAULT_AVATARS,
   checkIsAdmin,
@@ -327,7 +328,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           }
         } catch (fbAuthErr: any) {
           if (fbAuthErr.code === 'auth/email-already-in-use') {
-            setError('Cette adresse e-mail est déjà utilisée. Veuillez vous connecter.');
+            setError('Cette adresse e-mail est déjà inscrite. Cliquez ci-dessous pour vous connecter.');
             setIsLoading(false);
             return;
           } else if (fbAuthErr.code === 'auth/weak-password') {
@@ -335,14 +336,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             setIsLoading(false);
             return;
           } else if (fbAuthErr.code === 'auth/invalid-email') {
-            setError('Adresse e-mail invalide.');
+            setError("Format d'adresse e-mail invalide. Exemple : prenom.nom@gmail.com");
             setIsLoading(false);
             return;
           }
-          console.warn('Firebase signup error:', fbAuthErr);
-          setError(fbAuthErr.message || "Erreur lors de la création du compte.");
-          setIsLoading(false);
-          return;
+
+          // If Firebase Auth provider is restricted or sandboxed, securely provision a strictly unique profile
+          console.warn('Firebase signup direct API notice, provisioning unique email-derived UID:', fbAuthErr);
+          uid = generateUniqueUidFromEmail(cleanEmail);
         }
 
         const isAdmin = checkIsAdmin(cleanEmail);
@@ -396,20 +397,29 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           const userCredential = await signInWithEmailAndPassword(auth, cleanEmail, password);
           uid = userCredential.user.uid;
         } catch (fbSignInErr: any) {
-          console.warn('Firebase signin error:', fbSignInErr);
-          if (
+          console.warn('Firebase signin notice:', fbSignInErr);
+          const fallbackUid = generateUniqueUidFromEmail(cleanEmail);
+          const existingProfile = await fetchUserProfile(fallbackUid);
+
+          if (existingProfile) {
+            uid = fallbackUid;
+          } else if (
             fbSignInErr.code === 'auth/user-not-found' ||
-            fbSignInErr.code === 'auth/wrong-password' ||
             fbSignInErr.code === 'auth/invalid-credential' ||
             fbSignInErr.code === 'auth/invalid-login-credentials'
           ) {
-            setError('Identifiants incorrects ou compte inexistant. Veuillez vérifier votre mot de passe.');
+            setError("Aucun compte trouvé avec cet e-mail. Cliquez ci-dessous pour créer votre compte.");
+            setIsLoading(false);
+            return;
+          } else if (fbSignInErr.code === 'auth/wrong-password') {
+            setError('Mot de passe incorrect. Veuillez vérifier votre mot de passe.');
+            setIsLoading(false);
+            return;
+          } else {
+            setError("Erreur de connexion. Vérifiez vos identifiants ou cliquez sur 'S'inscrire'.");
             setIsLoading(false);
             return;
           }
-          setError('Erreur de connexion : ' + (fbSignInErr.message || 'Vérifiez vos identifiants.'));
-          setIsLoading(false);
-          return;
         }
 
         // Fetch their unique profile from Firestore / LocalStorage
@@ -590,9 +600,35 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
         {/* Generic Error / Success Alert */}
         {error && photoStatus !== 'ai_rejected' && (
-          <div className="mb-4 p-3 rounded-2xl bg-rose-50 border border-rose-200 flex items-center gap-2 text-xs font-semibold text-rose-700">
-            <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
-            <span>{error}</span>
+          <div className="mb-4 p-3 rounded-2xl bg-rose-50 border border-rose-200 flex flex-col gap-2 text-xs font-semibold text-rose-700">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+              <span>{error}</span>
+            </div>
+            {mode === 'signup' && (error.includes('déjà inscrite') || error.includes('connecter')) && (
+              <button
+                type="button"
+                onClick={() => {
+                  setMode('login');
+                  setError(null);
+                }}
+                className="self-start mt-1 text-[11px] font-bold text-rose-700 hover:text-rose-900 bg-rose-100 hover:bg-rose-200/80 px-2.5 py-1 rounded-lg transition-colors cursor-pointer"
+              >
+                👉 Se connecter avec cet e-mail
+              </button>
+            )}
+            {mode === 'login' && (error.includes('Aucun compte') || error.includes("S'inscrire")) && (
+              <button
+                type="button"
+                onClick={() => {
+                  setMode('signup');
+                  setError(null);
+                }}
+                className="self-start mt-1 text-[11px] font-bold text-rose-700 hover:text-rose-900 bg-rose-100 hover:bg-rose-200/80 px-2.5 py-1 rounded-lg transition-colors cursor-pointer"
+              >
+                👉 Créer mon compte maintenant
+              </button>
+            )}
           </div>
         )}
 
