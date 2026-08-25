@@ -343,6 +343,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         });
 
         // Initialize fresh empty scoped storage for this brand new user
+        localStorage.setItem(getScopedKey(uid, 'profile'), JSON.stringify(fullProfile));
+        localStorage.setItem('amour_affinites_auth', JSON.stringify(authUser));
         localStorage.removeItem(getScopedKey(uid, 'convs'));
         localStorage.removeItem(getScopedKey(uid, 'messages'));
         localStorage.removeItem(getScopedKey(uid, 'favorites'));

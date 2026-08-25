@@ -26,6 +26,7 @@ import {
 import { UserProfile, AuthUser, AppNotification } from '../types';
 import { db, collection, onSnapshot, doc, updateDoc, setDoc } from '../lib/firebase';
 import { AdminNotificationManager } from './AdminNotificationManager';
+import { MOCK_PROFILES } from '../data/mockProfiles';
 
 interface AdminDashboardProps {
   currentUser: UserProfile;
@@ -518,6 +519,30 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     onChange={(e) => setMaxDistanceKm(parseInt(e.target.value) || 15000)}
                     className="w-full px-3.5 py-2.5 rounded-2xl bg-slate-900 border border-slate-700 text-xs text-white focus:border-rose-500 focus:outline-none"
                   />
+                </div>
+
+                {/* Database Purge & Re-seed Tool */}
+                <div className="pt-3 border-t border-slate-700">
+                  <div className="p-3.5 rounded-2xl bg-rose-950/40 border border-rose-900/60 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                    <div>
+                      <p className="font-bold text-rose-300">Purger la Base & Réinitialiser les Profils</p>
+                      <p className="text-slate-400 text-[11px]">Efface les données résiduelles et recharge la liste fraîche des 14 profils membres diversifiés (Hommes & Femmes).</p>
+                    </div>
+                    <button
+                      onClick={() => {
+                        if (window.confirm('Confirmer la réinitialisation complète des profils et le nettoyage du cache ?')) {
+                          onUpdateProfiles(MOCK_PROFILES);
+                          localStorage.removeItem('amour_affinites_passed');
+                          localStorage.removeItem('amour_affinites_liked');
+                          localStorage.removeItem('amour_affinites_favorites');
+                          showNotification('Base de données et profils réinitialisés avec succès !');
+                        }
+                      }}
+                      className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shrink-0 transition-colors shadow-sm"
+                    >
+                      Purger & Réinitialiser
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
