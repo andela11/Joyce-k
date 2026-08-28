@@ -59,7 +59,7 @@ import {
   loadUserAiSettings,
   saveUserAiSettings,
 } from './utils/userUtils';
-import { auth, onAuthStateChanged, signOut } from './lib/firebase';
+import { auth, onAuthStateChanged, signOut, db, collection, onSnapshot } from './lib/firebase';
 
 export default function App() {
   // Navigation State
@@ -292,9 +292,10 @@ export default function App() {
 
   // Firestore Registered Users Real-time Sync for Discovery & Radar
   useEffect(() => {
-    import('./lib/firebase').then(({ db, collection, onSnapshot }) => {
-      try {
-        const unsub = onSnapshot(collection(db, 'users'), (snapshot) => {
+    try {
+      const unsub = onSnapshot(
+        collection(db, 'users'),
+        (snapshot) => {
           if (!snapshot.empty) {
             const dbList: UserProfile[] = [];
             snapshot.forEach((docSnap) => {
@@ -353,12 +354,15 @@ export default function App() {
               return [...dbList, ...baseMocks];
             });
           }
-        });
-        return () => unsub();
-      } catch (err) {
-        console.warn('Firestore users sync warning:', err);
-      }
-    });
+        },
+        (err) => {
+          console.warn('Firestore users sync warning:', err);
+        }
+      );
+      return () => unsub();
+    } catch (err) {
+      console.warn('Firestore users sync setup error:', err);
+    }
   }, [authUser?.id, currentUser?.id]);
 
   // Notifications State

@@ -708,6 +708,56 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({
         />
       </div>
 
+      {/* Gender & Matching Orientation */}
+      <div className="bg-white border border-rose-100 rounded-[32px] p-5 shadow-xl shadow-rose-100/40 space-y-3 text-slate-800">
+        <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2 border-b border-rose-100 pb-2.5">
+          <User className="w-4 h-4 text-rose-600" />
+          <span>Genre & Affinités Ciblées</span>
+        </h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-slate-700 block">
+              Votre genre :
+            </label>
+            <select
+              id="profile-gender-select"
+              value={profile.gender || 'homme'}
+              onChange={(e) => {
+                const g = e.target.value as 'homme' | 'femme' | 'non-binaire';
+                const targetInterested: ('femme' | 'homme' | 'non-binaire')[] =
+                  g === 'homme' ? ['femme'] : g === 'femme' ? ['homme'] : ['femme', 'homme'];
+                setProfile({
+                  ...profile,
+                  gender: g,
+                  interestedIn: targetInterested,
+                });
+              }}
+              className="w-full bg-rose-50/40 border border-rose-200 text-slate-900 font-semibold text-xs rounded-xl p-2.5 focus:border-rose-500 focus:bg-white shadow-2xs"
+            >
+              <option value="homme">👨 Homme</option>
+              <option value="femme">👩 Femme</option>
+              <option value="non-binaire">⚧️ Non-binaire</option>
+            </select>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-slate-700 block">
+              Profils recherchés (Règle de rencontre) :
+            </label>
+            <div className="p-2.5 rounded-xl bg-rose-50/80 border border-rose-200 text-xs font-bold text-rose-800 flex items-center gap-2">
+              <Heart className="w-4 h-4 text-rose-600 fill-rose-600 shrink-0" />
+              <span>
+                {profile.gender === 'femme'
+                  ? '👨 Profils d’hommes uniquement'
+                  : profile.gender === 'homme'
+                  ? '👩 Profils de femmes uniquement'
+                  : '👫 Tous les profils compatibles'}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Relationship Goal & Worldwide City */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {/* Relationship Goal */}

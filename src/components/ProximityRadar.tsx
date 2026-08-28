@@ -27,6 +27,7 @@ import {
   COUNTRY_PHONE_DATABASE,
   CountryPhoneInfo,
 } from '../utils/phoneCountryUtils';
+import { isGenderCompatible } from '../utils/userUtils';
 
 interface ProximityRadarProps {
   currentUser: UserProfile;
@@ -95,7 +96,13 @@ export const ProximityRadar: React.FC<ProximityRadarProps> = ({
 
   // Calculate distance for all profiles
   const profilesWithDistance = (profiles || [])
-    .filter((p) => p && !(privacySettings?.blockedUsers || []).includes(p.id))
+    .filter(
+      (p) =>
+        p &&
+        p.id !== currentUser?.id &&
+        !(privacySettings?.blockedUsers || []).includes(p.id) &&
+        isGenderCompatible(currentUser, p)
+    )
     .map((p) => {
       const distance = calculateDistanceKm(
         currentUser?.lat || 0,

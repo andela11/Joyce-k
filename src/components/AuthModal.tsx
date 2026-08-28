@@ -191,11 +191,25 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       } catch (authErr: any) {
         console.warn('Firebase popup error:', authErr);
         if (authErr.code === 'auth/popup-closed-by-user') {
-          setError('Connexion Google annulée.');
+          setError('Connexion Google annulée par l’utilisateur.');
           setIsLoading(false);
           return;
         }
-        setError('Impossible de se connecter avec Google. Veuillez réessayer ou utiliser votre e-mail.');
+        if (authErr.code === 'auth/unauthorized-domain') {
+          setError(
+            'Ce domaine (Vercel) doit être ajouté dans Firebase Console > Authentification > Domaines autorisés. Vous pouvez vous connecter immédiatement avec votre e-mail ci-dessous.'
+          );
+          setIsLoading(false);
+          return;
+        }
+        if (authErr.code === 'auth/popup-blocked') {
+          setError(
+            'La fenêtre popup a été bloquée par votre navigateur. Autorisez les popups ou utilisez votre e-mail.'
+          );
+          setIsLoading(false);
+          return;
+        }
+        setError('Connexion Google indisponible sur ce domaine. Veuillez vous connecter avec votre adresse e-mail ci-dessous.');
         setIsLoading(false);
         return;
       }
@@ -294,7 +308,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     try {
       const selectedCityObj = PRESET_CITIES.find((c) => c.name === selectedCityName) || PRESET_CITIES[0];
       const parsedInterestedIn: ('femme' | 'homme' | 'non-binaire')[] =
-        interestedIn === 'tous' ? ['femme', 'homme', 'non-binaire'] : [interestedIn];
+        gender === 'homme'
+          ? ['femme']
+          : gender === 'femme'
+          ? ['homme']
+          : interestedIn === 'tous'
+          ? ['femme', 'homme', 'non-binaire']
+          : [interestedIn];
 
       let uid = '';
       let userName = name.trim() || cleanEmail.split('@')[0];
@@ -783,7 +803,15 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   <select
                     id="signup-gender-select"
                     value={gender}
-                    onChange={(e) => setGender(e.target.value as any)}
+                    onChange={(e) => {
+                      const g = e.target.value as 'homme' | 'femme' | 'non-binaire';
+                      setGender(g);
+                      if (g === 'homme') {
+                        setInterestedIn('femme');
+                      } else if (g === 'femme') {
+                        setInterestedIn('homme');
+                      }
+                    }}
                     className="w-full px-3.5 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl bg-orange-50/30 border border-orange-200 focus:border-rose-500 focus:bg-white focus:outline-none text-sm font-medium text-slate-900 transition-colors"
                   >
                     <option value="homme">Homme</option>

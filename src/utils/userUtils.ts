@@ -274,11 +274,43 @@ export function saveUserAiSettings(uid: string | undefined | null, ai: AiAutoRes
 }
 
 /**
+ * Determines whether a target profile matches the gender matching rules for the current user.
+ * Rule: Men always encounter Women, Women always encounter Men.
+ */
+export function isGenderCompatible(
+  currentUser: Partial<UserProfile> | null | undefined,
+  targetProfile: Partial<UserProfile> | null | undefined
+): boolean {
+  if (!currentUser || !targetProfile) return true;
+  
+  const userGender = currentUser.gender || 'homme';
+  const targetGender = targetProfile.gender || 'femme';
+
+  // Strict Rule: Men always meet Women and vice-versa
+  if (userGender === 'homme') {
+    return targetGender === 'femme';
+  }
+  if (userGender === 'femme') {
+    return targetGender === 'homme';
+  }
+
+  // Non-binary or custom interestedIn preferences
+  if (currentUser.interestedIn && currentUser.interestedIn.length > 0) {
+    return currentUser.interestedIn.includes(targetGender as any);
+  }
+
+  return true;
+}
+
+/**
  * Helper to normalize a profile object safely while preserving all customized user fields.
  */
 function normalizeProfileObject(uid: string, data: Partial<UserProfile>): UserProfile {
   const gender = data.gender || 'homme';
   const defaultPhoto = GENDER_DEFAULT_AVATARS[gender] || GENDER_DEFAULT_AVATARS.homme;
+
+  const defaultInterestedIn: ('femme' | 'homme' | 'non-binaire')[] =
+    gender === 'homme' ? ['femme'] : gender === 'femme' ? ['homme'] : ['femme', 'homme'];
 
   return {
     ...data,
@@ -286,7 +318,7 @@ function normalizeProfileObject(uid: string, data: Partial<UserProfile>): UserPr
     name: data.name || 'Membre Joyce-K',
     age: data.age || 25,
     gender,
-    interestedIn: data.interestedIn || (gender === 'homme' ? ['femme'] : ['homme']),
+    interestedIn: data.interestedIn && data.interestedIn.length > 0 ? data.interestedIn : defaultInterestedIn,
     photos:
       Array.isArray(data.photos) && data.photos.length > 0
         ? data.photos

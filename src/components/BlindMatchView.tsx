@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { UserProfile, ChatMessage } from '../types';
 import { MOCK_PROFILES } from '../data/mockProfiles';
+import { isGenderCompatible } from '../utils/userUtils';
 
 interface BlindMatchViewProps {
   currentUser: UserProfile;
@@ -32,15 +33,25 @@ export const BlindMatchView: React.FC<BlindMatchViewProps> = ({
   onMatchRevealed,
   onOpenDirectChat,
 }) => {
-  // Filter eligible candidate profiles
+  // Filter eligible candidate profiles with strict gender compatibility (Men <-> Women)
   const eligibleCandidates = React.useMemo(() => {
     const pool = profiles.length > 0 ? profiles : MOCK_PROFILES;
-    const filtered = pool.filter((p) => p.id !== currentUser.id);
-    return filtered.length > 0 ? filtered : MOCK_PROFILES;
-  }, [profiles, currentUser.id]);
+    const filtered = pool.filter((p) => p.id !== currentUser.id && isGenderCompatible(currentUser, p));
+    if (filtered.length > 0) return filtered;
+    
+    // Fallback on mock profiles matching the opposite gender
+    const mockFiltered = MOCK_PROFILES.filter((p) => p.id !== currentUser.id && isGenderCompatible(currentUser, p));
+    return mockFiltered.length > 0 ? mockFiltered : pool.filter((p) => p.id !== currentUser.id);
+  }, [profiles, currentUser]);
 
   const [partnerIndex, setPartnerIndex] = useState(0);
-  const partner = eligibleCandidates[partnerIndex % eligibleCandidates.length] || MOCK_PROFILES[2];
+  const fallbackPartner = MOCK_PROFILES[0];
+  const partner: UserProfile =
+    (eligibleCandidates.length > 0 ? eligibleCandidates[partnerIndex % eligibleCandidates.length] : null) ||
+    (currentUser?.gender === 'femme'
+      ? MOCK_PROFILES.find((p) => p.gender === 'homme') || MOCK_PROFILES[2]
+      : MOCK_PROFILES.find((p) => p.gender === 'femme') || MOCK_PROFILES[0]) ||
+    fallbackPartner;
 
   const [dailyTopic, setDailyTopic] = useState<{
     question: string;
@@ -61,10 +72,10 @@ export const BlindMatchView: React.FC<BlindMatchViewProps> = ({
   const [inputText, setInputText] = useState('');
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>(() => [
     {
-      id: `blind_msg_${partner.id}_0`,
-      conversationId: `conv_${partner.id}`,
-      senderId: partner.id,
-      receiverId: currentUser.id,
+      id: `blind_msg_${partner?.id || 'partner'}_0`,
+      conversationId: `conv_${partner?.id || 'partner'}`,
+      senderId: partner?.id || 'partner',
+      receiverId: currentUser?.id || 'user',
       text: `Hello ! Très intrigué(e) par cette question du jour. Pour ma part, ce serait sans hésitation mon premier voyage improvisé où j'ai découvert ma passion ! Et toi ?`,
       timestamp: Date.now() - 45000,
       isSelf: false,

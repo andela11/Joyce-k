@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { UserProfile, PrivacySettings } from '../types';
 import { calculateDistanceKm, formatFuzzedDistance } from '../utils/geoUtils';
+import { isGenderCompatible } from '../utils/userUtils';
 import { LoveLanguageQuizModal } from './LoveLanguageQuizModal';
 
 interface DiscoverySwipeProps {
@@ -87,26 +88,17 @@ const SwipeCard: React.FC<SwipeCardProps> = ({
   const isDraggingRef = useRef(false);
 
   const handleDragEnd = (_: any, info: any) => {
-    setTimeout(() => {
-      isDraggingRef.current = false;
-    }, 150);
+    isDraggingRef.current = false;
 
     const ox = info.offset.x;
     const vx = info.velocity.x;
-    const oy = info.offset.y;
-    const vy = info.velocity.y;
 
-    if (oy < -80 || (oy < -30 && vy < -300)) {
-      onSwipeComplete('up');
-      return;
-    }
-
-    if (ox > 60 || (ox > 20 && vx > 200)) {
+    if (ox > 50 || (ox > 15 && vx > 150)) {
       onSwipeComplete('right');
       return;
     }
 
-    if (ox < -60 || (ox < -20 && vx < -200)) {
+    if (ox < -50 || (ox < -15 && vx < -150)) {
       onSwipeComplete('left');
       return;
     }
@@ -125,6 +117,7 @@ const SwipeCard: React.FC<SwipeCardProps> = ({
       id={`discovery-profile-card-${profile.id}`}
       style={{ x, rotate }}
       drag="x"
+      dragSnapToOrigin={true}
       dragConstraints={{ left: 0, right: 0 }}
       dragElastic={0.65}
       onDragStart={() => {
@@ -148,14 +141,14 @@ const SwipeCard: React.FC<SwipeCardProps> = ({
       {/* Floating Dynamic Swiping Stamps (Like, Nope) */}
       <motion.div
         style={{ opacity: likeOpacity }}
-        className="absolute top-8 left-8 z-30 pointer-events-none border-4 border-emerald-500 text-emerald-500 font-black text-2xl tracking-wider px-4 py-1.5 rounded-2xl -rotate-12 bg-white/90 backdrop-blur-md shadow-xl"
+        className="absolute top-8 left-8 z-30 pointer-events-none border-4 border-emerald-500 text-emerald-500 font-black text-2xl tracking-wider px-4 py-1.5 rounded-2xl -rotate-12 bg-white/95 backdrop-blur-md shadow-xl"
       >
         LIKE ❤️
       </motion.div>
 
       <motion.div
         style={{ opacity: nopeOpacity }}
-        className="absolute top-8 right-8 z-30 pointer-events-none border-4 border-rose-500 text-rose-500 font-black text-2xl tracking-wider px-4 py-1.5 rounded-2xl rotate-12 bg-white/90 backdrop-blur-md shadow-xl"
+        className="absolute top-8 right-8 z-30 pointer-events-none border-4 border-rose-500 text-rose-500 font-black text-2xl tracking-wider px-4 py-1.5 rounded-2xl rotate-12 bg-white/95 backdrop-blur-md shadow-xl"
       >
         PASSER ✖️
       </motion.div>
@@ -625,6 +618,7 @@ export const DiscoverySwipe: React.FC<DiscoverySwipeProps> = ({
   } | null>(null);
 
   const lastTapRef = useRef<number>(0);
+  const isSwipingLockRef = useRef(false);
 
   // Filter States
   const [selectedRegion, setSelectedRegion] = useState<string>('all');
@@ -634,11 +628,21 @@ export const DiscoverySwipe: React.FC<DiscoverySwipeProps> = ({
   const [selectedInterestFilter, setSelectedInterestFilter] = useState<string>('all');
   const [verifiedOnly, setVerifiedOnly] = useState(false);
 
+  // When filters or gender change, safely reset deck to start
+  useEffect(() => {
+    setCurrentIndex(0);
+    setCurrentPhotoIndex(0);
+  }, [selectedRegion, maxDistance, minAge, maxAge, selectedInterestFilter, verifiedOnly, currentUser?.gender]);
+
   // Filter the available profiles cleanly
   const filteredProfiles = (profiles || []).filter((p) => {
     if (!p) return false;
     if (currentUser?.id && p.id === currentUser.id) return false;
     if ((privacySettings?.blockedUsers || []).includes(p.id)) return false;
+
+    // Strict Rule: Men always encounter Women, and Women always encounter Men
+    if (!isGenderCompatible(currentUser, p)) return false;
+
     if (p.age < minAge || p.age > maxAge) return false;
     if (verifiedOnly && !p.verified) return false;
     if (
@@ -730,7 +734,8 @@ export const DiscoverySwipe: React.FC<DiscoverySwipeProps> = ({
     currentIndex + 1 < filteredProfiles.length ? filteredProfiles[currentIndex + 1] : null;
 
   const handleSwipeAction = (direction: 'left' | 'right' | 'up') => {
-    if (!activeProfile) return;
+    if (!activeProfile || isSwipingLockRef.current) return;
+    isSwipingLockRef.current = true;
 
     const liked = direction === 'right' || direction === 'up';
     const superLike = direction === 'up';
@@ -753,6 +758,10 @@ export const DiscoverySwipe: React.FC<DiscoverySwipeProps> = ({
 
     setCurrentPhotoIndex(0);
     setCurrentIndex((prev) => prev + 1);
+
+    setTimeout(() => {
+      isSwipingLockRef.current = false;
+    }, 180);
   };
 
   const triggerSuperLikeBurst = () => {
@@ -903,9 +912,21 @@ export const DiscoverySwipe: React.FC<DiscoverySwipeProps> = ({
           className="mb-6 p-4 sm:p-5 bg-white border border-rose-200 rounded-3xl shadow-xl shadow-rose-100/60 space-y-4 text-slate-800"
         >
           <div className="flex items-center justify-between border-b border-rose-100 pb-3">
-            <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-              Critères de recherche
-            </h3>
+            <div className="flex items-center gap-2">
+              <h3 className="text-sm font-bold text-slate-900">
+                Critères de recherche
+              </h3>
+              <span className="text-[11px] font-black px-2.5 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200 flex items-center gap-1">
+                <span>🎯 Ciblage :</span>
+                <span>
+                  {currentUser?.gender === 'homme'
+                    ? 'Femmes'
+                    : currentUser?.gender === 'femme'
+                    ? 'Hommes'
+                    : 'Tous'}
+                </span>
+              </span>
+            </div>
             <button
               id="reset-discovery-filters-btn"
               onClick={() => {
