@@ -244,7 +244,7 @@ export const ProximityRadar: React.FC<ProximityRadarProps> = ({
                 </button>
               )}
               <div className="p-2 rounded-2xl bg-rose-100 text-rose-600 border border-rose-200">
-                <Radio className="w-5 h-5 animate-pulse" />
+                <Radio className="w-5 h-5 text-rose-600" />
               </div>
               <h1 className="text-xl sm:text-2xl font-black text-slate-900">
                 Radar de Proximité & Localisation par Numéro
@@ -451,12 +451,9 @@ export const ProximityRadar: React.FC<ProximityRadarProps> = ({
             <button
               id="center-user-profile-blip"
               onClick={() => setShowCenterUserModal(true)}
-              className="relative z-30 flex flex-col items-center group cursor-pointer transition-transform hover:scale-110"
+              className="relative z-30 flex flex-col items-center group cursor-pointer transition-transform hover:scale-105"
               title="Voir mon profil géolocalisé et mon pays"
             >
-              {/* Pulsing Aura */}
-              <span className="absolute -inset-2 rounded-full bg-rose-500/20 animate-ping" />
-
               {/* Exact User Profile Photo */}
               <div className="relative">
                 <img
@@ -671,7 +668,7 @@ export const ProximityRadar: React.FC<ProximityRadarProps> = ({
             </div>
           ) : (
             <div className="py-12 text-center bg-white border border-rose-100 rounded-[32px] p-6 space-y-3 shadow-lg shadow-rose-100/50">
-              <Radio className="w-8 h-8 text-rose-500 mx-auto animate-pulse" />
+              <Radio className="w-8 h-8 text-rose-500 mx-auto" />
               <h4 className="text-sm font-bold text-slate-900">
                 Aucun profil détecté dans ce rayon ({radarRadius} km)
               </h4>
@@ -717,8 +714,6 @@ export const ProximityRadar: React.FC<ProximityRadarProps> = ({
             {/* Exact Profile Photo Card & Country Badge */}
             <div className="flex flex-col items-center text-center space-y-3 bg-gradient-to-b from-rose-50/80 to-white border border-rose-100 rounded-3xl p-5 shadow-inner">
               <div className="relative">
-                {/* Glowing Radar Rings around Exact Photo */}
-                <div className="absolute -inset-2 rounded-full bg-gradient-to-r from-rose-500 to-orange-500 opacity-30 animate-pulse blur-sm" />
                 <img
                   src={activeLocationModal.photoUrl}
                   alt={activeLocationModal.userName}
@@ -826,8 +821,8 @@ export const ProximityRadar: React.FC<ProximityRadarProps> = ({
                 </div>
                 <div className="flex justify-between">
                   <span className="text-slate-400 font-medium">Statut Radar :</span>
-                  <span className="font-bold text-emerald-600 flex items-center gap-1">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+                  <span className="font-bold text-emerald-600 flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500" />
                     Actif & Synchronisé
                   </span>
                 </div>

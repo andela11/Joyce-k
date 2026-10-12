@@ -387,7 +387,7 @@ export const EmojiStickerPicker: React.FC<EmojiStickerPickerProps> = ({
               className={`w-52 sm:w-60 rounded-2xl p-4 bg-gradient-to-br ${customGradient} text-white shadow-xl shadow-rose-500/20 border border-white/30 text-center space-y-1 relative overflow-hidden transform transition-all duration-300 hover:scale-105`}
             >
               <span className="absolute -top-6 -right-6 w-20 h-20 rounded-full bg-white/20 blur-md pointer-events-none" />
-              <div className="text-4xl filter drop-shadow-md animate-bounce my-1">
+              <div className="text-4xl filter drop-shadow-md my-1">
                 {customEmoji || '💖'}
               </div>
               <h4 className="font-black text-sm sm:text-base leading-tight drop-shadow-xs">
@@ -402,7 +402,7 @@ export const EmojiStickerPicker: React.FC<EmojiStickerPickerProps> = ({
           </div>
 
           {creatorSuccessNotice && (
-            <div className="p-2 rounded-xl bg-emerald-100 border border-emerald-300 text-emerald-800 text-xs font-bold text-center flex items-center justify-center gap-1.5 animate-bounce">
+            <div className="p-2 rounded-xl bg-emerald-100 border border-emerald-300 text-emerald-800 text-xs font-bold text-center flex items-center justify-center gap-1.5">
               <Check className="w-4 h-4 text-emerald-600" />
               <span>Sticker enregistré dans votre collection !</span>
             </div>

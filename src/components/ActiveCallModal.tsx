@@ -431,8 +431,8 @@ export const ActiveCallModal: React.FC<ActiveCallModalProps> = ({
 
           {/* Heart Sent / Received Toast Notification */}
           {heartNotification && (
-            <div className="absolute top-20 z-40 px-4 py-2 rounded-full bg-rose-600/90 text-white text-xs font-bold shadow-xl border border-rose-300/40 backdrop-blur-md animate-bounce flex items-center gap-2 pointer-events-none">
-              <Heart className="w-4 h-4 text-white fill-white animate-pulse" />
+            <div className="absolute top-20 z-40 px-4 py-2 rounded-full bg-rose-600/90 text-white text-xs font-bold shadow-xl border border-rose-300/40 backdrop-blur-md flex items-center gap-2 pointer-events-none">
+              <Heart className="w-4 h-4 text-white fill-white" />
               <span>{heartNotification}</span>
             </div>
           )}
@@ -440,7 +440,7 @@ export const ActiveCallModal: React.FC<ActiveCallModalProps> = ({
           {/* Hint Overlay for Double Tap in Video Calls */}
           {callType === 'video' && callStatus === 'connected' && (
             <div className="absolute top-24 left-4 z-20 px-3 py-1.5 rounded-full bg-slate-950/60 backdrop-blur-md border border-rose-500/30 text-rose-200 text-[11px] font-medium flex items-center gap-1.5 opacity-90 hover:opacity-100 transition-opacity pointer-events-none">
-              <Heart className="w-3.5 h-3.5 text-rose-400 fill-rose-400 animate-pulse" />
+              <Heart className="w-3.5 h-3.5 text-rose-400 fill-rose-400" />
               <span>Tapotez 2× l'écran pour envoyer des cœurs</span>
             </div>
           )}
@@ -458,9 +458,9 @@ export const ActiveCallModal: React.FC<ActiveCallModalProps> = ({
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-transparent to-slate-950/40" />
 
-                {/* Animated video live pulse effect */}
+                {/* Video live indicator */}
                 <div className="absolute bottom-24 sm:bottom-28 left-4 z-20 flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/40 backdrop-blur-md border border-white/10 text-white text-xs">
-                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
                   <span className="font-bold">{partner.name}</span>
                   <span className="text-[10px] text-slate-300">({partner.city})</span>
                 </div>
@@ -498,14 +498,8 @@ export const ActiveCallModal: React.FC<ActiveCallModalProps> = ({
               {/* Background ambient glow */}
               <div className="absolute inset-0 bg-gradient-to-b from-rose-950/30 via-slate-950 to-slate-950" />
 
-              {/* Big Avatar with Pulsing Rings */}
+              {/* Big Avatar */}
               <div className="relative z-10">
-                {callStatus === 'ringing' && (
-                  <>
-                    <div className="absolute -inset-4 rounded-full bg-rose-500/20 animate-ping" />
-                    <div className="absolute -inset-8 rounded-full bg-rose-500/10 animate-pulse" />
-                  </>
-                )}
                 <div className="w-28 h-28 sm:w-36 sm:h-36 rounded-full overflow-hidden border-4 border-rose-500 shadow-2xl shadow-rose-900/50 relative">
                   <img
                     src={partner?.photos?.[0] || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800'}
@@ -538,7 +532,7 @@ export const ActiveCallModal: React.FC<ActiveCallModalProps> = ({
                     <span
                       key={i}
                       style={{ height: `${isMuted ? 8 : Math.max(10, height * 0.3)}px` }}
-                      className="w-1 rounded-full bg-gradient-to-t from-rose-500 to-orange-400 animate-pulse transition-all duration-300"
+                      className="w-1 rounded-full bg-gradient-to-t from-rose-500 to-orange-400 transition-all duration-300"
                     />
                   ))}
                 </div>
@@ -560,7 +554,7 @@ export const ActiveCallModal: React.FC<ActiveCallModalProps> = ({
               className="p-3.5 sm:p-4 rounded-2xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-400 border border-rose-500/40 hover:scale-105 active:scale-95 transition-all cursor-pointer flex items-center justify-center shadow-lg shadow-rose-950"
               title="Envoyer des cœurs d'amour (ou double-tapotez l'écran)"
             >
-              <Heart className="w-5 h-5 fill-rose-500 text-rose-500 animate-pulse" />
+              <Heart className="w-5 h-5 fill-rose-500 text-rose-500" />
             </button>
           )}
 

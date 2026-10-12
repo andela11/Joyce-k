@@ -28,6 +28,7 @@ import {
   Award,
 } from 'lucide-react';
 import { UserProfile, RelationshipGoal, AuthUser, LoveLanguage } from '../types';
+import { getApiUrl } from '../utils/api';
 import { ALL_INTEREST_CATEGORIES } from '../data/categories';
 import { PRESET_CITIES } from '../utils/geoUtils';
 import { detectCountryFromPhoneNumber, COUNTRY_PHONE_DATABASE } from '../utils/phoneCountryUtils';
@@ -136,7 +137,7 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({
     setVideoSuccessMsg(null);
 
     try {
-      const res = await fetch('/api/videos/verify-authenticity', {
+      const res = await fetch(getApiUrl('/api/videos/verify-authenticity'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -157,6 +158,10 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({
           setIsUploadingVideo(false);
           return;
         }
+      } else {
+        setVideoAiError("Échec du service d'analyse vidéo. Veuillez vérifier votre connexion et réessayer.");
+        setIsUploadingVideo(false);
+        return;
       }
 
       // Success: Authentic real video
@@ -169,13 +174,8 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({
       setVideoSuccessMsg('Vidéo réelle certifiée et ajoutée avec succès !');
       setTimeout(() => setVideoSuccessMsg(null), 4000);
     } catch (err) {
-      console.warn('Video upload fallback verification:', err);
-      setProfile((prev) => ({
-        ...prev,
-        videos: [...(prev.videos || []), videoDataOrUrl],
-      }));
-      setNewVideoUrl('');
-      setShowAddVideo(false);
+      console.warn('Video upload verification error:', err);
+      setVideoAiError("Impossible de vérifier l'authenticité de la vidéo (erreur réseau). Veuillez réessayer.");
     } finally {
       setIsUploadingVideo(false);
     }
@@ -238,7 +238,7 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({
     setGalleryAiError(null);
 
     try {
-      const res = await fetch('/api/images/verify-authenticity', {
+      const res = await fetch(getApiUrl('/api/images/verify-authenticity'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -258,6 +258,10 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({
           setIsUploadingPhoto(false);
           return;
         }
+      } else {
+        setGalleryAiError("Échec du service d'analyse d'image. Veuillez vérifier votre connexion et réessayer.");
+        setIsUploadingPhoto(false);
+        return;
       }
 
       // Success
@@ -268,13 +272,8 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({
       setNewPhotoUrl('');
       setShowAddPhoto(false);
     } catch (err) {
-      console.warn('Gallery upload fallback verification:', err);
-      setProfile((prev) => ({
-        ...prev,
-        photos: [...prev.photos, base64OrUrl],
-      }));
-      setNewPhotoUrl('');
-      setShowAddPhoto(false);
+      console.warn('Gallery upload verification error:', err);
+      setGalleryAiError("Impossible de vérifier l'authenticité de la photo (erreur réseau). Veuillez réessayer.");
     } finally {
       setIsUploadingPhoto(false);
     }
@@ -313,7 +312,7 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({
   const handleAiEnhanceBio = async () => {
     setIsEnhancing(true);
     try {
-      const res = await fetch('/api/ai/enhance-bio', {
+      const res = await fetch(getApiUrl('/api/ai/enhance-bio'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -471,7 +470,7 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({
         {galleryAiError && (
           <div
             id="gallery-ai-error-banner"
-            className="p-3.5 rounded-2xl bg-rose-50 border border-rose-300 text-rose-900 text-xs font-semibold flex items-start gap-2.5 animate-bounce-short"
+            className="p-3.5 rounded-2xl bg-rose-50 border border-rose-300 text-rose-900 text-xs font-semibold flex items-start gap-2.5"
           >
             <ShieldAlert className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
             <div>

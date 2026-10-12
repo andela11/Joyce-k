@@ -11,6 +11,7 @@ import {
   Award,
 } from 'lucide-react';
 import { UserProfile, CompatibilityReport } from '../types';
+import { getApiUrl } from '../utils/api';
 
 interface CompatibilityModalProps {
   userProfile: UserProfile;
@@ -44,7 +45,7 @@ export const CompatibilityModal: React.FC<CompatibilityModalProps> = ({
   const calculateCompatibilityWithAi = async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/ai/compatibility', {
+      const res = await fetch(getApiUrl('/api/ai/compatibility'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

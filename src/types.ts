@@ -48,6 +48,8 @@ export interface UserProfile {
   loveLanguageLabel?: string;
   phoneNumber?: string;
   country?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export type PersonalityTone =

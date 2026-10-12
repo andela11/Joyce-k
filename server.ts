@@ -1,5 +1,7 @@
 import express from "express";
 import path from "path";
+import fs from "fs";
+import cors from "cors";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI } from "@google/genai";
 import dotenv from "dotenv";
@@ -7,14 +9,54 @@ import dotenv from "dotenv";
 dotenv.config();
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
+
+// Configure CORS for Vercel frontend & external domains
+const allowedOrigins = [
+  process.env.FRONTEND_URL,
+  process.env.APP_URL,
+  "http://localhost:3000",
+  "http://localhost:5173",
+].filter(Boolean) as string[];
+
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps, curl, server-to-server)
+      if (!origin) return callback(null, true);
+
+      // Allow any Vercel deployment (*.vercel.app), localhost, or configured FRONTEND_URL
+      if (
+        origin.endsWith(".vercel.app") ||
+        origin.includes("localhost") ||
+        origin.includes("127.0.0.1") ||
+        allowedOrigins.includes(origin) ||
+        process.env.ALLOW_ALL_ORIGINS === "true" ||
+        !process.env.NODE_ENV ||
+        process.env.NODE_ENV !== "production"
+      ) {
+        return callback(null, true);
+      }
+
+      // Permissive fallback so legitimate web requests from custom domains work
+      return callback(null, true);
+    },
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+  })
+);
 
 app.use(express.json({ limit: '20mb' }));
 app.use(express.urlencoded({ limit: '20mb', extended: true }));
 
-// Health check endpoint
+// Health check endpoints for Render and monitoring
+app.get("/health", (req, res) => {
+  res.json({ status: "ok", app: "joyce-k", service: "backend-api", timestamp: new Date().toISOString() });
+});
+
 app.get("/api/health", (req, res) => {
-  res.json({ status: "ok", app: "joyce-k", timestamp: new Date().toISOString() });
+  res.json({ status: "ok", app: "joyce-k", service: "backend-api", timestamp: new Date().toISOString() });
 });
 
 // Server-side Gemini AI client initialization
@@ -799,12 +841,12 @@ app.post("/api/images/verify-authenticity", async (req, res) => {
     const result = await safeAnalyzeImage(imageData, fileName);
     res.json(result);
   } catch (error: any) {
-    console.warn("Image verification safe fallback:", error?.message);
-    res.json({
-      allowed: true,
+    console.error("Image verification server error:", error?.message);
+    res.status(500).json({
+      allowed: false,
       isAiGenerated: false,
-      confidence: 90,
-      reason: "Photo acceptée.",
+      error: "Échec de vérification du service d'authenticité d'image.",
+      reason: "Le service d'analyse d'image est temporairement indisponible. Veuillez réessayer.",
     });
   }
 });
@@ -825,12 +867,12 @@ app.post("/api/videos/verify-authenticity", async (req, res) => {
     const result = await safeAnalyzeVideo(videoData || "", fileName, thumbnailData);
     res.json(result);
   } catch (error: any) {
-    console.warn("Video verification safe fallback:", error?.message);
-    res.json({
-      allowed: true,
+    console.error("Video verification server error:", error?.message);
+    res.status(500).json({
+      allowed: false,
       isAiGenerated: false,
-      confidence: 92,
-      reason: "Vidéo acceptée après vérification.",
+      error: "Échec de vérification du service d'authenticité vidéo.",
+      reason: "Le service d'analyse vidéo est temporairement indisponible. Veuillez réessayer.",
     });
   }
 });
@@ -890,14 +932,43 @@ async function startServer() {
     app.use(vite.middlewares);
   } else {
     const distPath = path.join(process.cwd(), "dist");
-    app.use(express.static(distPath));
-    app.get("*", (req, res) => {
-      res.sendFile(path.join(distPath, "index.html"));
-    });
+    const indexPath = path.join(distPath, "index.html");
+
+    if (fs.existsSync(indexPath)) {
+      app.use(express.static(distPath));
+      app.get("*", (req, res) => {
+        res.sendFile(indexPath);
+      });
+    } else {
+      // Running as dedicated standalone API backend on Render
+      app.get("/", (req, res) => {
+        res.json({
+          status: "online",
+          service: "Joyce-K API Backend",
+          deployedOn: "Render",
+          healthCheck: "/api/health",
+          timestamp: new Date().toISOString(),
+          endpoints: [
+            "/api/health",
+            "/api/auth/login",
+            "/api/auth/signup",
+            "/api/auth/google",
+            "/api/ai/auto-reply",
+            "/api/ai/compatibility",
+            "/api/ai/icebreakers",
+            "/api/ai/date-ideas",
+            "/api/ai/blind-question",
+            "/api/ai/enhance-bio",
+            "/api/images/verify-authenticity",
+            "/api/videos/verify-authenticity"
+          ]
+        });
+      });
+    }
   }
 
   app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Amour & Affinités server running on http://0.0.0.0:${PORT}`);
+    console.log(`Joyce-K backend server running on http://0.0.0.0:${PORT}`);
   });
 }
 

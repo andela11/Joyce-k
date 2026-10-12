@@ -228,8 +228,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-rose-950 text-rose-400 border border-rose-800">
                 Espace Super Admin
               </span>
-              <span className="flex items-center gap-1 text-xs text-emerald-400 font-semibold">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="flex items-center gap-1.5 text-xs text-emerald-400 font-medium">
+                <span className="w-2 h-2 rounded-full bg-emerald-500" />
                 Système En Ligne
               </span>
             </div>

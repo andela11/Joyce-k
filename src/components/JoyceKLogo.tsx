@@ -4,6 +4,7 @@ interface JoyceKLogoProps {
   size?: 'sm' | 'md' | 'lg' | 'xl';
   variant?: 'light' | 'dark' | 'dark-bg' | 'light-bg';
   showTagline?: boolean;
+  taglineText?: string;
   className?: string;
 }
 
@@ -11,6 +12,7 @@ export const JoyceKLogo: React.FC<JoyceKLogoProps> = ({
   size = 'md',
   variant = 'dark-bg',
   showTagline = false,
+  taglineText = "Jusqu'à la rencontre authentique",
   className = '',
 }) => {
   // Proportions for the stylized inline 'K' SVG glyph
@@ -43,15 +45,12 @@ export const JoyceKLogo: React.FC<JoyceKLogoProps> = ({
 
   const currentSize = sizeMap[size];
   const isDarkBg = variant === 'dark' || variant === 'dark-bg';
-  const textColor = isDarkBg ? 'text-white' : 'text-slate-900';
-  const spineColor = isDarkBg ? '#FFFFFF' : '#0F172A';
-  const softRed = '#F43F5E'; // Soft refined rose/red
 
   return (
     <div className={`inline-flex flex-col items-center justify-center text-center select-none ${className}`}>
-      <div className={`flex items-center justify-center font-black tracking-tight leading-none ${currentSize.fontSize} font-sans text-center`}>
+      <div className={`flex items-center justify-center font-bold tracking-tight leading-none ${currentSize.fontSize} font-serif text-center`}>
         {/* "Joyce-" */}
-        <span className={`${textColor} drop-shadow-xs transition-colors`}>
+        <span className={`${isDarkBg ? 'text-white' : 'text-slate-900 dark:text-white'} drop-shadow-xs transition-colors`}>
           Joyce-
         </span>
 
@@ -63,26 +62,26 @@ export const JoyceKLogo: React.FC<JoyceKLogoProps> = ({
             viewBox="0 0 24 28"
             fill="none"
             xmlns="http://www.w3.org/2000/svg"
-            className="inline-block overflow-visible"
+            className="inline-block overflow-visible text-slate-900 dark:text-white"
           >
             {/* Vertical spine of K */}
             <path
               d="M5 3V25"
-              stroke={spineColor}
+              stroke={isDarkBg ? '#FFFFFF' : 'currentColor'}
               strokeWidth="4"
               strokeLinecap="round"
             />
-            {/* Upper inclined stroke of K - SOFT RED */}
+            {/* Upper inclined stroke of K - Chic Powder Rose */}
             <path
               d="M5 14L20 3"
-              stroke={softRed}
+              stroke="#f472b6"
               strokeWidth="4.2"
               strokeLinecap="round"
             />
             {/* Lower inclined branch of K */}
             <path
               d="M5 14L20 25"
-              stroke={spineColor}
+              stroke={isDarkBg ? '#FFFFFF' : 'currentColor'}
               strokeWidth="4"
               strokeLinecap="round"
             />
@@ -92,9 +91,9 @@ export const JoyceKLogo: React.FC<JoyceKLogoProps> = ({
 
       {showTagline && (
         <span
-          className={`${currentSize.taglineSize} uppercase font-bold tracking-widest text-rose-500/95 mt-1.5 font-sans text-center block w-full`}
+          className={`${currentSize.taglineSize} uppercase font-bold tracking-widest text-rose-500 dark:text-rose-300 mt-1.5 font-sans text-center block w-full`}
         >
-          Rencontres Authentiques
+          {taglineText}
         </span>
       )}
     </div>

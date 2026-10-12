@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { motion } from 'motion/react';
 import {
   ShieldCheck,
   Radio,
@@ -18,10 +19,13 @@ import {
   Quote,
   Flame,
   MessageCircle,
+  Sparkles,
 } from 'lucide-react';
 import { JoyceKLogo } from './JoyceKLogo';
+import { HeartExplosionTitle } from './HeartExplosionTitle';
 import { ActiveTab, UserProfile } from '../types';
 import { PRESET_CITIES } from '../utils/geoUtils';
+import { AnimatedFooter } from './AnimatedFooter';
 
 interface LandingPageProps {
   onOpenAuth: (mode?: 'login' | 'signup') => void;
@@ -217,70 +221,68 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   ];
 
   return (
-    <div id="joyce-k-landing-page" className="w-full bg-white text-slate-800 selection:bg-rose-500 selection:text-white">
+    <div id="joyce-k-landing-page" className="w-full bg-white dark:bg-[#0b0d12] text-slate-800 dark:text-slate-100 selection:bg-rose-500 selection:text-white transition-colors duration-200">
       {/* 1. HERO SECTION WITH PHOTO COVER BACKGROUND CLEARLY VISIBLE */}
-      <section id="hero-section" className="relative overflow-hidden pt-12 pb-20 md:pt-20 md:pb-28 border-b border-orange-100/70 flex items-center justify-center min-h-[640px]">
+      <section id="hero-section" className="relative overflow-hidden pt-12 pb-20 md:pt-20 md:pb-28 flex items-center justify-center min-h-[640px]">
         {/* Background Cover Photo with High Clarity & Vibrancy */}
         <div className="absolute inset-0 z-0 overflow-hidden">
           <img
             src="https://images.unsplash.com/photo-1516589178581-6cd7833ae3b2?w=1600&auto=format&fit=crop&q=85"
             alt="Joyce-K Rencontres Authentiques"
-            className="w-full h-full object-cover object-center scale-100 filter brightness-105 contrast-[1.03] transition-all duration-1000"
+            className="w-full h-full object-cover object-center scale-100 filter brightness-105 dark:brightness-90 contrast-[1.03] transition-all duration-1000"
             referrerPolicy="no-referrer"
           />
 
-          {/* Clean, Lighter Gradient & Vignette Overlay ensuring the photo is well perceived while keeping text fully legible */}
-          <div className="absolute inset-0 bg-gradient-to-b from-white/70 via-white/50 to-white/80" />
-          <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-white/40" />
+          {/* Clean, Lighter Gradient & Vignette Overlay in light, deep charcoal in dark */}
+          <div className="absolute inset-0 bg-gradient-to-b from-white/70 via-white/50 to-white/80 dark:from-[#0b0d12]/85 dark:via-[#0b0d12]/75 dark:to-[#0b0d12]/95" />
+          <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-white/40 dark:from-[#0b0d12] dark:via-transparent dark:to-[#0b0d12]/50" />
 
           {/* Gentle warm accent glow */}
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[350px] bg-rose-200/25 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[350px] bg-rose-200/25 dark:bg-rose-500/10 rounded-full blur-3xl pointer-events-none" />
         </div>
 
         <div className="max-w-4xl mx-auto px-4 sm:px-6 relative z-10 w-full">
           <div className="flex flex-col items-center justify-center text-center space-y-6 sm:space-y-7">
             {/* Prominent Centered Brand Logo */}
             <div className="w-full flex flex-col items-center justify-center">
-              <div className="p-4 sm:p-5 rounded-[28px] bg-white/95 backdrop-blur-md border border-orange-200/90 shadow-2xl shadow-orange-100/80 hover:shadow-2xl transition-all duration-300 transform hover:scale-[1.02] flex flex-col items-center justify-center text-center">
+              <div className="p-4 sm:p-5 rounded-[28px] bg-white/95 dark:bg-[#131620]/90 dark:border dark:border-slate-800/80 backdrop-blur-md shadow-xl shadow-slate-900/5 hover:shadow-2xl transition-all duration-300 transform hover:scale-[1.02] flex flex-col items-center justify-center text-center">
                 <JoyceKLogo size="xl" variant="light-bg" showTagline={true} />
               </div>
             </div>
 
-            {/* Main Catchphrase */}
-            <div className="space-y-3.5 max-w-2xl mx-auto">
-              <h1 className="text-3xl sm:text-5xl md:text-6xl font-black tracking-tight text-slate-900 leading-tight sm:leading-[1.1] drop-shadow-sm">
-                L’Amour Authentique, <br />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-rose-600 via-rose-500 to-orange-500">
-                  Sans Faux Profils ni IA.
-                </span>
-              </h1>
-              <p className="text-sm sm:text-base md:text-lg text-slate-800 font-medium max-w-xl mx-auto leading-relaxed drop-shadow-xs bg-white/60 sm:bg-white/40 backdrop-blur-[2px] p-2 rounded-xl">
-                Découvrez la première plateforme de rencontres internationales certifiée 100% personnes réelles. Matching par passions partagées, radar de proximité mondial et IA discrète.
+            {/* Main Catchphrase with Interactive Heart Explosion on Hover */}
+            <div className="space-y-3.5 max-w-2xl mx-auto flex flex-col items-center">
+              <HeartExplosionTitle
+                title="Jusqu'à la rencontre authentique"
+                titleClassName="text-3xl sm:text-5xl md:text-6xl font-bold font-serif tracking-tight leading-tight sm:leading-[1.15] drop-shadow-sm text-slate-900 dark:text-white"
+              />
+              <p className="text-sm sm:text-base md:text-lg text-slate-800 dark:text-slate-200 font-normal font-sans max-w-xl mx-auto leading-relaxed drop-shadow-xs bg-white/60 dark:bg-[#131620]/75 dark:border dark:border-slate-800/60 backdrop-blur-[2px] p-2 rounded-xl">
+                Découvrez la première plateforme de rencontres internationales certifiée 100% personnes réelles. Sans faux profils ni IA trompeuse.
               </p>
             </div>
 
             {/* Quick Trust Pillars */}
-            <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 text-xs text-slate-800 font-bold pt-1">
-              <span className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/95 backdrop-blur-md border border-orange-200 shadow-sm">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+            <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 text-xs text-slate-800 dark:text-slate-200 font-medium font-sans pt-1">
+              <span className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/95 dark:bg-[#151924]/90 dark:border dark:border-slate-800 backdrop-blur-md shadow-xs">
+                <CheckCircle2 className="w-4 h-4 text-emerald-500" />
                 Photos Réelles Certifiées
               </span>
-              <span className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/95 backdrop-blur-md border border-rose-200 shadow-sm">
-                <CheckCircle2 className="w-4 h-4 text-rose-600" />
+              <span className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/95 dark:bg-[#151924]/90 dark:border dark:border-slate-800 backdrop-blur-md shadow-xs">
+                <CheckCircle2 className="w-4 h-4 text-rose-500" />
                 Radar Mondial & Local
               </span>
-              <span className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/95 backdrop-blur-md border border-orange-200 shadow-sm">
-                <CheckCircle2 className="w-4 h-4 text-orange-600" />
+              <span className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/95 dark:bg-[#151924]/90 dark:border dark:border-slate-800 backdrop-blur-md shadow-xs">
+                <CheckCircle2 className="w-4 h-4 text-orange-500" />
                 Confidentialité & Mode Fantôme
               </span>
             </div>
 
             {/* Action CTA Buttons */}
-            <div className="flex flex-col sm:flex-row items-center gap-3 pt-3 w-full sm:w-auto">
+            <div className="flex flex-col sm:flex-row items-center gap-3 pt-3 w-full sm:w-auto font-sans">
               <button
                 id="hero-signup-popup-btn"
                 onClick={() => onOpenAuth('signup')}
-                className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-600 text-white font-black text-sm sm:text-base shadow-xl shadow-rose-300/90 flex items-center justify-center transition-all transform hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
+                className="w-full sm:w-auto px-8 py-3.5 rounded-full bg-rose-600 hover:bg-rose-500 text-white font-medium text-sm sm:text-base shadow-sm shadow-rose-600/20 flex items-center justify-center transition-all transform hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
               >
                 <span>Créer mon compte</span>
               </button>
@@ -288,16 +290,16 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               <button
                 id="hero-login-popup-btn"
                 onClick={() => onOpenAuth('login')}
-                className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-white/95 hover:bg-white text-slate-800 font-bold text-sm sm:text-base border border-orange-200 shadow-md shadow-orange-100/50 flex items-center justify-center gap-2 transition-all cursor-pointer backdrop-blur-md"
+                className="w-full sm:w-auto px-8 py-3.5 rounded-full bg-white dark:bg-[#151924] dark:border dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-[#1b2030] text-slate-800 dark:text-slate-100 font-medium text-sm sm:text-base shadow-xs flex items-center justify-center gap-2 transition-all cursor-pointer backdrop-blur-md"
               >
                 <span>Se connecter</span>
-                <ArrowRight className="w-4 h-4 text-rose-500" />
+                <ArrowRight className="w-4 h-4 text-rose-500 dark:text-rose-400" />
               </button>
             </div>
 
             {/* Quick Worldwide Coverage Preview */}
-            <div className="pt-4 flex items-center justify-center gap-2 text-xs font-semibold text-slate-700 bg-white/70 backdrop-blur-xs px-4 py-1.5 rounded-full border border-orange-100/60 shadow-2xs">
-              <Globe2 className="w-4 h-4 text-rose-500 shrink-0" />
+            <div className="pt-4 flex items-center justify-center gap-2 text-xs font-semibold text-slate-700 dark:text-slate-300 bg-white/80 dark:bg-[#131620]/80 dark:border dark:border-slate-800 backdrop-blur-xs px-4 py-2 rounded-full shadow-xs">
+              <Globe2 className="w-4 h-4 text-rose-500 dark:text-rose-400 shrink-0" />
               <span>
                 Actif dans plus de 25 grandes métropoles mondiales (Paris, Yaoundé, Dakar, Montréal, Abidjan, Bruxelles, Genève...)
               </span>
@@ -306,20 +308,17 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         </div>
       </section>
 
-      {/* 2. DIVERSE RADIANT SMILING FACES MARQUEE - SECTION NOIRE LUXE & VISAGES JOYEUX */}
-      <section id="members-section" className="py-8 bg-slate-950 border-y border-slate-800/90 overflow-hidden relative">
-        {/* Subtle background glow */}
-        <div className="absolute inset-0 bg-gradient-to-r from-rose-950/20 via-transparent to-orange-950/20 pointer-events-none" />
-
+      {/* 2. DIVERSE RADIANT SMILING FACES MARQUEE */}
+      <section id="members-section" className="py-8 bg-slate-50 dark:bg-[#0e1118] dark:border-y dark:border-slate-800/80 overflow-hidden relative transition-colors">
         <div className="max-w-6xl mx-auto px-4 mb-4 flex items-center justify-between relative z-10">
           <div className="flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />
-            <span className="text-xs font-black uppercase tracking-wider text-slate-300">
-              Membres certifiés en ligne à travers le monde
+            <span className="w-2 h-2 rounded-full bg-emerald-500" />
+            <span className="text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+              Membres certifiés actifs à travers le monde
             </span>
           </div>
-          <span className="text-xs font-bold text-rose-400 hidden sm:inline">
-            100% Visages Réels & Souriants
+          <span className="text-xs font-medium text-slate-500 dark:text-slate-400 hidden sm:inline">
+            Profils vérifiés avec photos réelles
           </span>
         </div>
 
@@ -331,30 +330,27 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               <div
                 key={idx}
                 onClick={() => onOpenAuth('signup')}
-                className="w-56 p-3 rounded-2xl bg-slate-900/90 border border-slate-800 shadow-lg hover:shadow-rose-950/30 transition-all flex items-center gap-3 shrink-0 cursor-pointer group hover:border-rose-500/60 hover:bg-slate-850"
+                className="w-56 p-3 rounded-2xl bg-white dark:bg-[#151924] dark:border dark:border-slate-800 shadow-xs hover:shadow-md transition-all flex items-center gap-3 shrink-0 cursor-pointer group"
               >
-                <div className="relative w-13 h-13 rounded-full overflow-hidden bg-slate-800 shrink-0 border-2 border-rose-500/40 group-hover:border-rose-400 transition-colors">
+                <div className="relative w-12 h-12 rounded-full overflow-hidden bg-slate-100 dark:bg-slate-800 shrink-0">
                   <img
                     src={person.photo}
                     alt={person.name}
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     referrerPolicy="no-referrer"
                   />
-                  <span className="absolute bottom-0 right-0 p-0.5 rounded-full bg-emerald-500 text-white shadow-xs">
-                    <CheckCircle2 className="w-3 h-3" />
-                  </span>
                 </div>
                 <div className="space-y-0.5 overflow-hidden">
                   <div className="flex items-center gap-1">
-                    <h4 className="text-xs font-black text-white group-hover:text-rose-300 transition-colors truncate">
+                    <h4 className="text-xs font-bold text-slate-900 dark:text-white group-hover:text-rose-600 dark:group-hover:text-rose-400 transition-colors truncate">
                       {person.name}, {person.age}
                     </h4>
                   </div>
-                  <p className="text-[11px] text-slate-400 flex items-center gap-0.5 truncate font-medium">
-                    <MapPin className="w-3 h-3 text-rose-400 shrink-0" />
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-0.5 truncate font-medium">
+                    <MapPin className="w-3 h-3 text-slate-400 dark:text-slate-500 shrink-0" />
                     {person.city}
                   </p>
-                  <span className="inline-block text-[10px] font-semibold text-rose-300 bg-rose-950/70 border border-rose-900/50 px-1.5 py-0.2 rounded">
+                  <span className="inline-block text-[10px] font-medium text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">
                     {person.passion}
                   </span>
                 </div>
@@ -364,25 +360,18 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         </div>
       </section>
 
-      {/* 3. PRESENTATION DES FONCTIONNALITÉS - SECTION NOIRE PREMIUM */}
-      <section id="features-section" className="py-20 md:py-28 border-b border-slate-800/90 bg-slate-950 text-white relative overflow-hidden">
-        {/* Ambient background glows */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-96 h-96 bg-rose-600/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 right-10 w-80 h-80 bg-orange-600/10 rounded-full blur-3xl pointer-events-none" />
-
+      {/* 3. PRESENTATION DES FONCTIONNALITÉS */}
+      <section id="features-section" className="py-20 md:py-24 bg-white dark:bg-[#0b0d12] text-slate-900 dark:text-slate-100 relative overflow-hidden transition-colors">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 relative z-10">
-          <div className="text-center max-w-2xl mx-auto mb-14 space-y-3.5">
-            <span className="px-3.5 py-1 rounded-full text-xs font-extrabold uppercase tracking-wider bg-rose-950/80 text-rose-300 border border-rose-800/60 shadow-sm">
+          <div className="text-center max-w-2xl mx-auto mb-14 space-y-3">
+            <span className="px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider bg-slate-100 dark:bg-[#151924] dark:border dark:border-slate-800 text-slate-700 dark:text-slate-300 font-sans">
               Fonctionnalités Clés
             </span>
-            <h2 className="text-2xl sm:text-4xl md:text-5xl font-black text-white tracking-tight leading-tight">
-              Tout ce dont vous avez besoin pour des{' '}
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-rose-400 via-rose-300 to-orange-400">
-                rencontres vraies
-              </span>
+            <h2 className="text-2xl sm:text-4xl font-bold font-serif text-slate-900 dark:text-white tracking-tight">
+              Tout ce dont vous avez besoin pour des rencontres réelles
             </h2>
-            <p className="text-sm sm:text-base text-slate-400 font-medium max-w-xl mx-auto leading-relaxed">
-              Chaque détail de Joyce-K a été conçu pour éliminer la superficialité et connecter des cœurs sincères sans algorithmes toxiques.
+            <p className="text-sm sm:text-base text-slate-600 dark:text-slate-400 font-normal font-sans max-w-xl mx-auto leading-relaxed">
+              Une expérience fluide conçue pour favoriser des conversations authentiques et spontanées.
             </p>
           </div>
 
@@ -393,31 +382,31 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 <div
                   key={idx}
                   id={`feature-card-${idx}`}
-                  className="p-6 sm:p-7 rounded-3xl bg-slate-900/90 border border-slate-800 hover:border-rose-500/60 hover:bg-slate-900 transition-all duration-300 shadow-xl shadow-black/50 hover:shadow-2xl hover:shadow-rose-950/40 flex flex-col justify-between group backdrop-blur-xs"
+                  className="p-6 sm:p-7 rounded-3xl bg-slate-50 dark:bg-[#131620] dark:border dark:border-slate-800/80 hover:bg-rose-50/40 dark:hover:bg-rose-950/20 transition-all duration-300 shadow-xs hover:shadow-md flex flex-col justify-between group"
                 >
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
-                      <div className="w-12 h-12 rounded-2xl bg-slate-800/90 border border-slate-700/80 flex items-center justify-center text-rose-400 group-hover:scale-105 group-hover:bg-rose-950/60 group-hover:border-rose-700/80 group-hover:text-rose-300 transition-all">
-                        <Icon className="w-6 h-6" />
+                      <div className="w-11 h-11 rounded-xl bg-white dark:bg-[#1c2233] flex items-center justify-center text-slate-700 dark:text-rose-300 group-hover:text-rose-600 dark:group-hover:text-rose-400 transition-all shadow-xs">
+                        <Icon className="w-5 h-5" />
                       </div>
-                      <span className="text-[11px] font-bold px-2.5 py-1 rounded-full border bg-slate-800 text-rose-300 border-slate-700 group-hover:border-rose-800">
+                      <span className="text-[11px] font-medium px-2.5 py-0.5 rounded-full bg-white dark:bg-[#1c2233] text-slate-600 dark:text-slate-300 shadow-2xs font-sans">
                         {f.badge}
                       </span>
                     </div>
 
-                    <h3 className="text-lg font-bold text-white group-hover:text-rose-400 transition-colors">
+                    <h3 className="text-base font-bold font-serif text-slate-900 dark:text-white group-hover:text-rose-600 dark:group-hover:text-rose-400 transition-colors">
                       {f.title}
                     </h3>
-                    <p className="text-xs sm:text-sm text-slate-300 leading-relaxed font-normal">
+                    <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed font-normal font-sans">
                       {f.description}
                     </p>
                   </div>
 
                   <div
                     onClick={() => onOpenAuth('signup')}
-                    className="mt-6 pt-3.5 border-t border-slate-800/90 flex items-center text-xs font-bold text-rose-400 group-hover:text-rose-300 cursor-pointer group-hover:translate-x-1 transition-all"
+                    className="mt-6 pt-3.5 flex items-center text-xs font-semibold text-slate-700 dark:text-slate-300 group-hover:text-rose-600 dark:group-hover:text-rose-400 cursor-pointer transition-all font-sans"
                   >
-                    <span>Rejoindre pour tester</span>
+                    <span>Découvrir</span>
                     <ChevronRight className="w-3.5 h-3.5 ml-1" />
                   </div>
                 </div>
@@ -427,18 +416,18 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         </div>
       </section>
 
-      {/* 4. REAL TESTIMONIALS SECTION - DÉFILEMENT DE TÉMOIGNAGES DE VRAIS COUPLES */}
-      <section id="testimonials-section" className="py-16 md:py-24 border-b border-orange-100/70 bg-gradient-to-b from-orange-50/30 via-white to-white">
+      {/* 4. REAL TESTIMONIALS SECTION */}
+      <section id="testimonials-section" className="py-16 md:py-24 bg-slate-50 dark:bg-[#0e1118] dark:border-y dark:border-slate-800/80 transition-colors">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 mb-12">
           <div className="text-center max-w-2xl mx-auto space-y-3">
-            <span className="px-3.5 py-1 rounded-full text-xs font-extrabold uppercase tracking-wider bg-rose-100 text-rose-700 border border-rose-200">
-              Histoires d'Amour Réelles
+            <span className="px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider bg-white dark:bg-[#151924] dark:border dark:border-slate-800 text-slate-700 dark:text-slate-300 shadow-xs font-sans">
+              Témoignages & Expériences
             </span>
-            <h2 className="text-2xl sm:text-4xl font-black text-slate-900 tracking-tight">
+            <h2 className="text-2xl sm:text-4xl font-bold font-serif text-slate-900 dark:text-white tracking-tight">
               Ils ont trouvé l'amour sur Joyce-K
             </h2>
-            <p className="text-sm text-slate-600 font-medium">
-              Découvrez les témoignages de célibataires du monde entier qui ont rencontré leur moitié grâce à nos profils certifiés.
+            <p className="text-sm text-slate-600 dark:text-slate-400 font-normal font-sans">
+              Des célibataires qui partagent leur parcours authentique.
             </p>
           </div>
         </div>
@@ -449,7 +438,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             {[...testimonials, ...testimonials].map((item, idx) => (
               <div
                 key={idx}
-                className="w-80 sm:w-96 p-6 rounded-3xl bg-white border border-rose-100 shadow-xl shadow-rose-100/40 flex flex-col justify-between shrink-0 space-y-4 group hover:border-rose-300 transition-all"
+                className="w-80 sm:w-96 p-6 rounded-3xl bg-white dark:bg-[#151924] dark:border dark:border-slate-800 shadow-xs hover:shadow-md flex flex-col justify-between shrink-0 space-y-4 group transition-all"
               >
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
@@ -459,18 +448,18 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                         <Star key={starIdx} className="w-4 h-4 fill-amber-400 text-amber-400" />
                       ))}
                     </div>
-                    <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                    <span className="text-[10px] font-medium text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-full font-sans">
                       {item.date}
                     </span>
                   </div>
 
-                  <p className="text-xs sm:text-sm text-slate-700 leading-relaxed italic font-medium">
+                  <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed italic font-serif">
                     "{item.quote}"
                   </p>
                 </div>
 
-                <div className="flex items-center gap-3 pt-3 border-t border-rose-50">
-                  <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-rose-200 shrink-0">
+                <div className="flex items-center gap-3 pt-3">
+                  <div className="w-11 h-11 rounded-full overflow-hidden shrink-0">
                     <img
                       src={item.photo}
                       alt={item.names}
@@ -479,11 +468,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                     />
                   </div>
                   <div>
-                    <h4 className="text-xs sm:text-sm font-black text-slate-900">
+                    <h4 className="text-xs sm:text-sm font-bold font-serif text-slate-900 dark:text-white">
                       {item.names}
                     </h4>
-                    <p className="text-[11px] text-slate-500 font-medium flex items-center gap-1">
-                      <MapPin className="w-3 h-3 text-rose-500" />
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 font-normal font-sans flex items-center gap-1">
+                      <MapPin className="w-3 h-3 text-slate-400 dark:text-slate-500" />
                       {item.location}
                     </p>
                   </div>
@@ -494,48 +483,41 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         </div>
       </section>
 
-      {/* 5. RADAR & AFFINITY SPOTLIGHT - SECTION NOIRE LUXE */}
-      <section id="radar-preview-section" className="py-20 md:py-28 border-b border-slate-800/90 bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-white relative overflow-hidden">
-        {/* Subtle glowing radar ripple behind */}
-        <div className="absolute top-1/2 left-1/4 -translate-y-1/2 w-96 h-96 bg-rose-600/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 right-10 w-72 h-72 bg-orange-600/10 rounded-full blur-3xl pointer-events-none" />
-
+      {/* 5. RADAR & PRÉSENCE MONDIALE */}
+      <section id="radar-preview-section" className="py-20 md:py-24 bg-white dark:bg-[#0b0d12] text-slate-900 dark:text-slate-100 relative overflow-hidden transition-colors">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 relative z-10">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
             {/* Left Description */}
             <div className="space-y-6">
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-800 border border-slate-700 text-rose-300 text-xs font-bold shadow-sm">
-                <Radio className="w-3.5 h-3.5 text-rose-400 animate-pulse" />
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-100 dark:bg-[#151924] dark:border dark:border-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold font-sans">
+                <Radio className="w-3.5 h-3.5 text-slate-600 dark:text-slate-400" />
                 <span>Radar & Présence Mondiale</span>
               </div>
-              <h2 className="text-2xl sm:text-4xl font-black text-white tracking-tight leading-snug">
-                Trouvez des personnes qui partagent{' '}
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-rose-400 via-rose-300 to-orange-400">
-                  votre vision du monde.
-                </span>
+              <h2 className="text-2xl sm:text-4xl font-bold font-serif text-slate-900 dark:text-white tracking-tight leading-snug">
+                Trouvez des personnes qui partagent votre vision du monde.
               </h2>
-              <p className="text-sm sm:text-base text-slate-300 leading-relaxed font-normal">
-                Que vous soyez à Paris, Yaoundé, Douala, Bruxelles, Dakar, Abidjan, Montréal ou Genève, notre radar vous permet de visualiser instantanément les profils disponibles et certifiés.
+              <p className="text-sm sm:text-base text-slate-600 dark:text-slate-400 leading-relaxed font-normal font-sans">
+                Que vous soyez à Paris, Yaoundé, Douala, Bruxelles, Dakar, Abidjan, Montréal ou Genève, notre radar vous permet de visualiser facilement les profils à proximité et certifiés.
               </p>
 
-              <div className="space-y-3.5">
-                <div className="flex items-start gap-3 p-4 rounded-2xl bg-slate-900/90 border border-slate-800 shadow-md">
-                  <div className="w-9 h-9 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center text-emerald-400 shrink-0 mt-0.5">
-                    <UserCheck className="w-5 h-5" />
+              <div className="space-y-3 font-sans">
+                <div className="flex items-start gap-3 p-4 rounded-2xl bg-slate-50 dark:bg-[#131620] dark:border dark:border-slate-800 shadow-xs">
+                  <div className="w-8 h-8 rounded-lg bg-white dark:bg-[#1c2233] flex items-center justify-center text-slate-700 dark:text-slate-300 shrink-0 mt-0.5 shadow-xs">
+                    <UserCheck className="w-4 h-4" />
                   </div>
                   <div>
-                    <h4 className="text-xs sm:text-sm font-bold text-white">Vérification humaine systématique</h4>
-                    <p className="text-xs text-slate-300 mt-0.5">Aucun faux profil, aucun bot commercial. Vous échangez uniquement avec de vraies personnes.</p>
+                    <h4 className="text-xs sm:text-sm font-bold font-serif text-slate-900 dark:text-white">Vérification de profil</h4>
+                    <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">Aucun faux profil ni robot. Vous échangez uniquement avec de vrais utilisateurs.</p>
                   </div>
                 </div>
 
-                <div className="flex items-start gap-3 p-4 rounded-2xl bg-slate-900/90 border border-slate-800 shadow-md">
-                  <div className="w-9 h-9 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center text-rose-400 shrink-0 mt-0.5">
-                    <Heart className="w-5 h-5" />
+                <div className="flex items-start gap-3 p-4 rounded-2xl bg-slate-50 dark:bg-[#131620] dark:border dark:border-slate-800 shadow-xs">
+                  <div className="w-8 h-8 rounded-lg bg-white dark:bg-[#1c2233] flex items-center justify-center text-slate-700 dark:text-slate-300 shrink-0 mt-0.5 shadow-xs">
+                    <Heart className="w-4 h-4" />
                   </div>
                   <div>
-                    <h4 className="text-xs sm:text-sm font-bold text-white">Échanges fluides & sécurisés</h4>
-                    <p className="text-xs text-slate-300 mt-0.5">Notes vocales, messagerie instantanée, brise-glaces et suggestions d'affinités basées sur vos loisirs.</p>
+                    <h4 className="text-xs sm:text-sm font-bold font-serif text-slate-900 dark:text-white">Échanges fluides & respectueux</h4>
+                    <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">Notes vocales, messagerie instantanée et suggestions d'intérêts communs.</p>
                   </div>
                 </div>
               </div>
@@ -543,24 +525,23 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               <button
                 id="landing-radar-cta-btn"
                 onClick={() => onOpenAuth('signup')}
-                className="px-7 py-4 rounded-2xl bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-600 text-white font-black text-xs sm:text-sm flex items-center gap-2 shadow-xl shadow-rose-950/60 transition-all transform hover:-translate-y-0.5 cursor-pointer"
+                className="px-6 py-3.5 rounded-full bg-slate-900 dark:bg-rose-600 hover:bg-slate-800 dark:hover:bg-rose-500 text-white font-medium text-xs sm:text-sm flex items-center gap-2 shadow-xs transition-all cursor-pointer font-sans"
               >
-                <span>Créer mon compte pour accéder au radar</span>
+                <span>Accéder au radar mondial</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
             </div>
 
             {/* Right Preview Card Showcase */}
-            <div className="relative">
-              <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 shadow-2xl shadow-black/80 space-y-4 backdrop-blur-xs">
-                <div className="flex items-center justify-between border-b border-slate-800 pb-3.5">
+            <div className="relative font-sans">
+              <div className="bg-slate-50 dark:bg-[#131620] dark:border dark:border-slate-800/80 rounded-3xl p-6 shadow-xs space-y-4">
+                <div className="flex items-center justify-between pb-2">
                   <div className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-rose-500 animate-ping" />
-                    <span className="text-xs font-bold text-white">Exemples de Villes & Régions Actives</span>
+                    <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                    <span className="text-xs font-bold font-serif text-slate-900 dark:text-white">Villes & Régions Actives</span>
                   </div>
-                  <span className="text-[11px] text-emerald-400 font-bold bg-emerald-950/60 border border-emerald-800/80 px-2.5 py-0.5 rounded-full flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                    En direct
+                  <span className="text-[11px] text-slate-600 dark:text-slate-300 font-medium bg-white dark:bg-[#1c2233] px-2.5 py-0.5 rounded-full shadow-xs">
+                    Disponibles
                   </span>
                 </div>
 
@@ -569,16 +550,16 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                     <div
                       key={city.name}
                       onClick={() => onOpenAuth('signup')}
-                      className="p-3 rounded-2xl bg-slate-800/80 border border-slate-700/70 hover:border-rose-500/60 hover:bg-slate-800 cursor-pointer transition-all flex items-center justify-between group"
+                      className="p-3 rounded-2xl bg-white dark:bg-[#181d2a] dark:border dark:border-slate-800/80 hover:bg-rose-50/50 dark:hover:bg-rose-950/20 cursor-pointer transition-all flex items-center justify-between shadow-xs group"
                     >
                       <div className="flex items-center gap-2">
                         <span className="text-base">{city.flag}</span>
                         <div>
-                          <p className="font-bold text-white group-hover:text-rose-300 transition-colors">{city.name}</p>
-                          <p className="text-[10px] text-slate-400">{city.country}</p>
+                          <p className="font-semibold text-slate-900 dark:text-slate-200 group-hover:text-rose-600 dark:group-hover:text-rose-400 transition-colors">{city.name}</p>
+                          <p className="text-[10px] text-slate-500 dark:text-slate-400">{city.country}</p>
                         </div>
                       </div>
-                      <span className="text-[10px] font-semibold text-rose-300 bg-rose-950/80 border border-rose-900/60 px-2 py-0.5 rounded-full">
+                      <span className="text-[10px] font-medium text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-full">
                         {city.region}
                       </span>
                     </div>
@@ -588,9 +569,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 <div className="pt-2 text-center">
                   <button
                     onClick={() => onOpenAuth('signup')}
-                    className="text-xs font-bold text-rose-400 hover:text-rose-300 flex items-center justify-center gap-1 mx-auto cursor-pointer transition-colors"
+                    className="text-xs font-medium text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white flex items-center justify-center gap-1 mx-auto cursor-pointer transition-colors"
                   >
-                    <span>Inscrivez-vous pour débloquer tous les profils</span>
+                    <span>Voir tous les profils de votre région</span>
                     <ArrowRight className="w-3.5 h-3.5" />
                   </button>
                 </div>
@@ -600,68 +581,68 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         </div>
       </section>
 
-      {/* 6. PARTIE CONTACT - PROPRE AVEC BLINKSERVICES513@GMAIL.COM */}
-      <section id="contact-section" className="py-16 md:py-24 border-b border-orange-100/70 bg-white">
+      {/* 6. PARTIE CONTACT */}
+      <section id="contact-section" className="py-16 md:py-24 bg-white dark:bg-[#0b0d12] transition-colors">
         <div className="max-w-5xl mx-auto px-4 sm:px-6">
           <div className="text-center max-w-xl mx-auto mb-12 space-y-3">
-            <span className="px-3.5 py-1 rounded-full text-xs font-extrabold uppercase tracking-wider bg-orange-100 text-rose-700 border border-orange-200">
+            <span className="px-3.5 py-1 rounded-full text-xs font-semibold uppercase tracking-wider bg-rose-50 dark:bg-rose-950/40 dark:border dark:border-rose-900/50 text-rose-800 dark:text-rose-300 font-sans">
               Support & Contact
             </span>
-            <h2 className="text-2xl sm:text-4xl font-black text-slate-900 tracking-tight">
+            <h2 className="text-2xl sm:text-4xl font-bold font-serif text-slate-900 dark:text-white tracking-tight">
               Une question ou suggestion ? Contactez-nous
             </h2>
-            <p className="text-xs sm:text-sm text-slate-600 font-medium">
+            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 font-normal font-sans">
               Notre équipe d'assistance et de développement est à votre disposition pour vous répondre rapidement.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start font-sans">
             {/* Contact Info Box */}
-            <div className="p-6 rounded-3xl bg-orange-50/40 border border-orange-200/80 space-y-5 shadow-sm">
-              <h3 className="text-base font-bold text-slate-900 border-b border-orange-200/80 pb-3">
+            <div className="p-6 rounded-3xl bg-slate-50 dark:bg-[#131620] dark:border dark:border-slate-800/80 space-y-5 shadow-xs">
+              <h3 className="text-base font-bold font-serif text-slate-900 dark:text-white pb-1">
                 Informations Joyce-K
               </h3>
 
               <div className="space-y-4 text-xs">
                 <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-xl bg-white border border-orange-200 flex items-center justify-center text-rose-600 shrink-0">
+                  <div className="w-8 h-8 rounded-xl bg-white dark:bg-[#1c2233] flex items-center justify-center text-rose-600 dark:text-rose-400 shrink-0 shadow-xs">
                     <Building2 className="w-4 h-4" />
                   </div>
                   <div>
-                    <p className="font-bold text-slate-900">Éditeur & Entreprise</p>
-                    <p className="text-slate-600">Blink-services</p>
+                    <p className="font-semibold text-slate-900 dark:text-white">Éditeur & Entreprise</p>
+                    <p className="text-slate-600 dark:text-slate-400">Blink-services</p>
                   </div>
                 </div>
 
                 <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-xl bg-white border border-orange-200 flex items-center justify-center text-rose-600 shrink-0">
+                  <div className="w-8 h-8 rounded-xl bg-white dark:bg-[#1c2233] flex items-center justify-center text-rose-600 dark:text-rose-400 shrink-0 shadow-xs">
                     <UserCheck className="w-4 h-4" />
                   </div>
                   <div>
-                    <p className="font-bold text-slate-900">Concepteur & Fondateur</p>
-                    <p className="text-slate-600">Junior Andela</p>
+                    <p className="font-semibold text-slate-900 dark:text-white">Concepteur & Fondateur</p>
+                    <p className="text-slate-600 dark:text-slate-400">Junior Andela</p>
                   </div>
                 </div>
 
                 <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-xl bg-white border border-orange-200 flex items-center justify-center text-rose-600 shrink-0">
+                  <div className="w-8 h-8 rounded-xl bg-white dark:bg-[#1c2233] flex items-center justify-center text-rose-600 dark:text-rose-400 shrink-0 shadow-xs">
                     <MapPin className="w-4 h-4" />
                   </div>
                   <div>
-                    <p className="font-bold text-slate-900">Siège & Localisation</p>
-                    <p className="text-slate-600">Yaoundé, Cameroun</p>
+                    <p className="font-semibold text-slate-900 dark:text-white">Siège & Localisation</p>
+                    <p className="text-slate-600 dark:text-slate-400">Yaoundé, Cameroun</p>
                   </div>
                 </div>
 
                 <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-xl bg-white border border-orange-200 flex items-center justify-center text-rose-600 shrink-0">
+                  <div className="w-8 h-8 rounded-xl bg-white dark:bg-[#1c2233] flex items-center justify-center text-rose-600 dark:text-rose-400 shrink-0 shadow-xs">
                     <Mail className="w-4 h-4" />
                   </div>
                   <div>
-                    <p className="font-bold text-slate-900">Adresse E-mail de Contact</p>
+                    <p className="font-semibold text-slate-900 dark:text-white">Adresse E-mail de Contact</p>
                     <a
                       href="mailto:blinkservices513@gmail.com"
-                      className="text-rose-600 hover:text-rose-700 font-bold underline"
+                      className="text-rose-600 dark:text-rose-400 hover:text-rose-700 dark:hover:text-rose-300 font-semibold underline"
                     >
                       blinkservices513@gmail.com
                     </a>
@@ -671,30 +652,30 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             </div>
 
             {/* Contact Form */}
-            <div className="md:col-span-2 p-6 sm:p-8 rounded-3xl bg-white border border-orange-200/80 shadow-md shadow-orange-50">
+            <div className="md:col-span-2 p-6 sm:p-8 rounded-3xl bg-slate-50 dark:bg-[#131620] dark:border dark:border-slate-800/80 shadow-xs">
               {contactStatus === 'sent' ? (
                 <div className="py-10 text-center space-y-3">
-                  <div className="w-14 h-14 rounded-full bg-emerald-100 border border-emerald-300 flex items-center justify-center mx-auto text-emerald-600">
+                  <div className="w-14 h-14 rounded-full bg-emerald-100 dark:bg-emerald-950/50 flex items-center justify-center mx-auto text-emerald-600 dark:text-emerald-400 shadow-xs">
                     <CheckCircle2 className="w-7 h-7" />
                   </div>
-                  <h3 className="text-lg font-bold text-slate-900">Message envoyé avec succès !</h3>
-                  <p className="text-xs text-slate-600 max-w-sm mx-auto">
+                  <h3 className="text-lg font-bold font-serif text-slate-900 dark:text-white">Message envoyé avec succès !</h3>
+                  <p className="text-xs text-slate-600 dark:text-slate-400 max-w-sm mx-auto">
                     Merci pour votre message. L'équipe Blink-services vous répondra sur votre adresse dans les plus brefs délais.
                   </p>
                   <button
                     onClick={() => setContactStatus('idle')}
-                    className="mt-4 px-5 py-2 rounded-xl bg-slate-900 text-xs font-bold text-white hover:bg-slate-800 cursor-pointer"
+                    className="mt-4 px-5 py-2.5 rounded-full bg-slate-900 dark:bg-rose-600 text-xs font-medium text-white hover:bg-slate-800 dark:hover:bg-rose-500 cursor-pointer shadow-xs"
                   >
                     Envoyer un autre message
                   </button>
                 </div>
               ) : (
                 <form onSubmit={handleContactSubmit} className="space-y-4">
-                  <h3 className="text-base font-bold text-slate-900">Envoyez-nous un message</h3>
+                  <h3 className="text-base font-bold font-serif text-slate-900 dark:text-white">Envoyez-nous un message</h3>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-xs font-bold text-slate-700 mb-1">
+                      <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
                         Votre Nom
                       </label>
                       <input
@@ -703,12 +684,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                         placeholder="Ex: Alexandre Martin"
                         value={contactName}
                         onChange={(e) => setContactName(e.target.value)}
-                        className="w-full px-3.5 py-2.5 rounded-2xl bg-orange-50/30 border border-orange-200 focus:border-rose-500 focus:bg-white focus:outline-none text-xs text-slate-900 font-medium"
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-[#181d2a] dark:border dark:border-slate-700/80 focus:bg-white dark:focus:bg-[#1c2233] focus:outline-none focus:ring-2 focus:ring-rose-500/20 text-xs text-slate-900 dark:text-white font-medium shadow-2xs placeholder-slate-400 dark:placeholder-slate-500"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-xs font-bold text-slate-700 mb-1">
+                      <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
                         Votre Adresse E-mail
                       </label>
                       <input
@@ -717,19 +698,19 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                         placeholder="nom@exemple.com"
                         value={contactEmail}
                         onChange={(e) => setContactEmail(e.target.value)}
-                        className="w-full px-3.5 py-2.5 rounded-2xl bg-orange-50/30 border border-orange-200 focus:border-rose-500 focus:bg-white focus:outline-none text-xs text-slate-900 font-medium"
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-[#181d2a] dark:border dark:border-slate-700/80 focus:bg-white dark:focus:bg-[#1c2233] focus:outline-none focus:ring-2 focus:ring-rose-500/20 text-xs text-slate-900 dark:text-white font-medium shadow-2xs placeholder-slate-400 dark:placeholder-slate-500"
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                    <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
                       Sujet de votre demande
                     </label>
                     <select
                       value={contactSubject}
                       onChange={(e) => setContactSubject(e.target.value)}
-                      className="w-full px-3.5 py-2.5 rounded-2xl bg-orange-50/30 border border-orange-200 focus:border-rose-500 focus:bg-white focus:outline-none text-xs text-slate-900 font-medium"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-[#181d2a] dark:border dark:border-slate-700/80 focus:bg-white dark:focus:bg-[#1c2233] focus:outline-none focus:ring-2 focus:ring-rose-500/20 text-xs text-slate-900 dark:text-white font-medium shadow-2xs"
                     >
                       <option value="Renseignement">Renseignement général</option>
                       <option value="Vérification Photo">Question sur la certification photo & Anti-IA</option>
@@ -739,7 +720,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                    <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
                       Votre Message
                     </label>
                     <textarea
@@ -748,16 +729,16 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                       placeholder="Expliquez-nous votre demande en détail..."
                       value={contactMessage}
                       onChange={(e) => setContactMessage(e.target.value)}
-                      className="w-full px-3.5 py-2.5 rounded-2xl bg-orange-50/30 border border-orange-200 focus:border-rose-500 focus:bg-white focus:outline-none text-xs text-slate-900 leading-relaxed font-medium"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-[#181d2a] dark:border dark:border-slate-700/80 focus:bg-white dark:focus:bg-[#1c2233] focus:outline-none focus:ring-2 focus:ring-rose-500/20 text-xs text-slate-900 dark:text-white leading-relaxed font-medium shadow-2xs placeholder-slate-400 dark:placeholder-slate-500"
                     />
                   </div>
 
                   <button
                     type="submit"
                     disabled={contactStatus === 'sending'}
-                    className="w-full py-3 rounded-2xl bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-600 text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md shadow-rose-200 transition-all disabled:opacity-50 cursor-pointer"
+                    className="w-full py-3 rounded-full bg-rose-600 hover:bg-rose-500 text-white font-medium text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm shadow-rose-600/20 transition-all disabled:opacity-50 cursor-pointer"
                   >
-                    <Send className="w-4 h-4" />
+                    <Send className="w-4 h-4 stroke-[1.75px]" />
                     <span>{contactStatus === 'sending' ? 'Envoi en cours...' : 'Envoyer le message'}</span>
                   </button>
                 </form>
@@ -767,195 +748,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         </div>
       </section>
 
-      {/* 7. PROFESSIONAL FOOTER */}
-      <footer id="main-app-footer" className="bg-slate-950 text-slate-400 border-t border-slate-800/80 pt-16 pb-12 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto space-y-12">
-          {/* Main Footer Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10">
-            {/* Col 1 & 2: Brand Identity & Manifesto */}
-            <div className="lg:col-span-2 space-y-5">
-              <JoyceKLogo size="md" variant="dark-bg" showTagline={true} />
-              <p className="text-xs sm:text-sm text-slate-400 leading-relaxed max-w-sm">
-                La référence des rencontres internationales authentiques. Une plateforme sécurisée,
-                conçue pour connecter des célibataires exigeants autour de valeurs sincères,
-                de passions partagées et d'une alchimie émotionnelle réelle.
-              </p>
-
-              {/* Trust Badges */}
-              <div className="pt-2 flex flex-wrap items-center gap-2 text-[11px] font-semibold text-slate-300">
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-slate-900 border border-slate-800">
-                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-                  100% Profils Réels
-                </span>
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-slate-900 border border-slate-800">
-                  <Lock className="w-3.5 h-3.5 text-rose-400" />
-                  Chiffrement Sécurisé
-                </span>
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-slate-900 border border-slate-800">
-                  <UserCheck className="w-3.5 h-3.5 text-cyan-400" />
-                  Conforme RGPD
-                </span>
-              </div>
-            </div>
-
-            {/* Col 3: Navigation & Découverte */}
-            <div className="space-y-4">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-200">
-                Navigation
-              </h4>
-              <ul className="space-y-2.5 text-xs">
-                <li>
-                  <button
-                    onClick={() => {
-                      const el = document.getElementById('hero-section');
-                      el?.scrollIntoView({ behavior: 'smooth' });
-                    }}
-                    className="hover:text-rose-400 transition-colors cursor-pointer"
-                  >
-                    Accueil
-                  </button>
-                </li>
-                <li>
-                  <button
-                    onClick={() => onOpenAuth('signup')}
-                    className="hover:text-rose-400 transition-colors cursor-pointer text-left"
-                  >
-                    Découvrir les Membres
-                  </button>
-                </li>
-                <li>
-                  <button
-                    onClick={() => {
-                      const el = document.getElementById('radar-preview-section');
-                      el?.scrollIntoView({ behavior: 'smooth' });
-                    }}
-                    className="hover:text-rose-400 transition-colors cursor-pointer"
-                  >
-                    Radar de Proximité Monde
-                  </button>
-                </li>
-                <li>
-                  <button
-                    onClick={() => onOpenAuth('signup')}
-                    className="hover:text-rose-400 transition-colors cursor-pointer text-left"
-                  >
-                    Blind-Match Événementiel (21h)
-                  </button>
-                </li>
-                <li>
-                  <button
-                    onClick={() => {
-                      const el = document.getElementById('testimonials-section');
-                      el?.scrollIntoView({ behavior: 'smooth' });
-                    }}
-                    className="hover:text-rose-400 transition-colors cursor-pointer"
-                  >
-                    Témoignages & Avis
-                  </button>
-                </li>
-              </ul>
-            </div>
-
-            {/* Col 4: Sécurité & Confidentialité */}
-            <div className="space-y-4">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-200">
-                Sécurité & Éthique
-              </h4>
-              <ul className="space-y-2.5 text-xs text-slate-400">
-                <li className="flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                  <span>Modération humaine 24/7</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                  <span>Scan anti-deepfake certifié</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                  <span>Blocage & signalement instantané</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                  <span>Confidentialité stricte des échanges</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                  <span>Charte de respect mutuel</span>
-                </li>
-              </ul>
-            </div>
-
-            {/* Col 5: Éditeur & Contact Entreprise */}
-            <div className="space-y-4">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-200">
-                Contact & Éditeur
-              </h4>
-              <div className="space-y-3 text-xs">
-                <div>
-                  <div className="text-[11px] text-slate-500">Édité & développé par</div>
-                  <div className="font-bold text-white flex items-center gap-1.5 mt-0.5">
-                    <Building2 className="w-3.5 h-3.5 text-rose-400" />
-                    Blink-services
-                  </div>
-                </div>
-                <div>
-                  <div className="text-[11px] text-slate-500">Fondateur</div>
-                  <div className="font-semibold text-slate-200">Junior Andela</div>
-                </div>
-                <div>
-                  <div className="text-[11px] text-slate-500">Siège</div>
-                  <div className="font-medium text-slate-300 flex items-center gap-1.5 mt-0.5">
-                    <MapPin className="w-3.5 h-3.5 text-rose-400" />
-                    Yaoundé, Cameroun
-                  </div>
-                </div>
-                <div>
-                  <div className="text-[11px] text-slate-500">Support client</div>
-                  <a
-                    href="mailto:blinkservices513@gmail.com"
-                    className="font-medium text-rose-400 hover:text-rose-300 transition-colors flex items-center gap-1.5 mt-0.5"
-                  >
-                    <Mail className="w-3.5 h-3.5" />
-                    blinkservices513@gmail.com
-                  </a>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Subtle separator */}
-          <div className="w-full h-px bg-slate-800/80" />
-
-          {/* Bottom Bar: Copyright, System Status & Disclaimers */}
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
-            <div className="flex items-center gap-2">
-              <p>
-                © {new Date().getFullYear()} <strong className="text-slate-300 font-semibold">Joyce-K</strong> by{' '}
-                <strong className="text-slate-300 font-semibold">Blink-services</strong>. Tous droits réservés.
-              </p>
-            </div>
-
-            <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-slate-900 border border-slate-800 text-[11px]">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="text-slate-300 font-medium">Système opérationnel & sécurisé</span>
-            </div>
-
-            <div className="flex items-center gap-4 text-[11px]">
-              <span className="hover:text-slate-300 transition-colors cursor-pointer">
-                Conditions Générales
-              </span>
-              <span>•</span>
-              <span className="hover:text-slate-300 transition-colors cursor-pointer">
-                Politique de Confidentialité
-              </span>
-              <span>•</span>
-              <span className="hover:text-slate-300 transition-colors cursor-pointer">
-                Mentions Légales
-              </span>
-            </div>
-          </div>
-        </div>
-      </footer>
+      {/* 7. MODERN ANIMATED FOOTER */}
+      <AnimatedFooter onOpenAuth={onOpenAuth} />
     </div>
   );
 };

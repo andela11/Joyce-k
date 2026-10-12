@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: joyce-k-backend
+    env: node
+    plan: free
+    region: frankfurt # ou oregon / ohio / singapore
+    buildCommand: npm install && npm run build:server
+    startCommand: npm run start:server
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: GEMINI_API_KEY
+        sync: false # À définir dans le dashboard Render
+      - key: FRONTEND_URL
+        sync: false # Exemple: https://joyce-k.vercel.app

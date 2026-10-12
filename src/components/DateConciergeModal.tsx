@@ -20,6 +20,7 @@ import {
   Zap,
 } from 'lucide-react';
 import { UserProfile, DateIdea, SafeDateGuardian } from '../types';
+import { getApiUrl } from '../utils/api';
 
 interface DateConciergeModalProps {
   currentUser: UserProfile;
@@ -72,7 +73,7 @@ export const DateConciergeModal: React.FC<DateConciergeModalProps> = ({
   const fetchDateIdeas = async () => {
     setIsLoadingIdeas(true);
     try {
-      const res = await fetch('/api/ai/date-ideas', {
+      const res = await fetch(getApiUrl('/api/ai/date-ideas'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

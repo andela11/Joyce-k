@@ -19,6 +19,7 @@ import { AdminDashboard } from './components/AdminDashboard';
 import { FavoritesView } from './components/FavoritesView';
 import { ActiveCallModal } from './components/ActiveCallModal';
 import { BlindMatchView } from './components/BlindMatchView';
+import { AnimatedFooter } from './components/AnimatedFooter';
 import {
   UserProfile,
   ActiveTab,
@@ -64,6 +65,19 @@ import { auth, onAuthStateChanged, signOut, db, collection, onSnapshot } from '.
 export default function App() {
   // Navigation State
   const [activeTab, setActiveTab] = useState<ActiveTab>('landing');
+
+  // Dark Mode State with LocalStorage Persistence
+  const [darkMode, setDarkMode] = useState<boolean>(() => {
+    try {
+      const saved = localStorage.getItem('joycek_dark_mode');
+      if (saved !== null) {
+        return saved === 'true';
+      }
+      return typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    } catch {
+      return false;
+    }
+  });
 
   // Authentication State
   const [authUser, setAuthUser] = useState<AuthUser | null>(() => {
@@ -196,6 +210,20 @@ export default function App() {
       setActiveConversationId(null);
     }
   }, []);
+
+  // Sync dark mode class and localStorage
+  useEffect(() => {
+    if (darkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+    try {
+      localStorage.setItem('joycek_dark_mode', String(darkMode));
+    } catch (e) {
+      console.warn('Failed to save dark mode preference:', e);
+    }
+  }, [darkMode]);
 
   // Sync user profile from Firestore / LocalStorage on mount or when authUser changes
   useEffect(() => {
@@ -342,6 +370,13 @@ export default function App() {
                   country: data.country || 'Cameroun',
                 } as UserProfile);
               }
+            });
+
+            dbList.sort((a, b) => {
+              const dateA = a.createdAt || '';
+              const dateB = b.createdAt || '';
+              if (dateA && dateB) return dateB.localeCompare(dateA);
+              return a.id.localeCompare(b.id);
             });
 
             setProfiles(() => {
@@ -660,6 +695,17 @@ export default function App() {
     // Pass strictly records rejection - no match created
   };
 
+  // Rewind last swipe action
+  const handleRewindSwipe = (profileId: string) => {
+    setLikedProfileIds((prev) => prev.filter((id) => id !== profileId));
+    setPassedProfileIds((prev) => prev.filter((id) => id !== profileId));
+  };
+
+  // Reset passed profiles to rediscover
+  const handleResetPassedProfiles = () => {
+    setPassedProfileIds([]);
+  };
+
   // Send message in active chat
   const handleSendMessage = (
     conversationId: string,
@@ -954,7 +1000,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-rose-500 selection:text-white">
+    <div className="min-h-screen bg-white dark:bg-[#0b0d12] text-slate-900 dark:text-slate-100 flex flex-col font-sans selection:bg-rose-500 selection:text-white transition-colors duration-200">
       {/* Top Main Navigation */}
       <Navigation
         activeTab={activeTab}
@@ -973,6 +1019,8 @@ export default function App() {
         activeConversationId={activeConversationId}
         conversations={conversations}
         onStartCall={handleStartCallWithProfile}
+        darkMode={darkMode}
+        onToggleDarkMode={() => setDarkMode((prev) => !prev)}
       />
 
       {/* Main Content Area based on Active Tab */}
@@ -986,16 +1034,20 @@ export default function App() {
         )}
 
         {activeTab === 'discovery' && (
-          <div className="pb-8 bg-rose-50/60 min-h-[calc(100vh-70px)] text-slate-800 w-full overflow-x-clip">
+          <div className="pb-8 bg-rose-50/60 dark:bg-[#0b0d12] min-h-[calc(100vh-70px)] text-slate-800 dark:text-slate-100 w-full overflow-x-clip transition-colors">
             <DiscoverySwipe
               currentUser={currentUser}
               profiles={profiles}
               privacySettings={privacySettings}
               favoriteIds={favoriteIds}
               matchedProfileIds={matchedProfileIds}
+              likedProfileIds={likedProfileIds}
+              passedProfileIds={passedProfileIds}
               onToggleFavorite={handleToggleFavorite}
               onLike={handleLikeProfile}
               onPass={handlePassProfile}
+              onRewindSwipe={handleRewindSwipe}
+              onResetPassed={handleResetPassedProfiles}
               onOpenCompatibility={(profile) => setCompatibilityProfile(profile)}
               onStartCall={handleStartCallWithProfile}
               onStartChat={handleStartChatWithProfile}
@@ -1005,7 +1057,7 @@ export default function App() {
         )}
 
         {activeTab === 'favorites' && (
-          <div className="pb-8 bg-rose-50/60 min-h-[calc(100vh-70px)] text-slate-800 w-full overflow-x-clip">
+          <div className="pb-8 bg-rose-50/60 dark:bg-[#0b0d12] min-h-[calc(100vh-70px)] text-slate-800 dark:text-slate-100 w-full overflow-x-clip transition-colors">
             <FavoritesView
               currentUser={currentUser}
               profiles={profiles}
@@ -1025,7 +1077,7 @@ export default function App() {
         )}
 
         {activeTab === 'radar' && (
-          <div className="pb-8 bg-rose-50/60 min-h-[calc(100vh-70px)] text-slate-800 w-full overflow-x-clip">
+          <div className="pb-8 bg-rose-50/60 dark:bg-[#0b0d12] min-h-[calc(100vh-70px)] text-slate-800 dark:text-slate-100 w-full overflow-x-clip transition-colors">
             <ProximityRadar
               currentUser={currentUser}
               profiles={profiles}
@@ -1053,7 +1105,7 @@ export default function App() {
         )}
 
         {activeTab === 'messages' && (
-          <div className="bg-rose-50/60 h-[calc(100dvh-56px)] sm:h-[calc(100dvh-64px)] flex flex-col text-slate-800 overflow-hidden">
+          <div className="bg-rose-50/60 dark:bg-[#0b0d12] h-[calc(100dvh-56px)] sm:h-[calc(100dvh-64px)] flex flex-col text-slate-800 dark:text-slate-100 overflow-hidden transition-colors">
             <MessagingCenter
               currentUser={currentUser}
               conversations={conversations}
@@ -1076,7 +1128,7 @@ export default function App() {
         )}
 
         {activeTab === 'ai_wingman' && (
-          <div className="pb-8 bg-rose-50/60 min-h-[calc(100vh-70px)] text-slate-800">
+          <div className="pb-8 bg-rose-50/60 dark:bg-[#0b0d12] min-h-[calc(100vh-70px)] text-slate-800 dark:text-slate-100 transition-colors">
             <AiWingmanCenter
               currentUser={currentUser}
               aiSettings={aiSettings}
@@ -1092,7 +1144,7 @@ export default function App() {
         )}
 
         {activeTab === 'blind_match' && (
-          <div className="pb-8 bg-rose-50/60 min-h-[calc(100vh-70px)] text-slate-800">
+          <div className="pb-8 bg-rose-50/60 dark:bg-[#0b0d12] min-h-[calc(100vh-70px)] text-slate-800 dark:text-slate-100 transition-colors">
             <BlindMatchView
               currentUser={currentUser}
               profiles={profiles}
@@ -1110,30 +1162,36 @@ export default function App() {
         )}
 
         {activeTab === 'privacy' && (
-          <div className="pb-8 bg-rose-50/60 min-h-[calc(100vh-70px)] text-slate-800">
-            <PrivacySecurityCenter
-              currentUser={currentUser}
-              privacySettings={privacySettings}
-              onUpdatePrivacySettings={(newSettings) =>
-                setPrivacySettings((prev) => ({ ...prev, ...newSettings }))
-              }
-              onPurgeAccount={handlePurgeAccount}
-              onUnblockUser={handleUnblockUser}
-              onBackToDiscovery={() => setActiveTab('discovery')}
-            />
+          <div className="bg-rose-50/60 dark:bg-[#0b0d12] min-h-[calc(100vh-70px)] text-slate-800 dark:text-slate-100 flex flex-col justify-between transition-colors">
+            <div className="pb-8">
+              <PrivacySecurityCenter
+                currentUser={currentUser}
+                privacySettings={privacySettings}
+                onUpdatePrivacySettings={(newSettings) =>
+                  setPrivacySettings((prev) => ({ ...prev, ...newSettings }))
+                }
+                onPurgeAccount={handlePurgeAccount}
+                onUnblockUser={handleUnblockUser}
+                onBackToDiscovery={() => setActiveTab('discovery')}
+              />
+            </div>
+            <AnimatedFooter onOpenAuth={handleOpenAuthModal} />
           </div>
         )}
 
         {activeTab === 'profile' && (
-          <div className="pb-8 bg-white min-h-[calc(100vh-70px)] text-slate-800">
-            <ProfileEditor
-              userProfile={currentUser}
-              onSaveProfile={handleSaveProfile}
-              authUser={authUser}
-              onOpenAuth={handleOpenAuthModal}
-              onLogout={handleLogout}
-              onBackToDiscovery={() => setActiveTab('discovery')}
-            />
+          <div className="bg-white dark:bg-[#0b0d12] min-h-[calc(100vh-70px)] text-slate-800 dark:text-slate-100 flex flex-col justify-between transition-colors">
+            <div className="pb-8">
+              <ProfileEditor
+                userProfile={currentUser}
+                onSaveProfile={handleSaveProfile}
+                authUser={authUser}
+                onOpenAuth={handleOpenAuthModal}
+                onLogout={handleLogout}
+                onBackToDiscovery={() => setActiveTab('discovery')}
+              />
+            </div>
+            <AnimatedFooter onOpenAuth={handleOpenAuthModal} />
           </div>
         )}
 

@@ -21,6 +21,7 @@ import {
   PersonalityTone,
   FlirtingLevel,
 } from '../types';
+import { getApiUrl } from '../utils/api';
 
 interface AiWingmanCenterProps {
   currentUser: UserProfile;
@@ -98,7 +99,7 @@ export const AiWingmanCenter: React.FC<AiWingmanCenterProps> = ({
     setIsSimulating(true);
 
     try {
-      const res = await fetch('/api/ai/auto-reply', {
+      const res = await fetch(getApiUrl('/api/ai/auto-reply'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -146,7 +147,7 @@ export const AiWingmanCenter: React.FC<AiWingmanCenterProps> = ({
   const handleGenerateAiBio = async () => {
     setIsEnhancingBio(true);
     try {
-      const res = await fetch('/api/ai/enhance-bio', {
+      const res = await fetch(getApiUrl('/api/ai/enhance-bio'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

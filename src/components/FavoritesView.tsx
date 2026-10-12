@@ -119,7 +119,7 @@ export const FavoritesView: React.FC<FavoritesViewProps> = ({
             </div>
             <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight flex items-center gap-2.5">
               <span>Mes Profils Favoris</span>
-              <Heart className="w-7 h-7 text-rose-500 fill-rose-500 animate-pulse" />
+              <Heart className="w-6 h-6 text-rose-500 fill-rose-500" />
             </h1>
             <p className="text-xs sm:text-sm text-slate-600 max-w-xl">
               Retrouvez tous les profils réels qui vous ont marqué(e) dans le swipe. Analysez votre affinité IA ou engagez la conversation dès que vous êtes prêt(e).
@@ -190,8 +190,8 @@ export const FavoritesView: React.FC<FavoritesViewProps> = ({
         {/* Empty State */}
         {favoriteProfiles.length === 0 ? (
           <div className="text-center py-20 px-6 max-w-lg mx-auto bg-white border border-rose-100 rounded-[36px] space-y-5 shadow-xl shadow-rose-100/50">
-            <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-rose-100 to-orange-100 border border-rose-200 flex items-center justify-center mx-auto text-rose-500 shadow-inner">
-              <Heart className="w-10 h-10 fill-rose-500 text-rose-500 animate-bounce" />
+            <div className="w-16 h-16 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center mx-auto text-rose-500 shadow-xs">
+              <Heart className="w-8 h-8 fill-rose-500 text-rose-500" />
             </div>
             <div className="space-y-2">
               <h3 className="text-xl font-black text-slate-900">

@@ -11,6 +11,7 @@ import {
   Video,
 } from 'lucide-react';
 import { UserProfile } from '../types';
+import { getApiUrl } from '../utils/api';
 
 interface MatchCelebrationModalProps {
   userProfile: UserProfile;
@@ -53,7 +54,7 @@ export const MatchCelebrationModal: React.FC<MatchCelebrationModalProps> = ({
     const loadIcebreakers = async () => {
       setLoadingIcebreakers(true);
       try {
-        const res = await fetch('/api/ai/icebreakers', {
+        const res = await fetch(getApiUrl('/api/ai/icebreakers'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -134,7 +135,7 @@ export const MatchCelebrationModal: React.FC<MatchCelebrationModalProps> = ({
               </span>
             </div>
 
-            <div className="w-10 h-10 sm:w-12 sm:h-12 shrink-0 rounded-full bg-gradient-to-tr from-rose-500 to-orange-500 text-white flex items-center justify-center shadow-lg shadow-rose-300 animate-bounce">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 shrink-0 rounded-full bg-gradient-to-tr from-rose-500 to-orange-500 text-white flex items-center justify-center shadow-md shadow-rose-200">
               <Heart className="w-5 h-5 sm:w-6 sm:h-6 fill-white" />
             </div>
 

@@ -43,6 +43,7 @@ import {
 } from '../types';
 import { ActiveCallModal } from './ActiveCallModal';
 import { AudioMessagePlayer } from './AudioMessagePlayer';
+import { getApiUrl } from '../utils/api';
 import { EmojiStickerPicker } from './EmojiStickerPicker';
 import { DateConciergeModal } from './DateConciergeModal';
 
@@ -187,7 +188,7 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
 
     const fetchSmartSuggestions = async () => {
       try {
-        const res = await fetch('/api/ai/icebreakers', {
+        const res = await fetch(getApiUrl('/api/ai/icebreakers'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -521,7 +522,7 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
       lastReceived?.text || `Salut ${currentUser.name}, comment vas-tu aujourd'hui ?`;
 
     try {
-      const res = await fetch('/api/ai/auto-reply', {
+      const res = await fetch(getApiUrl('/api/ai/auto-reply'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -1109,7 +1110,7 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
                               className={`rounded-2xl p-3.5 sm:p-4 bg-gradient-to-br ${msg.stickerData.gradient} text-white shadow-lg border border-white/30 text-center space-y-1 relative overflow-hidden transform hover:scale-105 transition-transform max-w-[210px] sm:max-w-[240px]`}
                             >
                               <span className="absolute -top-6 -right-6 w-16 h-16 rounded-full bg-white/20 blur-md pointer-events-none" />
-                              <div className="text-3xl sm:text-4xl filter drop-shadow-md my-0.5 animate-pulse">
+                              <div className="text-3xl sm:text-4xl filter drop-shadow-md my-0.5">
                                 {msg.stickerData.emoji}
                               </div>
                               <h4 className="font-black text-xs sm:text-sm leading-tight drop-shadow-xs text-white">
@@ -1221,10 +1222,10 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
                       <Trash2 className="w-4 h-4" />
                     </button>
 
-                    {/* Pulsing indicator & timer */}
+                    {/* Recording indicator & timer */}
                     <div className="flex items-center gap-2 shrink-0">
-                      <span className="w-3 h-3 rounded-full bg-rose-600 animate-ping" />
-                      <span className="font-black text-rose-700 text-xs sm:text-sm tabular-nums">
+                      <span className="w-2.5 h-2.5 rounded-full bg-rose-600" />
+                      <span className="font-bold text-rose-700 text-xs sm:text-sm tabular-nums">
                         {formatTimer(recordingSeconds)}
                       </span>
                     </div>
@@ -1418,9 +1419,8 @@ export const MessagingCenter: React.FC<MessagingCenterProps> = ({
                     <X className="w-5 h-5 sm:w-6 sm:h-6" />
                   ) : (
                     <>
-                      <span className="absolute -top-0.5 -right-0.5 flex h-3 w-3">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-300 opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-400 border border-white"></span>
+                      <span className="absolute -top-0.5 -right-0.5 flex h-2.5 w-2.5">
+                        <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500 border border-white"></span>
                       </span>
                       <Phone className="w-5 h-5 sm:w-6 sm:h-6" />
                     </>

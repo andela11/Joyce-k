@@ -19,6 +19,7 @@ import {
 import { UserProfile, ChatMessage } from '../types';
 import { MOCK_PROFILES } from '../data/mockProfiles';
 import { isGenderCompatible } from '../utils/userUtils';
+import { getApiUrl } from '../utils/api';
 
 interface BlindMatchViewProps {
   currentUser: UserProfile;
@@ -108,7 +109,7 @@ export const BlindMatchView: React.FC<BlindMatchViewProps> = ({
     const fetchQuestion = async () => {
       setIsLoadingTopic(true);
       try {
-        const res = await fetch('/api/ai/blind-question', { method: 'POST' });
+        const res = await fetch(getApiUrl('/api/ai/blind-question'), { method: 'POST' });
         if (res.ok) {
           const data = await res.json();
           if (data.question) setDailyTopic(data);
@@ -205,7 +206,7 @@ export const BlindMatchView: React.FC<BlindMatchViewProps> = ({
 
           <div className="flex items-center gap-3 self-start sm:self-center">
             <div className="px-4 py-2 rounded-2xl bg-black/40 border border-white/15 backdrop-blur-md flex items-center gap-2">
-              <Clock className="w-4 h-4 text-amber-400 animate-pulse" />
+              <Clock className="w-4 h-4 text-amber-400" />
               <div>
                 <div className="text-[10px] text-slate-400 font-bold uppercase">Temps restant</div>
                 <div className="text-sm font-black text-white font-mono">

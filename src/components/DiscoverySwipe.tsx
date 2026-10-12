@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { motion, useMotionValue, useTransform, AnimatePresence } from 'motion/react';
 import {
   Heart,
@@ -29,9 +29,13 @@ interface DiscoverySwipeProps {
   privacySettings: PrivacySettings;
   favoriteIds?: string[];
   matchedProfileIds?: string[];
+  likedProfileIds?: string[];
+  passedProfileIds?: string[];
   onToggleFavorite?: (profileId: string) => void;
   onLike: (profile: UserProfile, isSuperLike?: boolean) => void;
   onPass: (profile: UserProfile) => void;
+  onRewindSwipe?: (profileId: string) => void;
+  onResetPassed?: () => void;
   onOpenCompatibility: (profile: UserProfile) => void;
   onSelectProfileFromList?: (profile: UserProfile) => void;
   onStartCall?: (profile: UserProfile, type: 'audio' | 'video') => void;
@@ -162,7 +166,7 @@ const SwipeCard: React.FC<SwipeCardProps> = ({
             exit={{ scale: 1.3, opacity: 0 }}
             className="absolute inset-0 z-40 flex flex-col items-center justify-center bg-slate-900/60 backdrop-blur-xs pointer-events-none"
           >
-            <div className="p-4 rounded-full bg-gradient-to-tr from-amber-400 to-orange-500 text-white shadow-2xl shadow-amber-300 animate-bounce">
+            <div className="p-4 rounded-full bg-gradient-to-tr from-amber-400 to-orange-500 text-white shadow-2xl shadow-amber-300">
               <Star className="w-16 h-16 fill-white" />
             </div>
             <span className="text-3xl font-black text-white drop-shadow-md mt-3 uppercase tracking-wider">
@@ -279,14 +283,14 @@ const SwipeCard: React.FC<SwipeCardProps> = ({
         {/* Quick Info on Photo */}
         <div className="absolute bottom-4 inset-x-4 z-20 space-y-1 text-white pointer-events-none">
           <div className="flex items-center gap-2 flex-wrap">
-            <h2 className="text-2xl font-black tracking-tight drop-shadow-md">
+            <h2 className="text-2xl sm:text-3xl font-bold font-serif tracking-tight drop-shadow-md">
               {profile.name}, {profile.age}
             </h2>
             {profile.verified && (
               <span
                 id={`verified-badge-pill-${profile.id}`}
                 title="Profil Certifié Joyce-K — Inscription complétée & photos réelles validées"
-                className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-blue-600 text-white font-extrabold text-[11px] shadow-lg shadow-blue-500/30 border border-white/90 backdrop-blur-xs select-none"
+                className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-blue-600 text-white font-semibold text-[11px] shadow-md shadow-blue-500/20 border border-white/90 backdrop-blur-xs select-none font-sans"
               >
                 <svg className="w-3.5 h-3.5 fill-white" viewBox="0 0 24 24">
                   <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" />
@@ -295,19 +299,19 @@ const SwipeCard: React.FC<SwipeCardProps> = ({
               </span>
             )}
             {profile.astrologySign && (
-              <span className="text-xs px-2 py-0.5 rounded-full bg-white/20 backdrop-blur-md text-white font-medium border border-white/30">
+              <span className="text-xs px-2 py-0.5 rounded-full bg-white/20 backdrop-blur-md text-white font-medium border border-white/30 font-sans">
                 {profile.astrologySign}
               </span>
             )}
           </div>
 
-          <div className="flex items-center gap-3 text-xs text-white/90 font-medium">
+          <div className="flex items-center gap-3 text-xs text-white/90 font-medium font-sans">
             <span className="flex items-center gap-1">
-              <Briefcase className="w-3.5 h-3.5 text-rose-300" />
+              <Briefcase className="w-3.5 h-3.5 text-rose-300 stroke-[1.75px]" />
               {profile.occupation}
             </span>
             <span className="flex items-center gap-1">
-              <MapPin className="w-3.5 h-3.5 text-orange-300" />
+              <MapPin className="w-3.5 h-3.5 text-orange-300 stroke-[1.75px]" />
               {formatFuzzedDistance(
                 calculateDistanceKm(
                   currentUser.lat,
@@ -598,18 +602,21 @@ export const DiscoverySwipe: React.FC<DiscoverySwipeProps> = ({
   privacySettings,
   favoriteIds = [],
   matchedProfileIds = [],
+  likedProfileIds = [],
+  passedProfileIds = [],
   onToggleFavorite,
   onLike,
   onPass,
+  onRewindSwipe,
+  onResetPassed,
   onOpenCompatibility,
   onStartCall,
   onStartChat,
   onUpdateCurrentUser,
 }) => {
-  const [currentIndex, setCurrentIndex] = useState(0);
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
   const [showFilters, setShowFilters] = useState(false);
-  const [history, setHistory] = useState<number[]>([]);
+  const [history, setHistory] = useState<UserProfile[]>([]);
   const [showSuperLikeBurst, setShowSuperLikeBurst] = useState(false);
   const [isQuizModalOpen, setIsQuizModalOpen] = useState(false);
   const [feedbackToast, setFeedbackToast] = useState<{
@@ -628,136 +635,149 @@ export const DiscoverySwipe: React.FC<DiscoverySwipeProps> = ({
   const [selectedInterestFilter, setSelectedInterestFilter] = useState<string>('all');
   const [verifiedOnly, setVerifiedOnly] = useState(false);
 
-  // When filters or gender change, safely reset deck to start
+  // When filters or gender change, reset photo index
   useEffect(() => {
-    setCurrentIndex(0);
     setCurrentPhotoIndex(0);
   }, [selectedRegion, maxDistance, minAge, maxAge, selectedInterestFilter, verifiedOnly, currentUser?.gender]);
 
-  // Filter the available profiles cleanly
-  const filteredProfiles = (profiles || []).filter((p) => {
-    if (!p) return false;
-    if (currentUser?.id && p.id === currentUser.id) return false;
-    if ((privacySettings?.blockedUsers || []).includes(p.id)) return false;
+  // Filter the available profiles cleanly: excludes already liked/passed profiles
+  const filteredProfiles = useMemo(() => {
+    return (profiles || []).filter((p) => {
+      if (!p || !p.id) return false;
+      if (currentUser?.id && p.id === currentUser.id) return false;
+      if ((privacySettings?.blockedUsers || []).includes(p.id)) return false;
+      if (likedProfileIds.includes(p.id)) return false;
+      if (passedProfileIds.includes(p.id)) return false;
 
-    // Strict Rule: Men always encounter Women, and Women always encounter Men
-    if (!isGenderCompatible(currentUser, p)) return false;
+      // Strict Rule: Men always encounter Women, and Women always encounter Men
+      if (!isGenderCompatible(currentUser, p)) return false;
 
-    if (p.age < minAge || p.age > maxAge) return false;
-    if (verifiedOnly && !p.verified) return false;
-    if (
-      selectedInterestFilter !== 'all' &&
-      !(p.interests || []).includes(selectedInterestFilter)
-    )
-      return false;
-
-    // Region filter
-    if (selectedRegion !== 'all') {
-      const pCity = (p.city || '').toLowerCase();
+      if (p.age < minAge || p.age > maxAge) return false;
+      if (verifiedOnly && !p.verified) return false;
       if (
-        selectedRegion === 'Europe' &&
-        !pCity.includes('france') &&
-        !pCity.includes('belgique') &&
-        !pCity.includes('suisse') &&
-        !pCity.includes('royaume-uni') &&
-        !pCity.includes('allemagne') &&
-        !pCity.includes('espagne') &&
-        !pCity.includes('italie') &&
-        !pCity.includes('paris') &&
-        !pCity.includes('bruxelles') &&
-        !pCity.includes('genève') &&
-        !pCity.includes('londres') &&
-        !pCity.includes('berlin') &&
-        !pCity.includes('madrid') &&
-        !pCity.includes('rome')
-      ) {
+        selectedInterestFilter !== 'all' &&
+        !(p.interests || []).includes(selectedInterestFilter)
+      )
         return false;
-      }
-      if (
-        selectedRegion === 'Afrique' &&
-        !pCity.includes("côte d'ivoire") &&
-        !pCity.includes('sénégal') &&
-        !pCity.includes('cameroun') &&
-        !pCity.includes('maroc') &&
-        !pCity.includes('rd congo') &&
-        !pCity.includes('abidjan') &&
-        !pCity.includes('dakar') &&
-        !pCity.includes('yaoundé') &&
-        !pCity.includes('casablanca') &&
-        !pCity.includes('kinshasa') &&
-        !pCity.includes('tunisie') &&
-        !pCity.includes('algérie')
-      ) {
-        return false;
-      }
-      if (
-        selectedRegion === 'Amériques' &&
-        !pCity.includes('canada') &&
-        !pCity.includes('états-unis') &&
-        !pCity.includes('montréal') &&
-        !pCity.includes('québec') &&
-        !pCity.includes('new york') &&
-        !pCity.includes('brésil') &&
-        !pCity.includes('guadeloupe') &&
-        !pCity.includes('martinique')
-      ) {
-        return false;
-      }
-      if (
-        selectedRegion === 'Asie & Moyen-Orient' &&
-        !pCity.includes('japon') &&
-        !pCity.includes('tokyo') &&
-        !pCity.includes('émirats') &&
-        !pCity.includes('dubaï') &&
-        !pCity.includes('singapour')
-      ) {
-        return false;
-      }
-    }
 
-    if (maxDistance < 20000) {
-      const distance = calculateDistanceKm(
-        currentUser?.lat || 0,
-        currentUser?.lng || 0,
-        p.lat || 0,
-        p.lng || 0
-      );
-      if (distance > maxDistance) return false;
-    }
+      // Region filter
+      if (selectedRegion !== 'all') {
+        const pCity = (p.city || '').toLowerCase();
+        if (
+          selectedRegion === 'Europe' &&
+          !pCity.includes('france') &&
+          !pCity.includes('belgique') &&
+          !pCity.includes('suisse') &&
+          !pCity.includes('royaume-uni') &&
+          !pCity.includes('allemagne') &&
+          !pCity.includes('espagne') &&
+          !pCity.includes('italie') &&
+          !pCity.includes('paris') &&
+          !pCity.includes('bruxelles') &&
+          !pCity.includes('genève') &&
+          !pCity.includes('londres') &&
+          !pCity.includes('berlin') &&
+          !pCity.includes('madrid') &&
+          !pCity.includes('rome')
+        ) {
+          return false;
+        }
+        if (
+          selectedRegion === 'Afrique' &&
+          !pCity.includes("côte d'ivoire") &&
+          !pCity.includes('sénégal') &&
+          !pCity.includes('cameroun') &&
+          !pCity.includes('maroc') &&
+          !pCity.includes('rd congo') &&
+          !pCity.includes('abidjan') &&
+          !pCity.includes('dakar') &&
+          !pCity.includes('yaoundé') &&
+          !pCity.includes('casablanca') &&
+          !pCity.includes('kinshasa') &&
+          !pCity.includes('tunisie') &&
+          !pCity.includes('algérie')
+        ) {
+          return false;
+        }
+        if (
+          selectedRegion === 'Amériques' &&
+          !pCity.includes('canada') &&
+          !pCity.includes('états-unis') &&
+          !pCity.includes('montréal') &&
+          !pCity.includes('québec') &&
+          !pCity.includes('new york') &&
+          !pCity.includes('brésil') &&
+          !pCity.includes('guadeloupe') &&
+          !pCity.includes('martinique')
+        ) {
+          return false;
+        }
+        if (
+          selectedRegion === 'Asie & Moyen-Orient' &&
+          !pCity.includes('japon') &&
+          !pCity.includes('tokyo') &&
+          !pCity.includes('émirats') &&
+          !pCity.includes('dubaï') &&
+          !pCity.includes('singapour')
+        ) {
+          return false;
+        }
+      }
 
-    return true;
-  });
+      if (maxDistance < 20000) {
+        const distance = calculateDistanceKm(
+          currentUser?.lat || 0,
+          currentUser?.lng || 0,
+          p.lat || 0,
+          p.lng || 0
+        );
+        if (distance > maxDistance) return false;
+      }
 
-  const activeProfile =
-    currentIndex < filteredProfiles.length ? filteredProfiles[currentIndex] : null;
-  const nextProfile =
-    currentIndex + 1 < filteredProfiles.length ? filteredProfiles[currentIndex + 1] : null;
+      return true;
+    });
+  }, [
+    profiles,
+    currentUser,
+    privacySettings?.blockedUsers,
+    likedProfileIds,
+    passedProfileIds,
+    minAge,
+    maxAge,
+    verifiedOnly,
+    selectedInterestFilter,
+    selectedRegion,
+    maxDistance,
+  ]);
+
+  const activeProfile = filteredProfiles.length > 0 ? filteredProfiles[0] : null;
+  const nextProfile = filteredProfiles.length > 1 ? filteredProfiles[1] : null;
 
   const handleSwipeAction = (direction: 'left' | 'right' | 'up') => {
     if (!activeProfile || isSwipingLockRef.current) return;
     isSwipingLockRef.current = true;
 
+    const targetProfile = activeProfile;
     const liked = direction === 'right' || direction === 'up';
     const superLike = direction === 'up';
 
     setFeedbackToast({
       type: superLike ? 'superlike' : liked ? 'like' : 'pass',
-      name: activeProfile.name,
+      name: targetProfile.name,
     });
     setTimeout(() => {
       setFeedbackToast(null);
     }, 1400);
 
-    setHistory((prev) => [...prev, currentIndex]);
+    setHistory((prev) => [...prev, targetProfile]);
 
     if (liked) {
-      onLike(activeProfile, superLike);
+      onLike(targetProfile, superLike);
     } else {
-      onPass(activeProfile);
+      onPass(targetProfile);
     }
 
     setCurrentPhotoIndex(0);
-    setCurrentIndex((prev) => prev + 1);
 
     setTimeout(() => {
       isSwipingLockRef.current = false;
@@ -793,9 +813,11 @@ export const DiscoverySwipe: React.FC<DiscoverySwipeProps> = ({
 
   const handleRewind = () => {
     if (history.length === 0) return;
-    const lastIdx = history[history.length - 1];
+    const lastSwiped = history[history.length - 1];
     setHistory((prev) => prev.slice(0, -1));
-    setCurrentIndex(lastIdx);
+    if (lastSwiped && onRewindSwipe) {
+      onRewindSwipe(lastSwiped.id);
+    }
     setCurrentPhotoIndex(0);
   };
 
@@ -848,8 +870,8 @@ export const DiscoverySwipe: React.FC<DiscoverySwipeProps> = ({
           <h1 className="text-xl sm:text-2xl font-black text-slate-900 flex items-center gap-2">
             <span>Découvrir</span>
             <span className="text-xs px-2.5 py-0.5 rounded-full bg-rose-100 text-rose-600 font-bold border border-rose-200">
-              {filteredProfiles.length - currentIndex > 0
-                ? `${filteredProfiles.length - currentIndex} profils`
+              {filteredProfiles.length > 0
+                ? `${filteredProfiles.length} profils`
                 : '0 profil'}
             </span>
           </h1>
@@ -892,7 +914,6 @@ export const DiscoverySwipe: React.FC<DiscoverySwipeProps> = ({
             id={`region-pill-${reg.id}`}
             onClick={() => {
               setSelectedRegion(reg.id);
-              setCurrentIndex(0);
             }}
             className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all whitespace-nowrap shrink-0 shadow-xs cursor-pointer ${
               selectedRegion === reg.id
@@ -1122,9 +1143,16 @@ export const DiscoverySwipe: React.FC<DiscoverySwipeProps> = ({
           <button
             id="reset-discovery-stack-btn"
             onClick={() => {
-              setCurrentIndex(0);
               setHistory([]);
               setMaxDistance(20000);
+              setSelectedRegion('all');
+              setMinAge(18);
+              setMaxAge(45);
+              setSelectedInterestFilter('all');
+              setVerifiedOnly(false);
+              if (onResetPassed) {
+                onResetPassed();
+              }
             }}
             className="px-6 py-3 rounded-2xl bg-gradient-to-r from-rose-500 to-orange-500 text-white font-bold text-xs shadow-lg shadow-rose-200 hover:scale-105 active:scale-95 transition-all cursor-pointer"
           >
